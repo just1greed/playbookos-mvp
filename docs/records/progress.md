@@ -84,3 +84,9 @@
 
 - 已新增 `src/playbookos/ui/preview_server.py`，提供零依赖的本地 Dashboard 预览服务
 - 已新增 `tests/test_preview_server_unittest.py`，覆盖 demo store 的 dashboard 数据填充
+
+- 已新增 `src/playbookos/observability/error_log.py`，以 JSONL 文件形式记录运行中遇到的错误
+- 已在 preview server 与 FastAPI API 的核心错误路径接入 `record_error`
+- 已新增 `GET /api/errors` 与 preview `GET /api/errors`，可直接查看错误记录文件内容
+- preview server 默认端口已切换为 `8081`
+- 已新增 `tests/test_error_log_unittest.py`，覆盖错误记录文件的写入与读取

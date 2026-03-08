@@ -92,6 +92,7 @@ PlaybookOS 用来把目标、SOP、技能、工具权限、执行记录和反思
 - `POST /api/reflections/{reflection_id}/approve`
 - `POST /api/reflections/{reflection_id}/reject`
 - `POST /api/reflections/{reflection_id}/publish`
+- `GET /api/errors`
 - `GET /api/board`
 - `GET /api/meta/enums`
 - `GET /healthz`
@@ -170,6 +171,7 @@ PlaybookOS 用来把目标、SOP、技能、工具权限、执行记录和反思
 - `PLAYBOOKOS_DB_PATH`：自定义 SQLite 文件路径
 - `DATABASE_URL=sqlite:///absolute/or/relative/path.db`：显式指定 SQLite URL
 - `DATABASE_URL=postgresql://...`：当前会给出明确提示；正式 PostgreSQL schema 已放在 `data/sql/postgres_schema.sql`
+- `PLAYBOOKOS_ERROR_LOG_PATH`：错误记录文件路径，默认是 `data/error_records.jsonl`
 
 ## 本地运行
 
@@ -191,10 +193,10 @@ uvicorn playbookos.api.app:app --host 0.0.0.0 --port 8000
 如果当前环境还没安装 `fastapi` / `uvicorn`，也可以直接用零依赖预览服务：
 
 ```bash
-PYTHONPATH=src python3 -m playbookos.ui.preview_server --demo --port 8080
+PYTHONPATH=src python3 -m playbookos.ui.preview_server --demo --port 8081
 ```
 
-然后访问：`http://127.0.0.1:8080/`
+然后访问：`http://127.0.0.1:8081/`
 
 ## 下一步
 

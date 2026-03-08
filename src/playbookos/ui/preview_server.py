@@ -15,6 +15,7 @@ from urllib.parse import urlparse
 from playbookos.api.store import InMemoryStore, StoreProtocol
 from playbookos.domain.models import Goal, Playbook, ReflectionStatus
 from playbookos.executor.service import DeterministicExecutorAdapter, autopilot_goal_in_store
+from playbookos.observability import get_error_log_path, list_recorded_errors, record_error
 from playbookos.persistence import create_store_from_env
 from playbookos.planner.service import plan_goal_in_store
 from playbookos.reflection.service import approve_reflection_in_store, evaluate_reflection_in_store, publish_reflection_in_store
@@ -28,35 +29,43 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         path = parsed.path
 
-        if path == "/":
-            self._write_html(build_dashboard_html(self.server.store.board_snapshot(), api_base="/api"))
-            return
-        if path == "/healthz":
-            self._write_json({"status": "ok"})
-            return
-        if path == "/api/board":
-            self._write_json(self.server.store.board_snapshot())
-            return
-        if path == "/api/goals":
-            self._write_json(_serialize_items(self.server.store.goals.list()))
-            return
-        if path == "/api/playbooks":
-            self._write_json(_serialize_items(self.server.store.playbooks.list()))
-            return
-        if path == "/api/tasks":
-            self._write_json(_serialize_items(self.server.store.tasks.list()))
-            return
-        if path == "/api/runs":
-            self._write_json(_serialize_items(self.server.store.runs.list()))
-            return
-        if path == "/api/artifacts":
-            self._write_json(_serialize_items(self.server.store.artifacts.list()))
-            return
-        if path == "/api/reflections":
-            self._write_json(_serialize_items(self.server.store.reflections.list()))
-            return
+        try:
+            if path == "/":
+                self._write_html(build_dashboard_html(self.server.store.board_snapshot(), api_base="/api"))
+                return
+            if path == "/healthz":
+                self._write_json({"status": "ok"})
+                return
+            if path == "/api/board":
+                self._write_json(self.server.store.board_snapshot())
+                return
+            if path == "/api/goals":
+                self._write_json(_serialize_items(self.server.store.goals.list()))
+                return
+            if path == "/api/playbooks":
+                self._write_json(_serialize_items(self.server.store.playbooks.list()))
+                return
+            if path == "/api/tasks":
+                self._write_json(_serialize_items(self.server.store.tasks.list()))
+                return
+            if path == "/api/runs":
+                self._write_json(_serialize_items(self.server.store.runs.list()))
+                return
+            if path == "/api/artifacts":
+                self._write_json(_serialize_items(self.server.store.artifacts.list()))
+                return
+            if path == "/api/reflections":
+                self._write_json(_serialize_items(self.server.store.reflections.list()))
+                return
+            if path == "/api/errors":
+                self._write_json(list_recorded_errors(path=self.server.error_log_path))
+                return
 
-        self._write_json({"detail": "Not found"}, status=HTTPStatus.NOT_FOUND)
+            record_error("Route not found", component="preview_server", operation="do_GET", metadata={"path": path, "status_code": 404}, path=self.server.error_log_path)
+            self._write_json({"detail": "Not found"}, status=HTTPStatus.NOT_FOUND)
+        except Exception as exc:
+            record_error(exc, component="preview_server", operation="do_GET", metadata={"path": path}, path=self.server.error_log_path)
+            self._write_json({"detail": "Internal server error"}, status=HTTPStatus.INTERNAL_SERVER_ERROR)
 
     def log_message(self, format: str, *args: Any) -> None:
         return
@@ -79,9 +88,10 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
 
 
 class PreviewHTTPServer(ThreadingHTTPServer):
-    def __init__(self, server_address: tuple[str, int], store: StoreProtocol) -> None:
+    def __init__(self, server_address: tuple[str, int], store: StoreProtocol, *, error_log_path: str | Path | None = None) -> None:
         super().__init__(server_address, PreviewRequestHandler)
         self.store = store
+        self.error_log_path = get_error_log_path(error_log_path)
 
 
 def build_demo_store() -> StoreProtocol:
@@ -179,13 +189,18 @@ def _to_jsonable(value: Any) -> Any:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run the PlaybookOS preview dashboard without FastAPI dependencies.")
     parser.add_argument("--host", default="0.0.0.0")
-    parser.add_argument("--port", type=int, default=8080)
+    parser.add_argument("--port", type=int, default=8081)
     parser.add_argument("--db-path", default=None)
     parser.add_argument("--demo", action="store_true", help="Serve demo data instead of the configured runtime store.")
+    parser.add_argument("--error-log-path", default=None)
     args = parser.parse_args()
 
-    store = build_runtime_store(demo=args.demo, db_path=args.db_path)
-    server = PreviewHTTPServer((args.host, args.port), store)
+    try:
+        store = build_runtime_store(demo=args.demo, db_path=args.db_path)
+        server = PreviewHTTPServer((args.host, args.port), store, error_log_path=args.error_log_path)
+    except Exception as exc:
+        record_error(exc, component="preview_server", operation="startup", metadata={"host": args.host, "port": args.port}, path=args.error_log_path)
+        raise
     print(f"PlaybookOS preview running on http://{args.host}:{args.port} (demo={args.demo})")
     try:
         server.serve_forever()
