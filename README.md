@@ -188,6 +188,14 @@ uvicorn playbookos.api.app:app --host 0.0.0.0 --port 8000
 
 启动后打开首页即可看到控制台：`http://127.0.0.1:8000/`
 
+如果当前环境还没安装 `fastapi` / `uvicorn`，也可以直接用零依赖预览服务：
+
+```bash
+PYTHONPATH=src python3 -m playbookos.ui.preview_server --demo --port 8080
+```
+
+然后访问：`http://127.0.0.1:8080/`
+
 ## 下一步
 
 下一步可以继续补：

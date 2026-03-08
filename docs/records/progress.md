@@ -81,3 +81,6 @@
 - 已新增 `tests/test_dashboard_unittest.py`，覆盖首页 HTML 骨架、API 入口和转义安全
 - 已完成 `PYTHONPATH=src python3 -m unittest discover -s tests -p 'test*_unittest.py'` 全量校验
 - 已完成 `python3 -m compileall src tests` 语法校验
+
+- 已新增 `src/playbookos/ui/preview_server.py`，提供零依赖的本地 Dashboard 预览服务
+- 已新增 `tests/test_preview_server_unittest.py`，覆盖 demo store 的 dashboard 数据填充

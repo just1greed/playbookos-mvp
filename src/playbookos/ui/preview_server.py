@@ -1,0 +1,199 @@
+from __future__ import annotations
+
+import argparse
+import json
+from dataclasses import asdict, is_dataclass
+from datetime import datetime
+from decimal import Decimal
+from enum import Enum
+from http import HTTPStatus
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+from typing import Any
+from urllib.parse import urlparse
+
+from playbookos.api.store import InMemoryStore, StoreProtocol
+from playbookos.domain.models import Goal, Playbook, ReflectionStatus
+from playbookos.executor.service import DeterministicExecutorAdapter, autopilot_goal_in_store
+from playbookos.persistence import create_store_from_env
+from playbookos.planner.service import plan_goal_in_store
+from playbookos.reflection.service import approve_reflection_in_store, evaluate_reflection_in_store, publish_reflection_in_store
+from playbookos.ui import build_dashboard_html
+
+
+class PreviewRequestHandler(BaseHTTPRequestHandler):
+    server_version = "PlaybookOSPreview/0.1"
+
+    def do_GET(self) -> None:
+        parsed = urlparse(self.path)
+        path = parsed.path
+
+        if path == "/":
+            self._write_html(build_dashboard_html(self.server.store.board_snapshot(), api_base="/api"))
+            return
+        if path == "/healthz":
+            self._write_json({"status": "ok"})
+            return
+        if path == "/api/board":
+            self._write_json(self.server.store.board_snapshot())
+            return
+        if path == "/api/goals":
+            self._write_json(_serialize_items(self.server.store.goals.list()))
+            return
+        if path == "/api/playbooks":
+            self._write_json(_serialize_items(self.server.store.playbooks.list()))
+            return
+        if path == "/api/tasks":
+            self._write_json(_serialize_items(self.server.store.tasks.list()))
+            return
+        if path == "/api/runs":
+            self._write_json(_serialize_items(self.server.store.runs.list()))
+            return
+        if path == "/api/artifacts":
+            self._write_json(_serialize_items(self.server.store.artifacts.list()))
+            return
+        if path == "/api/reflections":
+            self._write_json(_serialize_items(self.server.store.reflections.list()))
+            return
+
+        self._write_json({"detail": "Not found"}, status=HTTPStatus.NOT_FOUND)
+
+    def log_message(self, format: str, *args: Any) -> None:
+        return
+
+    def _write_html(self, payload: str, *, status: HTTPStatus = HTTPStatus.OK) -> None:
+        encoded = payload.encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(encoded)))
+        self.end_headers()
+        self.wfile.write(encoded)
+
+    def _write_json(self, payload: Any, *, status: HTTPStatus = HTTPStatus.OK) -> None:
+        encoded = json.dumps(payload, ensure_ascii=False, indent=2).encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(encoded)))
+        self.end_headers()
+        self.wfile.write(encoded)
+
+
+class PreviewHTTPServer(ThreadingHTTPServer):
+    def __init__(self, server_address: tuple[str, int], store: StoreProtocol) -> None:
+        super().__init__(server_address, PreviewRequestHandler)
+        self.store = store
+
+
+def build_demo_store() -> StoreProtocol:
+    store = InMemoryStore()
+
+    goal = store.goals.save(
+        Goal(
+            title="Launch PlaybookOS control plane",
+            objective="Show a realistic dashboard with execution, artifacts, and learning signals.",
+            constraints=["No external SaaS calls in preview mode", "Keep humans in approval loop"],
+            definition_of_done=["Dashboard visible", "Artifacts visible", "Reflection published safely"],
+        )
+    )
+    store.playbooks.save(
+        Playbook(
+            name="Ops launch playbook",
+            source_kind="markdown",
+            source_uri="file:///demo/launch-playbook.md",
+            goal_id=goal.id,
+            compiled_spec={
+                "steps": [
+                    "Collect context",
+                    "Execute rollout",
+                    {"name": "Human approval", "depends_on": ["Execute rollout"], "requires_approval": True},
+                ],
+                "mcp_servers": ["plane", "github", "slack"],
+            },
+        )
+    )
+
+    second_goal = store.goals.save(
+        Goal(
+            title="Evaluate SOP patches",
+            objective="Generate a reflection proposal and publish a safer playbook version.",
+        )
+    )
+    store.playbooks.save(
+        Playbook(
+            name="Reflection loop playbook",
+            source_kind="markdown",
+            source_uri="file:///demo/reflection-playbook.md",
+            goal_id=second_goal.id,
+            compiled_spec={
+                "steps": ["Gather traces", "Update SOP guidance"],
+                "mcp_servers": ["plane"],
+            },
+        )
+    )
+
+    plan_goal_in_store(store, goal.id)
+    autopilot_goal_in_store(store, goal.id, adapter=DeterministicExecutorAdapter())
+
+    plan_goal_in_store(store, second_goal.id)
+    result = autopilot_goal_in_store(store, second_goal.id, adapter=DeterministicExecutorAdapter())
+    if result.reflection_ids:
+        reflection_id = result.reflection_ids[0]
+        evaluation = evaluate_reflection_in_store(store, reflection_id)
+        if evaluation.passed and evaluation.reflection.eval_status == ReflectionStatus.APPROVED:
+            approve_reflection_in_store(store, reflection_id, approved_by="preview-reviewer")
+            publish_reflection_in_store(store, reflection_id)
+
+    return store
+
+
+def build_runtime_store(*, demo: bool, db_path: str | None = None) -> StoreProtocol:
+    if demo:
+        return build_demo_store()
+    if db_path:
+        from playbookos.persistence.sqlite_store import SQLiteStore
+
+        return SQLiteStore(Path(db_path))
+    return create_store_from_env()
+
+
+def _serialize_items(items: list[Any]) -> list[Any]:
+    return [_to_jsonable(item) for item in items]
+
+
+def _to_jsonable(value: Any) -> Any:
+    if is_dataclass(value):
+        return {key: _to_jsonable(item) for key, item in asdict(value).items()}
+    if isinstance(value, Enum):
+        return value.value
+    if isinstance(value, datetime):
+        return value.isoformat()
+    if isinstance(value, Decimal):
+        return str(value)
+    if isinstance(value, list):
+        return [_to_jsonable(item) for item in value]
+    if isinstance(value, dict):
+        return {key: _to_jsonable(item) for key, item in value.items()}
+    return value
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Run the PlaybookOS preview dashboard without FastAPI dependencies.")
+    parser.add_argument("--host", default="0.0.0.0")
+    parser.add_argument("--port", type=int, default=8080)
+    parser.add_argument("--db-path", default=None)
+    parser.add_argument("--demo", action="store_true", help="Serve demo data instead of the configured runtime store.")
+    args = parser.parse_args()
+
+    store = build_runtime_store(demo=args.demo, db_path=args.db_path)
+    server = PreviewHTTPServer((args.host, args.port), store)
+    print(f"PlaybookOS preview running on http://{args.host}:{args.port} (demo={args.demo})")
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        server.server_close()
+
+
+if __name__ == "__main__":
+    main()
