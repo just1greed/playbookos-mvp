@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from playbookos.domain.models import Artifact, Goal, Playbook, Reflection, Run, Task
+from playbookos.domain.models import Artifact, Goal, Playbook, Reflection, Run, Skill, Task
 from playbookos.persistence.sqlite_store import SQLiteStore
 
 
@@ -12,11 +12,14 @@ class SQLiteStoreTestCase(unittest.TestCase):
             db_path = Path(temp_dir) / "playbookos.db"
             first_store = SQLiteStore(db_path)
             goal = first_store.goals.save(Goal(title="Persist goal", objective="Keep state on disk"))
+            skill = first_store.skills.save(
+                Skill(name="Persist skill", description="Keep reusable worker profile", input_schema={}, output_schema={})
+            )
             playbook = first_store.playbooks.save(
                 Playbook(name="Persist playbook", source_kind="markdown", source_uri="file:///tmp/demo.md", goal_id=goal.id)
             )
             task = first_store.tasks.save(
-                Task(goal_id=goal.id, playbook_id=playbook.id, name="Persist task", description="Check sqlite storage")
+                Task(goal_id=goal.id, playbook_id=playbook.id, name="Persist task", description="Check sqlite storage", assigned_skill_id=skill.id)
             )
             run = first_store.runs.save(Run(task_id=task.id, worker_type="agents-sdk"))
             first_store.artifacts.save(
@@ -40,9 +43,12 @@ class SQLiteStoreTestCase(unittest.TestCase):
 
             second_store = SQLiteStore(db_path)
             self.assertEqual(second_store.goals.get(goal.id).title, "Persist goal")
+            self.assertEqual(second_store.skills.get(skill.id).name, "Persist skill")
             self.assertEqual(second_store.tasks.get(task.id).goal_id, goal.id)
+            self.assertEqual(second_store.tasks.get(task.id).assigned_skill_id, skill.id)
             self.assertEqual(second_store.runs.get(run.id).task_id, task.id)
             self.assertEqual(second_store.artifacts.list()[0].metadata["task_id"], task.id)
+            self.assertEqual(second_store.board_snapshot()["skills"]["draft"], 1)
             self.assertEqual(second_store.board_snapshot()["artifacts"]["run_report"], 1)
             self.assertEqual(second_store.board_snapshot()["reflections"]["proposed"], 1)
 

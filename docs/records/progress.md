@@ -90,3 +90,10 @@
 - 已新增 `GET /api/errors` 与 preview `GET /api/errors`，可直接查看错误记录文件内容
 - preview server 默认端口已切换为 `8081`
 - 已新增 `tests/test_error_log_unittest.py`，覆盖错误记录文件的写入与读取
+
+- 已将 `Skill` 从领域模型接入到 in-memory / SQLite store 与 board snapshot 聚合
+- 已新增 `POST /api/skills`、`GET /api/skills`、`GET /api/skills/{skill_id}` 接口
+- `POST /api/tasks` 现在会校验 `assigned_skill_id`，支持手动把 Skill 绑定到 Task
+- Dashboard 现已展示 `Skills` 维度，并在 demo preview 中注入示例 Skill
+- 已新增 `tests/test_skill_store_unittest.py`，覆盖手动创建 Skill 与任务绑定
+- 已新增 `docs/records/iteration-memory.md`，记录当前完成度、缺口和推荐下一优先级

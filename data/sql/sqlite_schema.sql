@@ -28,6 +28,22 @@ CREATE TABLE IF NOT EXISTS playbooks (
     FOREIGN KEY(goal_id) REFERENCES goals(id)
 );
 
+CREATE TABLE IF NOT EXISTS skills (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL,
+    input_schema_json TEXT NOT NULL,
+    output_schema_json TEXT NOT NULL,
+    required_mcp_servers_json TEXT NOT NULL,
+    approval_policy_json TEXT NOT NULL,
+    evaluation_policy_json TEXT NOT NULL,
+    rollback_version TEXT,
+    version TEXT NOT NULL,
+    status TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS tasks (
     id TEXT PRIMARY KEY,
     goal_id TEXT NOT NULL,

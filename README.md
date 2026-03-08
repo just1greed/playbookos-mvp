@@ -44,6 +44,7 @@ PlaybookOS 用来把目标、SOP、技能、工具权限、执行记录和反思
 
 当前版本提供：
 
+- 手动设置 Playbook / Task / Skill 的控制面基础能力
 - 产品与架构基线文档
 - 八个核心对象的 Python 领域模型
 - FastAPI 控制面 API 骨架
@@ -72,6 +73,9 @@ PlaybookOS 用来把目标、SOP、技能、工具权限、执行记录和反思
 - `GET /api/playbooks`
 - `GET /api/playbooks/{playbook_id}`
 - `POST /api/playbooks/{playbook_id}/compile`
+- `POST /api/skills`
+- `GET /api/skills`
+- `GET /api/skills/{skill_id}`
 - `POST /api/tasks`
 - `GET /api/tasks`
 - `GET /api/tasks/{task_id}`

@@ -13,7 +13,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 from playbookos.api.store import InMemoryStore, StoreProtocol
-from playbookos.domain.models import Goal, Playbook, ReflectionStatus
+from playbookos.domain.models import Goal, Playbook, ReflectionStatus, Skill
 from playbookos.executor.service import DeterministicExecutorAdapter, autopilot_goal_in_store
 from playbookos.observability import get_error_log_path, list_recorded_errors, record_error
 from playbookos.persistence import create_store_from_env
@@ -44,6 +44,9 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
                 return
             if path == "/api/playbooks":
                 self._write_json(_serialize_items(self.server.store.playbooks.list()))
+                return
+            if path == "/api/skills":
+                self._write_json(_serialize_items(self.server.store.skills.list()))
                 return
             if path == "/api/tasks":
                 self._write_json(_serialize_items(self.server.store.tasks.list()))
@@ -105,6 +108,9 @@ def build_demo_store() -> StoreProtocol:
             definition_of_done=["Dashboard visible", "Artifacts visible", "Reflection published safely"],
         )
     )
+    launch_skill = store.skills.save(
+        Skill(name="Launch operator", description="Coordinate rollout tasks", input_schema={}, output_schema={}, required_mcp_servers=["plane", "github", "slack"])
+    )
     store.playbooks.save(
         Playbook(
             name="Ops launch playbook",
@@ -128,6 +134,9 @@ def build_demo_store() -> StoreProtocol:
             objective="Generate a reflection proposal and publish a safer playbook version.",
         )
     )
+    reflection_skill = store.skills.save(
+        Skill(name="Reflection analyst", description="Review traces and improve SOPs", input_schema={}, output_schema={}, required_mcp_servers=["plane"])
+    )
     store.playbooks.save(
         Playbook(
             name="Reflection loop playbook",
@@ -142,9 +151,15 @@ def build_demo_store() -> StoreProtocol:
     )
 
     plan_goal_in_store(store, goal.id)
+    for task in [item for item in store.tasks.list() if item.goal_id == goal.id]:
+        task.assigned_skill_id = launch_skill.id
+        store.tasks.save(task)
     autopilot_goal_in_store(store, goal.id, adapter=DeterministicExecutorAdapter())
 
     plan_goal_in_store(store, second_goal.id)
+    for task in [item for item in store.tasks.list() if item.goal_id == second_goal.id]:
+        task.assigned_skill_id = reflection_skill.id
+        store.tasks.save(task)
     result = autopilot_goal_in_store(store, second_goal.id, adapter=DeterministicExecutorAdapter())
     if result.reflection_ids:
         reflection_id = result.reflection_ids[0]

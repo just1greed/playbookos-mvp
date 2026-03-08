@@ -22,6 +22,8 @@ from playbookos.api.schemas import (
     GoalLearningRead,
     GoalPlanRead,
     GoalRead,
+    SkillCreate,
+    SkillRead,
     PlaybookImport,
     PlaybookRead,
     ReflectionCreate,
@@ -49,6 +51,7 @@ from playbookos.domain.models import (
     Reflection,
     ReflectionStatus,
     RiskLevel,
+    Skill,
     Run,
     RunStatus,
     SkillStatus,
@@ -214,10 +217,26 @@ def create_app(store: StoreProtocol | None = None) -> FastAPI:
         store.playbooks.save(playbook)
         return PlaybookRead.model_validate(playbook)
 
+    @api.post("/api/skills", response_model=SkillRead, status_code=status.HTTP_201_CREATED)
+    def create_skill(payload: SkillCreate, store: store_dep) -> SkillRead:
+        skill = Skill(**payload.model_dump())
+        store.skills.save(skill)
+        return SkillRead.model_validate(skill)
+
+    @api.get("/api/skills", response_model=list[SkillRead])
+    def list_skills(store: store_dep) -> list[SkillRead]:
+        return [SkillRead.model_validate(skill) for skill in store.skills.list()]
+
+    @api.get("/api/skills/{skill_id}", response_model=SkillRead)
+    def get_skill(skill_id: str, store: store_dep) -> SkillRead:
+        return SkillRead.model_validate(_fetch(store.skills, skill_id, "Skill", operation="get_skill", metadata={"skill_id": skill_id}))
+
     @api.post("/api/tasks", response_model=TaskRead, status_code=status.HTTP_201_CREATED)
     def create_task(payload: TaskCreate, store: store_dep) -> TaskRead:
         _fetch(store.goals, payload.goal_id, "Goal", operation="create_task", metadata={"goal_id": payload.goal_id})
         _fetch(store.playbooks, payload.playbook_id, "Playbook", operation="create_task", metadata={"playbook_id": payload.playbook_id})
+        if payload.assigned_skill_id is not None:
+            _fetch(store.skills, payload.assigned_skill_id, "Skill", operation="create_task", metadata={"assigned_skill_id": payload.assigned_skill_id})
         task = Task(**payload.model_dump())
         store.tasks.save(task)
         return TaskRead.model_validate(task)

@@ -30,6 +30,23 @@ CREATE TABLE IF NOT EXISTS playbooks (
 CREATE INDEX IF NOT EXISTS idx_playbooks_goal_id ON playbooks(goal_id);
 CREATE INDEX IF NOT EXISTS idx_playbooks_status ON playbooks(status);
 
+CREATE TABLE IF NOT EXISTS skills (
+    id UUID PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL,
+    input_schema_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+    output_schema_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+    required_mcp_servers_json JSONB NOT NULL DEFAULT '[]'::jsonb,
+    approval_policy_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+    evaluation_policy_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+    rollback_version TEXT,
+    version TEXT NOT NULL,
+    status TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_skills_status ON skills(status);
+
 CREATE TABLE IF NOT EXISTS tasks (
     id UUID PRIMARY KEY,
     goal_id UUID NOT NULL REFERENCES goals(id) ON DELETE CASCADE,

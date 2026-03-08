@@ -4,7 +4,7 @@ from collections import Counter
 from threading import RLock
 from typing import Generic, Protocol, TypeVar
 
-from playbookos.domain.models import Artifact, Goal, Playbook, Reflection, Run, Task
+from playbookos.domain.models import Artifact, Goal, Playbook, Reflection, Run, Skill, Task
 
 EntityT = TypeVar("EntityT")
 
@@ -24,6 +24,7 @@ class RepositoryProtocol(Protocol[EntityT]):
 class StoreProtocol(Protocol):
     goals: RepositoryProtocol[Goal]
     playbooks: RepositoryProtocol[Playbook]
+    skills: RepositoryProtocol[Skill]
     tasks: RepositoryProtocol[Task]
     runs: RepositoryProtocol[Run]
     artifacts: RepositoryProtocol[Artifact]
@@ -59,6 +60,7 @@ class InMemoryStore:
     def __init__(self) -> None:
         self.goals = InMemoryRepository[Goal]()
         self.playbooks = InMemoryRepository[Playbook]()
+        self.skills = InMemoryRepository[Skill]()
         self.tasks = InMemoryRepository[Task]()
         self.runs = InMemoryRepository[Run]()
         self.artifacts = InMemoryRepository[Artifact]()
@@ -66,12 +68,14 @@ class InMemoryStore:
 
     def board_snapshot(self) -> dict[str, dict[str, int]]:
         goal_counts = Counter(goal.status.value for goal in self.goals.list())
+        skill_counts = Counter(skill.status.value for skill in self.skills.list())
         task_counts = Counter(task.status.value for task in self.tasks.list())
         run_counts = Counter(run.status.value for run in self.runs.list())
         artifact_counts = Counter(artifact.kind for artifact in self.artifacts.list())
         reflection_counts = Counter(reflection.eval_status.value for reflection in self.reflections.list())
         return {
             "goals": dict(goal_counts),
+            "skills": dict(skill_counts),
             "tasks": dict(task_counts),
             "runs": dict(run_counts),
             "artifacts": dict(artifact_counts),

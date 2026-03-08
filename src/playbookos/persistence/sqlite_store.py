@@ -18,6 +18,8 @@ from playbookos.domain.models import (
     Artifact,
     Goal,
     GoalStatus,
+    Skill,
+    SkillStatus,
     Playbook,
     PlaybookStatus,
     Reflection,
@@ -64,6 +66,23 @@ CREATE TABLE IF NOT EXISTS playbooks (
 );
 CREATE INDEX IF NOT EXISTS idx_playbooks_status ON playbooks(status);
 CREATE INDEX IF NOT EXISTS idx_playbooks_goal_id ON playbooks(goal_id);
+
+CREATE TABLE IF NOT EXISTS skills (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL,
+    input_schema_json TEXT NOT NULL,
+    output_schema_json TEXT NOT NULL,
+    required_mcp_servers_json TEXT NOT NULL,
+    approval_policy_json TEXT NOT NULL,
+    evaluation_policy_json TEXT NOT NULL,
+    rollback_version TEXT,
+    version TEXT NOT NULL,
+    status TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_skills_status ON skills(status);
 
 CREATE TABLE IF NOT EXISTS tasks (
     id TEXT PRIMARY KEY,
@@ -242,6 +261,12 @@ class SQLiteStore:
             to_record=_playbook_to_record,
             from_row=_playbook_from_row,
         )
+        self.skills = SQLiteRepository[Skill](
+            db_path=self.db_path,
+            table_name="skills",
+            to_record=_skill_to_record,
+            from_row=_skill_from_row,
+        )
         self.tasks = SQLiteRepository[Task](
             db_path=self.db_path,
             table_name="tasks",
@@ -270,6 +295,7 @@ class SQLiteStore:
     def board_snapshot(self) -> dict[str, dict[str, int]]:
         return {
             "goals": self._status_counts("goals", "status"),
+            "skills": self._status_counts("skills", "status"),
             "tasks": self._status_counts("tasks", "status"),
             "runs": self._status_counts("runs", "status"),
             "artifacts": self._status_counts("artifacts", "kind"),
@@ -394,6 +420,42 @@ def _playbook_from_row(row: sqlite3.Row) -> Playbook:
     )
 
 
+
+
+def _skill_to_record(skill: Skill) -> dict[str, Any]:
+    return {
+        "id": skill.id,
+        "name": skill.name,
+        "description": skill.description,
+        "input_schema_json": _dump_json(skill.input_schema),
+        "output_schema_json": _dump_json(skill.output_schema),
+        "required_mcp_servers_json": _dump_json(skill.required_mcp_servers),
+        "approval_policy_json": _dump_json(skill.approval_policy),
+        "evaluation_policy_json": _dump_json(skill.evaluation_policy),
+        "rollback_version": skill.rollback_version,
+        "version": skill.version,
+        "status": skill.status.value,
+        "created_at": skill.created_at.isoformat(),
+        "updated_at": skill.updated_at.isoformat(),
+    }
+
+
+def _skill_from_row(row: sqlite3.Row) -> Skill:
+    return Skill(
+        id=row["id"],
+        name=row["name"],
+        description=row["description"],
+        input_schema=_load_json(row["input_schema_json"], {}),
+        output_schema=_load_json(row["output_schema_json"], {}),
+        required_mcp_servers=_load_json(row["required_mcp_servers_json"], []),
+        approval_policy=_load_json(row["approval_policy_json"], {}),
+        evaluation_policy=_load_json(row["evaluation_policy_json"], {}),
+        rollback_version=row["rollback_version"],
+        version=row["version"],
+        status=SkillStatus(row["status"]),
+        created_at=datetime.fromisoformat(row["created_at"]),
+        updated_at=datetime.fromisoformat(row["updated_at"]),
+    )
 
 def _task_to_record(task: Task) -> dict[str, Any]:
     return {

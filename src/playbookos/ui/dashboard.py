@@ -2,32 +2,150 @@ from __future__ import annotations
 
 import html
 import json
-from typing import Any
 
 
-SECTION_ORDER = ["goals", "tasks", "runs", "artifacts", "reflections"]
-SECTION_LABELS = {
-    "goals": "Goals",
-    "tasks": "Tasks",
-    "runs": "Runs",
-    "artifacts": "Artifacts",
-    "reflections": "Reflections",
+SECTION_ORDER = ["goals", "skills", "tasks", "runs", "artifacts", "reflections"]
+
+TRANSLATIONS = {
+    "zh": {
+        "html_lang": "zh-CN",
+        "page_title": "PlaybookOS 控制台",
+        "badge": "✦ PlaybookOS · AI 工作操作系统",
+        "hero_title": "用一个可视化控制台，追踪 Goal → Task → Run → Reflection 的闭环。",
+        "hero_body": "这个页面直接消费 PlaybookOS 控制面 API，展示看板快照、关键资源入口、最近状态分布，以及执行与学习主链路的运行节奏。",
+        "refresh_board": "刷新看板",
+        "view_board_json": "查看原始 Board JSON",
+        "live_data_source": "实时数据源",
+        "waiting_refresh": "等待刷新…",
+        "total_resources": "总资源数",
+        "total_resources_desc": "Goals、Tasks、Runs、Artifacts、Reflections 总量",
+        "blocked_signals": "阻塞信号",
+        "blocked_signals_desc": "Blocked goals + waiting human runs",
+        "learning_signals": "学习信号",
+        "learning_signals_desc": "Reflections 与已发布改进路径",
+        "control_board": "控制看板",
+        "control_board_subtitle": "来自 /api/board 的实时状态分布",
+        "api_entry_points": "API 入口",
+        "api_entry_subtitle": "适合手动巡检，也适合自动化编排接入",
+        "quick_resource_peek": "资源速览",
+        "quick_resource_peek_subtitle": "从 API 抓取最近的实体样本",
+        "loading_resources_title": "等待加载资源",
+        "loading_resources_body": "页面会自动抓取 goals / tasks / runs / reflections / artifacts。",
+        "operating_rhythm": "运行节奏",
+        "operating_rhythm_subtitle": "当前 MVP 推荐的执行循环",
+        "timeline_1": "导入并编译 playbook，再把它规划成 task DAG。",
+        "timeline_2": "调度 ready task 进入 run，并沉淀 trace 与 artifact 元数据。",
+        "timeline_3": "对结果做 reflection，评估 proposal，经审批后再安全发布。",
+        "snapshot_json": "快照 JSON",
+        "snapshot_json_subtitle": "适合排查 UI 与数据不一致问题",
+        "footer": "PlaybookOS MVP · 单文件控制台 · 无外部前端依赖",
+        "tracked_items": "个跟踪对象",
+        "overview_suffix": "概览",
+        "last_updated": "最近刷新",
+        "api_prefix": "接口",
+        "api_card_body": "可直接打开这个资源接口，也可以把它接入你的自动化工具与操作流。",
+        "idle": "空闲",
+        "booting": "启动中",
+        "error": "错误",
+        "offline": "离线",
+        "route_not_found": "未找到路由",
+        "loading_failed_title": "加载失败",
+        "api_unavailable_title": "API 暂不可达",
+        "resource_empty_suffix": "暂无记录",
+        "resource_empty_body": "接口当前返回空列表。",
+        "resource_id_fallback": "无 ID",
+        "section_labels": {
+            "goals": "目标",
+            "skills": "技能",
+            "tasks": "任务",
+            "runs": "运行",
+            "artifacts": "产物",
+            "reflections": "反思",
+        },
+    },
+    "en": {
+        "html_lang": "en",
+        "page_title": "PlaybookOS Console",
+        "badge": "✦ PlaybookOS · AI Work Operating System",
+        "hero_title": "Track the full Goal → Task → Run → Reflection loop in one visual console.",
+        "hero_body": "This page reads directly from the PlaybookOS control-plane API and shows board snapshots, key resource entry points, status distribution, and the operating rhythm of execution and learning.",
+        "refresh_board": "Refresh Board",
+        "view_board_json": "Open Raw Board JSON",
+        "live_data_source": "Live Data Source",
+        "waiting_refresh": "Waiting for refresh…",
+        "total_resources": "Total Resources",
+        "total_resources_desc": "Total goals, tasks, runs, artifacts, and reflections",
+        "blocked_signals": "Blocked Signals",
+        "blocked_signals_desc": "Blocked goals + waiting human runs",
+        "learning_signals": "Learning Signals",
+        "learning_signals_desc": "Reflections and published improvement paths",
+        "control_board": "Control Board",
+        "control_board_subtitle": "Live status distribution from /api/board",
+        "api_entry_points": "API Entry Points",
+        "api_entry_subtitle": "Useful for manual inspection and automation workflows",
+        "quick_resource_peek": "Quick Resource Peek",
+        "quick_resource_peek_subtitle": "Recent entity samples fetched from the API",
+        "loading_resources_title": "Waiting for resources",
+        "loading_resources_body": "The page will automatically fetch goals / tasks / runs / reflections / artifacts.",
+        "operating_rhythm": "Operating Rhythm",
+        "operating_rhythm_subtitle": "Recommended workflow loop for the current MVP",
+        "timeline_1": "Import and compile a playbook, then turn it into a task DAG.",
+        "timeline_2": "Dispatch ready tasks into runs and capture traces plus artifact metadata.",
+        "timeline_3": "Reflect on outcomes, evaluate proposals, approve carefully, then publish safely.",
+        "snapshot_json": "Snapshot JSON",
+        "snapshot_json_subtitle": "Useful for debugging mismatches between UI and data",
+        "footer": "PlaybookOS MVP · single-file dashboard · no external frontend dependencies",
+        "tracked_items": "tracked items",
+        "overview_suffix": "overview",
+        "last_updated": "Last updated",
+        "api_prefix": "API",
+        "api_card_body": "Open this resource directly, or plug it into your automation tools and operating flows.",
+        "idle": "idle",
+        "booting": "booting",
+        "error": "error",
+        "offline": "offline",
+        "route_not_found": "Route not found",
+        "loading_failed_title": "Loading failed",
+        "api_unavailable_title": "API unavailable",
+        "resource_empty_suffix": "not found yet",
+        "resource_empty_body": "This endpoint currently returns an empty list.",
+        "resource_id_fallback": "No ID",
+        "section_labels": {
+            "goals": "Goals",
+            "skills": "Skills",
+            "tasks": "Tasks",
+            "runs": "Runs",
+            "artifacts": "Artifacts",
+            "reflections": "Reflections",
+        },
+    },
+}
+
+RESOURCE_SINGULAR = {
+    "goals": "Goal",
+    "skills": "Skill",
+    "tasks": "Task",
+    "runs": "Run",
+    "artifacts": "Artifact",
+    "reflections": "Reflection",
 }
 
 
 def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None, *, api_base: str = "/api") -> str:
     snapshot = board_snapshot or {section: {} for section in SECTION_ORDER}
-    cards_markup = "".join(_build_summary_card(section, snapshot.get(section, {})) for section in SECTION_ORDER)
-    endpoint_cards = "".join(_build_endpoint_card(api_base, section) for section in SECTION_ORDER)
     snapshot_json = json.dumps(snapshot, ensure_ascii=False, sort_keys=True)
     api_base_json = json.dumps(api_base)
+    translations_json = json.dumps(TRANSLATIONS, ensure_ascii=False)
+    section_order_json = json.dumps(SECTION_ORDER)
+    resource_singular_json = json.dumps(RESOURCE_SINGULAR, ensure_ascii=False)
+    default_lang = "zh"
 
     return f"""<!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="{TRANSLATIONS[default_lang]['html_lang']}">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>PlaybookOS Console</title>
+    <title>{html.escape(TRANSLATIONS[default_lang]['page_title'])}</title>
     <style>
       :root {{
         color-scheme: dark;
@@ -40,7 +158,6 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         --border: rgba(148, 163, 184, 0.16);
         --accent: #7c3aed;
         --accent-2: #06b6d4;
-        --success: #22c55e;
         --shadow: 0 24px 80px rgba(2, 8, 23, 0.45);
       }}
       * {{ box-sizing: border-box; }}
@@ -54,31 +171,27 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
           radial-gradient(circle at top right, rgba(6, 182, 212, 0.22), transparent 28%),
           linear-gradient(180deg, #020617 0%, var(--bg) 100%);
       }}
-      .shell {{
-        width: min(1180px, calc(100vw - 32px));
-        margin: 24px auto 48px;
-      }}
+      .shell {{ width: min(1180px, calc(100vw - 32px)); margin: 24px auto 48px; }}
       .hero {{
-        padding: 32px;
-        border: 1px solid var(--border);
-        border-radius: 28px;
+        padding: 32px; border: 1px solid var(--border); border-radius: 28px;
         background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(17, 24, 39, 0.78));
-        box-shadow: var(--shadow);
-        backdrop-filter: blur(18px);
+        box-shadow: var(--shadow); backdrop-filter: blur(18px);
       }}
       .hero-top {{ display: flex; justify-content: space-between; gap: 20px; align-items: flex-start; flex-wrap: wrap; }}
       .badge {{
-        display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px;
-        border-radius: 999px; background: rgba(124, 58, 237, 0.16); color: #ddd6fe; font-size: 13px;
-        border: 1px solid rgba(196, 181, 253, 0.15);
+        display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px;
+        background: rgba(124, 58, 237, 0.16); color: #ddd6fe; font-size: 13px; border: 1px solid rgba(196, 181, 253, 0.15);
       }}
+      .hero-controls {{ display: flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }}
+      .lang-toggle {{ display: inline-flex; gap: 6px; padding: 6px; background: rgba(15, 23, 42, 0.65); border: 1px solid var(--border); border-radius: 999px; }}
+      .lang-toggle button {{
+        border: 0; background: transparent; color: var(--muted); border-radius: 999px; padding: 8px 12px; cursor: pointer; font-weight: 700;
+      }}
+      .lang-toggle button.active {{ background: linear-gradient(135deg, var(--accent), #4f46e5); color: var(--text); }}
       h1 {{ margin: 14px 0 10px; font-size: clamp(32px, 5vw, 54px); line-height: 1.04; }}
       .hero p {{ margin: 0; max-width: 760px; color: var(--muted); font-size: 16px; line-height: 1.7; }}
       .hero-actions {{ display: flex; gap: 12px; flex-wrap: wrap; margin-top: 24px; }}
-      .button {{
-        border: 0; border-radius: 14px; padding: 12px 16px; font-weight: 600; cursor: pointer; text-decoration: none;
-        color: var(--text); background: linear-gradient(135deg, var(--accent), #4f46e5); box-shadow: 0 12px 32px rgba(79, 70, 229, 0.35);
-      }}
+      .button {{ border: 0; border-radius: 14px; padding: 12px 16px; font-weight: 600; cursor: pointer; text-decoration: none; color: var(--text); background: linear-gradient(135deg, var(--accent), #4f46e5); box-shadow: 0 12px 32px rgba(79, 70, 229, 0.35); }}
       .button.secondary {{ background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border); box-shadow: none; }}
       .hero-meta {{ display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 28px; }}
       .meta-card {{ padding: 18px; border-radius: 20px; background: rgba(15, 23, 42, 0.65); border: 1px solid var(--border); }}
@@ -88,25 +201,16 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
       .section-title h2 {{ margin: 0; font-size: 20px; }}
       .section-title span {{ color: var(--muted); font-size: 14px; }}
       .grid {{ display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }}
-      .card {{
-        grid-column: span 12; padding: 22px; border-radius: 24px; border: 1px solid var(--border);
-        background: var(--panel); box-shadow: var(--shadow); backdrop-filter: blur(14px);
-      }}
+      .card {{ grid-column: span 12; padding: 22px; border-radius: 24px; border: 1px solid var(--border); background: var(--panel); box-shadow: var(--shadow); backdrop-filter: blur(14px); }}
       .summary-card {{ grid-column: span 12; position: relative; overflow: hidden; }}
-      .summary-card::after {{
-        content: ""; position: absolute; inset: auto -30px -40px auto; width: 140px; height: 140px;
-        border-radius: 999px; background: radial-gradient(circle, rgba(6, 182, 212, 0.22), transparent 70%);
-      }}
+      .summary-card::after {{ content: ""; position: absolute; inset: auto -30px -40px auto; width: 140px; height: 140px; border-radius: 999px; background: radial-gradient(circle, rgba(6, 182, 212, 0.22), transparent 70%); }}
       .summary-card h3, .endpoint-card h3 {{ margin: 0 0 8px; font-size: 18px; }}
       .eyebrow {{ color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; }}
       .metric {{ display: flex; align-items: baseline; gap: 10px; margin-top: 10px; }}
       .metric strong {{ font-size: 38px; line-height: 1; }}
       .metric span {{ color: var(--muted); }}
       .pills {{ display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }}
-      .pill {{
-        border-radius: 999px; padding: 8px 10px; background: var(--panel-soft); color: #dbeafe;
-        border: 1px solid rgba(125, 211, 252, 0.12); font-size: 13px;
-      }}
+      .pill {{ border-radius: 999px; padding: 8px 10px; background: var(--panel-soft); color: #dbeafe; border: 1px solid rgba(125, 211, 252, 0.12); font-size: 13px; }}
       .chart {{ height: 10px; margin-top: 18px; border-radius: 999px; background: rgba(30, 41, 59, 0.88); overflow: hidden; }}
       .chart > span {{ display: block; height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width 0.35s ease; }}
       .endpoint-card {{ grid-column: span 4; background: var(--panel-strong); }}
@@ -115,28 +219,16 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
       .list-card {{ grid-column: span 8; }}
       .activity-card {{ grid-column: span 4; }}
       .rows {{ display: grid; gap: 10px; margin-top: 14px; }}
-      .row {{
-        display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 16px;
-        border-radius: 16px; background: rgba(15, 23, 42, 0.65); border: 1px solid rgba(148, 163, 184, 0.08);
-      }}
+      .row {{ display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 16px; border-radius: 16px; background: rgba(15, 23, 42, 0.65); border: 1px solid rgba(148, 163, 184, 0.08); }}
       .row strong {{ font-size: 14px; }}
       .row small {{ color: var(--muted); display: block; margin-top: 4px; }}
       .state {{ color: #bfdbfe; background: rgba(59, 130, 246, 0.14); padding: 6px 9px; border-radius: 999px; font-size: 12px; }}
       .timeline {{ display: grid; gap: 14px; margin-top: 10px; }}
       .timeline-item {{ position: relative; padding-left: 18px; color: var(--muted); line-height: 1.6; }}
-      .timeline-item::before {{
-        content: ""; position: absolute; left: 0; top: 10px; width: 8px; height: 8px; border-radius: 999px;
-        background: linear-gradient(135deg, var(--accent), var(--accent-2)); box-shadow: 0 0 18px rgba(99, 102, 241, 0.55);
-      }}
-      pre {{
-        margin: 0; padding: 18px; border-radius: 18px; overflow: auto; font-size: 13px;
-        color: #cbd5e1; background: rgba(2, 6, 23, 0.74); border: 1px solid rgba(148, 163, 184, 0.08);
-      }}
+      .timeline-item::before {{ content: ""; position: absolute; left: 0; top: 10px; width: 8px; height: 8px; border-radius: 999px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); box-shadow: 0 0 18px rgba(99, 102, 241, 0.55); }}
+      pre {{ margin: 0; padding: 18px; border-radius: 18px; overflow: auto; font-size: 13px; color: #cbd5e1; background: rgba(2, 6, 23, 0.74); border: 1px solid rgba(148, 163, 184, 0.08); }}
       .footer {{ margin-top: 20px; color: var(--muted); font-size: 13px; text-align: center; }}
-      @media (max-width: 980px) {{
-        .hero-meta {{ grid-template-columns: 1fr; }}
-        .endpoint-card, .list-card, .activity-card {{ grid-column: span 12; }}
-      }}
+      @media (max-width: 980px) {{ .hero-meta {{ grid-template-columns: 1fr; }} .endpoint-card, .list-card, .activity-card {{ grid-column: span 12; }} }}
     </style>
   </head>
   <body>
@@ -144,69 +236,83 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
       <section class="hero">
         <div class="hero-top">
           <div>
-            <span class="badge">✦ PlaybookOS · AI Work Operating System</span>
-            <h1>用一个可视化控制台，追踪 Goal → Task → Run → Reflection 的闭环。</h1>
-            <p>这个页面直接消费 PlaybookOS 控制面 API，展示看板快照、关键资源入口、最近状态分布，以及执行与学习主链路的运行节奏。</p>
+            <span class="badge" id="hero-badge"></span>
+            <h1 id="hero-title"></h1>
+            <p id="hero-body"></p>
             <div class="hero-actions">
-              <button class="button" id="refresh-board" type="button">刷新看板</button>
-              <a class="button secondary" href="{html.escape(api_base)}/board" target="_blank" rel="noreferrer">查看原始 Board JSON</a>
+              <button class="button" id="refresh-board" type="button"></button>
+              <a class="button secondary" id="board-json-link" href="{html.escape(api_base)}/board" target="_blank" rel="noreferrer"></a>
             </div>
           </div>
-          <div class="meta-card" style="min-width: 240px;">
-            <div class="eyebrow">Live Data Source</div>
-            <strong id="api-base-label">{html.escape(api_base)}</strong>
-            <span id="last-updated" style="display:block;margin-top:10px;color:var(--muted);">Waiting for refresh…</span>
+          <div class="hero-controls">
+            <div class="lang-toggle" aria-label="Language toggle">
+              <button id="lang-zh" type="button">中文</button>
+              <button id="lang-en" type="button">EN</button>
+            </div>
+            <div class="meta-card" style="min-width: 240px;">
+              <div class="eyebrow" id="live-data-source-label"></div>
+              <strong id="api-base-label">{html.escape(api_base)}</strong>
+              <span id="last-updated" style="display:block;margin-top:10px;color:var(--muted);"></span>
+            </div>
           </div>
         </div>
         <div class="hero-meta">
-          <div class="meta-card"><div class="eyebrow">Total Resources</div><strong id="resource-total">0</strong><span>Goals, tasks, runs, artifacts, reflections</span></div>
-          <div class="meta-card"><div class="eyebrow">Blocked Signals</div><strong id="blocked-total">0</strong><span>Blocked goals + waiting human runs</span></div>
-          <div class="meta-card"><div class="eyebrow">Learning Signals</div><strong id="learning-total">0</strong><span>Reflections and published improvement paths</span></div>
+          <div class="meta-card"><div class="eyebrow" id="total-resources-label"></div><strong id="resource-total">0</strong><span id="total-resources-desc"></span></div>
+          <div class="meta-card"><div class="eyebrow" id="blocked-signals-label"></div><strong id="blocked-total">0</strong><span id="blocked-signals-desc"></span></div>
+          <div class="meta-card"><div class="eyebrow" id="learning-signals-label"></div><strong id="learning-total">0</strong><span id="learning-signals-desc"></span></div>
         </div>
       </section>
 
       <section class="section">
-        <div class="section-title"><h2>Control Board</h2><span>Live status distribution from /api/board</span></div>
-        <div class="grid" id="summary-grid">{cards_markup}</div>
+        <div class="section-title"><h2 id="control-board-title"></h2><span id="control-board-subtitle"></span></div>
+        <div class="grid" id="summary-grid"></div>
       </section>
 
       <section class="section">
-        <div class="section-title"><h2>API Entry Points</h2><span>Core resources for manual inspection and automation</span></div>
-        <div class="grid">{endpoint_cards}</div>
+        <div class="section-title"><h2 id="api-entry-title"></h2><span id="api-entry-subtitle"></span></div>
+        <div class="grid" id="endpoint-grid"></div>
       </section>
 
       <section class="section">
         <div class="grid">
           <article class="card list-card">
-            <div class="section-title"><h2>Quick Resource Peek</h2><span>Recent entities fetched from the API</span></div>
-            <div class="rows" id="resource-rows">
-              <div class="row"><div><strong>等待加载资源</strong><small>页面会自动抓取 goals / tasks / runs / reflections / artifacts。</small></div><span class="state">booting</span></div>
-            </div>
+            <div class="section-title"><h2 id="resource-peek-title"></h2><span id="resource-peek-subtitle"></span></div>
+            <div class="rows" id="resource-rows"></div>
           </article>
           <article class="card activity-card">
-            <div class="section-title"><h2>Operating Rhythm</h2><span>Recommended loop for the MVP</span></div>
+            <div class="section-title"><h2 id="operating-rhythm-title"></h2><span id="operating-rhythm-subtitle"></span></div>
             <div class="timeline">
-              <div class="timeline-item">Import / compile a playbook, then turn it into a task DAG.</div>
-              <div class="timeline-item">Dispatch ready tasks into runs and capture trace + artifact metadata.</div>
-              <div class="timeline-item">Reflect on outcomes, evaluate proposals, approve carefully, then publish safely.</div>
+              <div class="timeline-item" id="timeline-1"></div>
+              <div class="timeline-item" id="timeline-2"></div>
+              <div class="timeline-item" id="timeline-3"></div>
             </div>
           </article>
         </div>
       </section>
 
       <section class="section">
-        <div class="section-title"><h2>Snapshot JSON</h2><span>Useful when debugging UI/data mismatches</span></div>
+        <div class="section-title"><h2 id="snapshot-json-title"></h2><span id="snapshot-json-subtitle"></span></div>
         <article class="card"><pre id="snapshot-json"></pre></article>
       </section>
 
-      <div class="footer">Built for PlaybookOS MVP · single-file dashboard · no external frontend dependencies</div>
+      <div class="footer" id="footer-text"></div>
     </main>
 
     <script>
       const apiBase = {api_base_json};
-      const sectionOrder = {json.dumps(SECTION_ORDER)};
-      const sectionLabels = {json.dumps(SECTION_LABELS, ensure_ascii=False)};
+      const sectionOrder = {section_order_json};
+      const resourceSingular = {resource_singular_json};
+      const translations = {translations_json};
       let currentSnapshot = {snapshot_json};
+      let currentLanguage = localStorage.getItem('playbookos-language') || 'zh';
+
+      function t(key) {{
+        return translations[currentLanguage][key];
+      }}
+
+      function sectionLabel(section) {{
+        return translations[currentLanguage].section_labels[section] || section;
+      }}
 
       function sumValues(record) {{
         return Object.values(record || {{}}).reduce((total, value) => total + Number(value || 0), 0);
@@ -216,20 +322,64 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         return String(value).replaceAll('_', ' ');
       }}
 
+      function escapeHtml(value) {{
+        return String(value)
+          .replaceAll('&', '&amp;')
+          .replaceAll('<', '&lt;')
+          .replaceAll('>', '&gt;')
+          .replaceAll('"', '&quot;')
+          .replaceAll("'", '&#39;');
+      }}
+
+      function applyLanguage(language) {{
+        currentLanguage = translations[language] ? language : 'zh';
+        localStorage.setItem('playbookos-language', currentLanguage);
+        document.documentElement.lang = t('html_lang');
+        document.title = t('page_title');
+        document.getElementById('hero-badge').textContent = t('badge');
+        document.getElementById('hero-title').textContent = t('hero_title');
+        document.getElementById('hero-body').textContent = t('hero_body');
+        document.getElementById('refresh-board').textContent = t('refresh_board');
+        document.getElementById('board-json-link').textContent = t('view_board_json');
+        document.getElementById('live-data-source-label').textContent = t('live_data_source');
+        document.getElementById('total-resources-label').textContent = t('total_resources');
+        document.getElementById('total-resources-desc').textContent = t('total_resources_desc');
+        document.getElementById('blocked-signals-label').textContent = t('blocked_signals');
+        document.getElementById('blocked-signals-desc').textContent = t('blocked_signals_desc');
+        document.getElementById('learning-signals-label').textContent = t('learning_signals');
+        document.getElementById('learning-signals-desc').textContent = t('learning_signals_desc');
+        document.getElementById('control-board-title').textContent = t('control_board');
+        document.getElementById('control-board-subtitle').textContent = t('control_board_subtitle');
+        document.getElementById('api-entry-title').textContent = t('api_entry_points');
+        document.getElementById('api-entry-subtitle').textContent = t('api_entry_subtitle');
+        document.getElementById('resource-peek-title').textContent = t('quick_resource_peek');
+        document.getElementById('resource-peek-subtitle').textContent = t('quick_resource_peek_subtitle');
+        document.getElementById('operating-rhythm-title').textContent = t('operating_rhythm');
+        document.getElementById('operating-rhythm-subtitle').textContent = t('operating_rhythm_subtitle');
+        document.getElementById('timeline-1').textContent = t('timeline_1');
+        document.getElementById('timeline-2').textContent = t('timeline_2');
+        document.getElementById('timeline-3').textContent = t('timeline_3');
+        document.getElementById('snapshot-json-title').textContent = t('snapshot_json');
+        document.getElementById('snapshot-json-subtitle').textContent = t('snapshot_json_subtitle');
+        document.getElementById('footer-text').textContent = t('footer');
+        document.getElementById('lang-zh').classList.toggle('active', currentLanguage === 'zh');
+        document.getElementById('lang-en').classList.toggle('active', currentLanguage === 'en');
+        renderSummary(currentSnapshot);
+        renderEndpointCards();
+      }}
+
       function renderSummary(snapshot) {{
         currentSnapshot = snapshot || {{}};
         const summaryGrid = document.getElementById('summary-grid');
         summaryGrid.innerHTML = sectionOrder.map((section) => createSummaryCard(section, snapshot[section] || {{}})).join('');
-
         const resourceTotal = sectionOrder.reduce((total, section) => total + sumValues(snapshot[section] || {{}}), 0);
         const blockedTotal = Number((snapshot.goals || {{}}).blocked || 0) + Number((snapshot.runs || {{}}).waiting_human || 0);
         const learningTotal = Number(sumValues(snapshot.reflections || {{}})) + Number((snapshot.goals || {{}}).review || 0);
-
         document.getElementById('resource-total').textContent = String(resourceTotal);
         document.getElementById('blocked-total').textContent = String(blockedTotal);
         document.getElementById('learning-total').textContent = String(learningTotal);
         document.getElementById('snapshot-json').textContent = JSON.stringify(snapshot, null, 2);
-        document.getElementById('last-updated').textContent = `Last updated: ${{new Date().toLocaleString()}}`;
+        document.getElementById('last-updated').textContent = `${{t('last_updated')}}: ${{new Date().toLocaleString()}}`;
       }}
 
       function createSummaryCard(section, stats) {{
@@ -239,16 +389,31 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         const dominantShare = total > 0 ? Math.max(8, Math.round((Number(dominant[1]) / total) * 100)) : 8;
         const pills = (topEntries.length ? topEntries : [['empty', 0]])
           .slice(0, 4)
-          .map(([name, value]) => `<span class="pill">${{formatStateLabel(name)}} · ${{value}}</span>`)
+          .map(([name, value]) => `<span class="pill">${{escapeHtml(formatStateLabel(name))}} · ${{value}}</span>`)
           .join('');
-
         return `
           <article class="card summary-card">
-            <div class="eyebrow">${{sectionLabels[section]}}</div>
-            <h3>${{sectionLabels[section]}} overview</h3>
-            <div class="metric"><strong>${{total}}</strong><span>tracked items</span></div>
+            <div class="eyebrow">${{escapeHtml(sectionLabel(section))}}</div>
+            <h3>${{escapeHtml(sectionLabel(section))}} ${{escapeHtml(t('overview_suffix'))}}</h3>
+            <div class="metric"><strong>${{total}}</strong><span>${{escapeHtml(t('tracked_items'))}}</span></div>
             <div class="pills">${{pills}}</div>
             <div class="chart"><span style="width:${{dominantShare}}%"></span></div>
+          </article>
+        `;
+      }}
+
+      function renderEndpointCards() {{
+        document.getElementById('endpoint-grid').innerHTML = sectionOrder.map((section) => createEndpointCard(section)).join('');
+      }}
+
+      function createEndpointCard(section) {{
+        const endpoint = `${{apiBase}}/${{section}}`;
+        return `
+          <article class="card endpoint-card">
+            <div class="eyebrow">${{escapeHtml(t('api_prefix'))}}</div>
+            <h3>${{escapeHtml(sectionLabel(section))}}</h3>
+            <p style="color:var(--muted);margin:0;line-height:1.7;">${{escapeHtml(t('api_card_body'))}}</p>
+            <a class="endpoint-link" href="${{escapeHtml(endpoint)}}" target="_blank" rel="noreferrer">${{escapeHtml(endpoint)}} →</a>
           </article>
         `;
       }}
@@ -263,37 +428,21 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
 
       function renderResourceRows(payloads) {{
         const rows = [];
-        const sections = [
-          ['goals', 'Goal'],
-          ['tasks', 'Task'],
-          ['runs', 'Run'],
-          ['artifacts', 'Artifact'],
-          ['reflections', 'Reflection'],
-        ];
-
-        for (const [resourceName, label] of sections) {{
+        for (const resourceName of sectionOrder) {{
+          const label = sectionLabel(resourceName);
+          const singular = resourceSingular[resourceName] || label;
           const items = Array.isArray(payloads[resourceName]) ? payloads[resourceName].slice(0, 2) : [];
           if (!items.length) {{
-            rows.push(`<div class="row"><div><strong>No ${{label}}s yet</strong><small>${{resourceName}} endpoint returned an empty list.</small></div><span class="state">idle</span></div>`);
+            rows.push(`<div class="row"><div><strong>${{escapeHtml(label)}} · ${{escapeHtml(t('resource_empty_suffix'))}}</strong><small>${{escapeHtml(resourceName)}} ${{escapeHtml(t('resource_empty_body'))}}</small></div><span class="state">${{escapeHtml(t('idle'))}}</span></div>`);
             continue;
           }}
           for (const item of items) {{
-            const title = item.title || item.name || item.summary || item.id;
-            const state = item.status || item.eval_status || item.kind || 'ready';
-            rows.push(`<div class="row"><div><strong>${{escapeHtml(title)}}</strong><small>${{label}} · ${{escapeHtml(item.id || 'n/a')}}</small></div><span class="state">${{escapeHtml(formatStateLabel(state))}}</span></div>`);
+            const title = item.title || item.name || item.summary || item.id || t('resource_id_fallback');
+            const state = item.status || item.eval_status || item.kind || t('idle');
+            rows.push(`<div class="row"><div><strong>${{escapeHtml(title)}}</strong><small>${{escapeHtml(singular)}} · ${{escapeHtml(item.id || t('resource_id_fallback'))}}</small></div><span class="state">${{escapeHtml(formatStateLabel(state))}}</span></div>`);
           }}
         }}
-
         document.getElementById('resource-rows').innerHTML = rows.join('');
-      }}
-
-      function escapeHtml(value) {{
-        return String(value)
-          .replaceAll('&', '&amp;')
-          .replaceAll('<', '&lt;')
-          .replaceAll('>', '&gt;')
-          .replaceAll('"', '&quot;')
-          .replaceAll("'", '&#39;');
       }}
 
       async function refresh() {{
@@ -305,60 +454,33 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
           fetchJson('artifacts'),
           fetchJson('reflections'),
         ]);
-
         renderSummary(board);
         renderResourceRows({{ goals, tasks, runs, artifacts, reflections }});
       }}
 
+      document.getElementById('lang-zh').addEventListener('click', () => applyLanguage('zh'));
+      document.getElementById('lang-en').addEventListener('click', () => applyLanguage('en'));
+
       document.getElementById('refresh-board').addEventListener('click', async () => {{
         const button = document.getElementById('refresh-board');
-        button.textContent = '刷新中…';
+        button.textContent = currentLanguage === 'zh' ? '刷新中…' : 'Refreshing…';
         button.disabled = true;
         try {{
           await refresh();
         }} catch (error) {{
-          document.getElementById('resource-rows').innerHTML = `<div class="row"><div><strong>加载失败</strong><small>${{escapeHtml(error.message)}}</small></div><span class="state">error</span></div>`;
+          document.getElementById('resource-rows').innerHTML = `<div class="row"><div><strong>${{escapeHtml(t('loading_failed_title'))}}</strong><small>${{escapeHtml(error.message)}}</small></div><span class="state">${{escapeHtml(t('error'))}}</span></div>`;
         }} finally {{
           button.disabled = false;
-          button.textContent = '刷新看板';
+          button.textContent = t('refresh_board');
         }}
       }});
 
-      renderSummary(currentSnapshot);
+      applyLanguage(currentLanguage);
+      document.getElementById('resource-rows').innerHTML = `<div class="row"><div><strong>${{escapeHtml(t('loading_resources_title'))}}</strong><small>${{escapeHtml(t('loading_resources_body'))}}</small></div><span class="state">${{escapeHtml(t('booting'))}}</span></div>`;
       refresh().catch((error) => {{
-        document.getElementById('resource-rows').innerHTML = `<div class="row"><div><strong>API 暂不可达</strong><small>${{escapeHtml(error.message)}}</small></div><span class="state">offline</span></div>`;
+        document.getElementById('resource-rows').innerHTML = `<div class="row"><div><strong>${{escapeHtml(t('api_unavailable_title'))}}</strong><small>${{escapeHtml(error.message)}}</small></div><span class="state">${{escapeHtml(t('offline'))}}</span></div>`;
       }});
     </script>
   </body>
 </html>
 """
-
-
-def _build_summary_card(section: str, stats: dict[str, int]) -> str:
-    total = sum(stats.values())
-    pills = "".join(
-        f'<span class="pill">{html.escape(name.replace("_", " "))} · {value}</span>' for name, value in list(stats.items())[:4]
-    ) or '<span class="pill">empty · 0</span>'
-    return (
-        f'<article class="card summary-card">'
-        f'<div class="eyebrow">{html.escape(SECTION_LABELS[section])}</div>'
-        f'<h3>{html.escape(SECTION_LABELS[section])} overview</h3>'
-        f'<div class="metric"><strong>{total}</strong><span>tracked items</span></div>'
-        f'<div class="pills">{pills}</div>'
-        f'<div class="chart"><span style="width:8%"></span></div>'
-        f'</article>'
-    )
-
-
-def _build_endpoint_card(api_base: str, section: str) -> str:
-    endpoint = f"{api_base}/{section}"
-    title = SECTION_LABELS[section]
-    return (
-        f'<article class="card endpoint-card">'
-        f'<div class="eyebrow">API</div>'
-        f'<h3>{html.escape(title)}</h3>'
-        f'<p style="color:var(--muted);margin:0;line-height:1.7;">'
-        f'Inspect {html.escape(title.lower())} directly or wire this endpoint into your own tools and operator flows.</p>'
-        f'<a class="endpoint-link" href="{html.escape(endpoint)}" target="_blank" rel="noreferrer">{html.escape(endpoint)} →</a>'
-        f'</article>'
-    )

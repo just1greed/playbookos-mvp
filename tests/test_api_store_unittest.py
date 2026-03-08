@@ -1,7 +1,7 @@
 import unittest
 
 from playbookos.api.store import InMemoryStore, NotFoundError
-from playbookos.domain.models import Artifact, Goal, Playbook, Reflection, Run, Task
+from playbookos.domain.models import Artifact, Goal, Playbook, Reflection, Run, Skill, Task
 
 
 class InMemoryStoreTestCase(unittest.TestCase):
@@ -10,6 +10,9 @@ class InMemoryStoreTestCase(unittest.TestCase):
         goal = store.goals.save(Goal(title="Ship API", objective="Expose control plane endpoints"))
         playbook = store.playbooks.save(
             Playbook(name="Onboarding", source_kind="markdown", source_uri="file:///tmp/onboarding.md")
+        )
+        store.skills.save(
+            Skill(name="Writer", description="Draft and edit SOP content", input_schema={}, output_schema={})
         )
         task = store.tasks.save(
             Task(
@@ -41,6 +44,7 @@ class InMemoryStoreTestCase(unittest.TestCase):
         snapshot = store.board_snapshot()
 
         self.assertEqual(snapshot["goals"]["draft"], 1)
+        self.assertEqual(snapshot["skills"]["draft"], 1)
         self.assertEqual(snapshot["tasks"]["inbox"], 1)
         self.assertEqual(snapshot["runs"]["queued"], 1)
         self.assertEqual(snapshot["artifacts"]["run_report"], 1)

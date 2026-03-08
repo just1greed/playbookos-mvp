@@ -166,6 +166,26 @@ class PlaybookRead(PlaybookImport):
     updated_at: datetime
 
 
+
+
+class SkillCreate(APIModel):
+    name: str
+    description: str
+    input_schema: dict[str, Any] = Field(default_factory=dict)
+    output_schema: dict[str, Any] = Field(default_factory=dict)
+    required_mcp_servers: list[str] = Field(default_factory=list)
+    approval_policy: dict[str, Any] = Field(default_factory=dict)
+    evaluation_policy: dict[str, Any] = Field(default_factory=dict)
+    rollback_version: str | None = None
+    version: str = "0.1.0"
+    status: SkillStatus = SkillStatus.DRAFT
+
+
+class SkillRead(SkillCreate):
+    id: str
+    created_at: datetime
+    updated_at: datetime
+
 class TaskCreate(APIModel):
     goal_id: str
     playbook_id: str
@@ -228,6 +248,7 @@ class ReflectionPublish(APIModel):
 
 class BoardSnapshot(APIModel):
     goals: dict[str, int] = Field(default_factory=dict)
+    skills: dict[str, int] = Field(default_factory=dict)
     tasks: dict[str, int] = Field(default_factory=dict)
     runs: dict[str, int] = Field(default_factory=dict)
     artifacts: dict[str, int] = Field(default_factory=dict)

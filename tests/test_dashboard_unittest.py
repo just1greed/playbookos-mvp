@@ -4,7 +4,7 @@ from playbookos.ui import build_dashboard_html
 
 
 class DashboardHtmlTestCase(unittest.TestCase):
-    def test_dashboard_html_includes_core_sections_and_endpoints(self) -> None:
+    def test_dashboard_html_includes_core_sections_endpoints_and_language_toggle(self) -> None:
         html = build_dashboard_html(
             {
                 "goals": {"draft": 1, "blocked": 2},
@@ -15,12 +15,16 @@ class DashboardHtmlTestCase(unittest.TestCase):
             }
         )
 
+        self.assertIn("PlaybookOS 控制台", html)
         self.assertIn("PlaybookOS Console", html)
-        self.assertIn("Control Board", html)
-        self.assertIn("Quick Resource Peek", html)
-        self.assertIn("/api/board", html)
-        self.assertIn("/api/goals", html)
-        self.assertIn("/api/artifacts", html)
+        self.assertIn('id="lang-zh"', html)
+        self.assertIn('id="lang-en"', html)
+        self.assertIn('localStorage.getItem(\'playbookos-language\')', html)
+        self.assertIn('applyLanguage(\'en\')', html)
+        self.assertIn('/api/board', html)
+        self.assertIn("fetchJson('goals')", html)
+        self.assertIn("fetchJson('artifacts')", html)
+        self.assertIn("const endpoint = `${apiBase}/${section}`;", html)
         self.assertIn('const apiBase = "/api";', html)
         self.assertIn('"artifacts": {"run_report": 4}', html)
 
