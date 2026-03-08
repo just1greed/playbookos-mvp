@@ -12,10 +12,12 @@ from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.responses import HTMLResponse
 
 from playbookos.api.schemas import (
+    AcceptanceRead,
     ArtifactCreate,
     ArtifactRead,
     BoardSnapshot,
     EnumCatalog,
+    EventRead,
     GoalAutopilotRead,
     GoalCreate,
     GoalDispatchRead,
@@ -27,6 +29,9 @@ from playbookos.api.schemas import (
     PlaybookImport,
     PlaybookRead,
     ReflectionCreate,
+    SessionRead,
+    TaskAcceptanceCreate,
+    TaskAcceptanceRead,
     ReflectionEvaluationRead,
     ReflectionPublish,
     ReflectionPublishRead,
@@ -72,6 +77,7 @@ from playbookos.reflection import (
     reflect_run_in_store,
     reject_reflection_in_store,
 )
+from playbookos.supervisor import AcceptanceError, accept_task_in_store
 from playbookos.ui import build_dashboard_html
 
 
@@ -231,6 +237,26 @@ def create_app(store: StoreProtocol | None = None) -> FastAPI:
     def get_skill(skill_id: str, store: store_dep) -> SkillRead:
         return SkillRead.model_validate(_fetch(store.skills, skill_id, "Skill", operation="get_skill", metadata={"skill_id": skill_id}))
 
+    @api.get("/api/sessions", response_model=list[SessionRead])
+    def list_sessions(store: store_dep) -> list[SessionRead]:
+        return [SessionRead.model_validate(session) for session in store.sessions.list()]
+
+    @api.get("/api/sessions/{session_id}", response_model=SessionRead)
+    def get_session(session_id: str, store: store_dep) -> SessionRead:
+        return SessionRead.model_validate(_fetch(store.sessions, session_id, "Session", operation="get_session", metadata={"session_id": session_id}))
+
+    @api.get("/api/acceptances", response_model=list[AcceptanceRead])
+    def list_acceptances(store: store_dep) -> list[AcceptanceRead]:
+        return [AcceptanceRead.model_validate(item) for item in store.acceptances.list()]
+
+    @api.get("/api/acceptances/{acceptance_id}", response_model=AcceptanceRead)
+    def get_acceptance(acceptance_id: str, store: store_dep) -> AcceptanceRead:
+        return AcceptanceRead.model_validate(_fetch(store.acceptances, acceptance_id, "Acceptance", operation="get_acceptance", metadata={"acceptance_id": acceptance_id}))
+
+    @api.get("/api/events", response_model=list[EventRead])
+    def list_events(store: store_dep) -> list[EventRead]:
+        return [EventRead.model_validate(item) for item in store.events.list()]
+
     @api.post("/api/tasks", response_model=TaskRead, status_code=status.HTTP_201_CREATED)
     def create_task(payload: TaskCreate, store: store_dep) -> TaskRead:
         _fetch(store.goals, payload.goal_id, "Goal", operation="create_task", metadata={"goal_id": payload.goal_id})
@@ -248,6 +274,27 @@ def create_app(store: StoreProtocol | None = None) -> FastAPI:
     @api.get("/api/tasks/{task_id}", response_model=TaskRead)
     def get_task(task_id: str, store: store_dep) -> TaskRead:
         return TaskRead.model_validate(_fetch(store.tasks, task_id, "Task", operation="get_task", metadata={"task_id": task_id}))
+
+    @api.post("/api/tasks/{task_id}/accept", response_model=TaskAcceptanceRead)
+    def accept_task(task_id: str, payload: TaskAcceptanceCreate, store: store_dep) -> TaskAcceptanceRead:
+        try:
+            result = accept_task_in_store(
+                store,
+                task_id,
+                criteria=payload.criteria,
+                reviewer_id=payload.reviewer_id,
+                accepted=payload.accepted,
+                notes=payload.notes,
+                findings=payload.findings,
+            )
+        except AcceptanceError as exc:
+            raise _conflict_http_exception(exc, operation="accept_task", metadata={"task_id": task_id}) from exc
+        return TaskAcceptanceRead(
+            acceptance=AcceptanceRead.model_validate(result.acceptance),
+            task_status=result.task_status,
+            goal_status=result.goal_status,
+            event_ids=result.event_ids,
+        )
 
     @api.post("/api/tasks/{task_id}/complete", response_model=TaskCompletionRead)
     def complete_task(task_id: str, store: store_dep) -> TaskCompletionRead:

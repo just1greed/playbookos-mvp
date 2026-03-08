@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 
 from playbookos.api.store import NotFoundError, StoreProtocol
 from playbookos.domain.models import GoalStatus, Run, RunStatus, Task, TaskStatus, utc_now
+from playbookos.supervisor import append_event, ensure_goal_supervisor_session, ensure_worker_session_for_run
 
 ACTIVE_RUN_STATUSES = {RunStatus.QUEUED, RunStatus.RUNNING, RunStatus.WAITING_HUMAN}
 TERMINAL_TASK_STATUSES = {TaskStatus.DONE, TaskStatus.LEARNED}
@@ -46,6 +47,8 @@ class TaskCompletionResult:
 class GoalOrchestrator:
     def dispatch_goal(self, store: StoreProtocol, goal_id: str) -> GoalDispatchResult:
         goal = store.goals.get(goal_id)
+        supervisor = ensure_goal_supervisor_session(store, goal_id)
+        append_event(store, entity_type="goal", entity_id=goal_id, event_type="goal.dispatch_started", payload={"supervisor_session_id": supervisor.id})
         tasks = self._goal_tasks(store, goal_id)
         if not tasks:
             raise OrchestrationError("Goal has no tasks to orchestrate")
@@ -78,6 +81,8 @@ class GoalOrchestrator:
             run_status = RunStatus.WAITING_HUMAN if task.approval_required else RunStatus.QUEUED
             run = Run(task_id=task.id, worker_type="temporal-worker", status=run_status)
             store.runs.save(run)
+            ensure_worker_session_for_run(store, run.id)
+            append_event(store, entity_type="run", entity_id=run.id, event_type="run.created", payload={"goal_id": goal_id, "task_id": task.id, "approval_required": task.approval_required})
 
             task.status = TaskStatus.WAITING_HUMAN if task.approval_required else TaskStatus.RUNNING
             task.updated_at = utc_now()
@@ -107,6 +112,7 @@ class GoalOrchestrator:
 
     def complete_task(self, store: StoreProtocol, task_id: str, *, auto_dispatch: bool = True) -> TaskCompletionResult:
         task = store.tasks.get(task_id)
+        append_event(store, entity_type="task", entity_id=task.id, event_type="task.completion_requested", payload={"goal_id": task.goal_id})
         task.status = TaskStatus.DONE
         task.updated_at = utc_now()
         store.tasks.save(task)

@@ -97,3 +97,12 @@
 - Dashboard 现已展示 `Skills` 维度，并在 demo preview 中注入示例 Skill
 - 已新增 `tests/test_skill_store_unittest.py`，覆盖手动创建 Skill 与任务绑定
 - 已新增 `docs/records/iteration-memory.md`，记录当前完成度、缺口和推荐下一优先级
+
+- 已新增 `Session`、`Acceptance`、`Event` 领域模型，并接入 in-memory / SQLite store
+- 已新增 `src/playbookos/supervisor/service.py`，用于维护 Goal 主控会话、Run 子会话、验收与事件流
+- `dispatch_goal_in_store` 现会自动创建 supervisor / worker session，并生成 `run.created` 等事件
+- `execute_run_in_store` 现会同步更新 worker session 的状态、summary 与输出上下文
+- 已新增 `GET /api/sessions`、`GET /api/acceptances`、`GET /api/events`、`POST /api/tasks/{task_id}/accept`
+- Dashboard 与 preview server 已展示 `skills / sessions / acceptances / events`，并继续支持中英文切换
+- 已新增 `tests/test_supervisor_unittest.py`，覆盖会话生成、验收与事件链路
+- 已完成 `PYTHONPATH=src python3 -m unittest discover -s tests -p 'test*_unittest.py'`，共 21 项测试通过

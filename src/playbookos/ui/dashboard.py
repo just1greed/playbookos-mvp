@@ -4,25 +4,25 @@ import html
 import json
 
 
-SECTION_ORDER = ["goals", "skills", "tasks", "runs", "artifacts", "reflections"]
+SECTION_ORDER = ["goals", "skills", "tasks", "sessions", "runs", "acceptances", "artifacts", "reflections", "events"]
 
 TRANSLATIONS = {
     "zh": {
         "html_lang": "zh-CN",
         "page_title": "PlaybookOS 控制台",
         "badge": "✦ PlaybookOS · AI 工作操作系统",
-        "hero_title": "用一个可视化控制台，追踪 Goal → Task → Run → Reflection 的闭环。",
-        "hero_body": "这个页面直接消费 PlaybookOS 控制面 API，展示看板快照、关键资源入口、最近状态分布，以及执行与学习主链路的运行节奏。",
+        "hero_title": "用一个可视化控制台，追踪 SOP / Skill / Task / Session / Acceptance / Reflection 的闭环。",
+        "hero_body": "这个页面直接消费 PlaybookOS 控制面 API，展示 SOP、技能、任务、子会话、验收、反思与事件流，让用户看见 AI 工作系统的完整主链路。",
         "refresh_board": "刷新看板",
         "view_board_json": "查看原始 Board JSON",
         "live_data_source": "实时数据源",
         "waiting_refresh": "等待刷新…",
         "total_resources": "总资源数",
-        "total_resources_desc": "Goals、Tasks、Runs、Artifacts、Reflections 总量",
+        "total_resources_desc": "Goals、Skills、Tasks、Sessions、Runs、Acceptances、Artifacts、Reflections、Events 总量",
         "blocked_signals": "阻塞信号",
         "blocked_signals_desc": "Blocked goals + waiting human runs",
         "learning_signals": "学习信号",
-        "learning_signals_desc": "Reflections 与已发布改进路径",
+        "learning_signals_desc": "Acceptances、Reflections 与已发布优化路径",
         "control_board": "控制看板",
         "control_board_subtitle": "来自 /api/board 的实时状态分布",
         "api_entry_points": "API 入口",
@@ -30,12 +30,12 @@ TRANSLATIONS = {
         "quick_resource_peek": "资源速览",
         "quick_resource_peek_subtitle": "从 API 抓取最近的实体样本",
         "loading_resources_title": "等待加载资源",
-        "loading_resources_body": "页面会自动抓取 goals / tasks / runs / reflections / artifacts。",
+        "loading_resources_body": "页面会自动抓取 goals / skills / tasks / sessions / runs / acceptances / reflections / artifacts / events。",
         "operating_rhythm": "运行节奏",
         "operating_rhythm_subtitle": "当前 MVP 推荐的执行循环",
-        "timeline_1": "导入并编译 playbook，再把它规划成 task DAG。",
-        "timeline_2": "调度 ready task 进入 run，并沉淀 trace 与 artifact 元数据。",
-        "timeline_3": "对结果做 reflection，评估 proposal，经审批后再安全发布。",
+        "timeline_1": "用户先配置 SOP / Skill / Task，系统再把 SOP 规划成可执行任务图。",
+        "timeline_2": "主控会话调度子会话执行任务，沉淀 run、artifact 与 event 事件轨迹。",
+        "timeline_3": "结果经过人工验收与 AI 复盘，再回写 SOP、技能与知识沉淀。",
         "snapshot_json": "快照 JSON",
         "snapshot_json_subtitle": "适合排查 UI 与数据不一致问题",
         "footer": "PlaybookOS MVP · 单文件控制台 · 无外部前端依赖",
@@ -58,27 +58,30 @@ TRANSLATIONS = {
             "goals": "目标",
             "skills": "技能",
             "tasks": "任务",
+            "sessions": "会话",
             "runs": "运行",
+            "acceptances": "验收",
             "artifacts": "产物",
             "reflections": "反思",
+            "events": "事件",
         },
     },
     "en": {
         "html_lang": "en",
         "page_title": "PlaybookOS Console",
         "badge": "✦ PlaybookOS · AI Work Operating System",
-        "hero_title": "Track the full Goal → Task → Run → Reflection loop in one visual console.",
-        "hero_body": "This page reads directly from the PlaybookOS control-plane API and shows board snapshots, key resource entry points, status distribution, and the operating rhythm of execution and learning.",
+        "hero_title": "Track the full SOP / Skill / Task / Session / Acceptance / Reflection loop in one visual console.",
+        "hero_body": "This page reads directly from the PlaybookOS control-plane API and exposes SOPs, skills, tasks, child sessions, acceptances, reflections, and event streams so the full AI work system stays visible to the user.",
         "refresh_board": "Refresh Board",
         "view_board_json": "Open Raw Board JSON",
         "live_data_source": "Live Data Source",
         "waiting_refresh": "Waiting for refresh…",
         "total_resources": "Total Resources",
-        "total_resources_desc": "Total goals, tasks, runs, artifacts, and reflections",
+        "total_resources_desc": "Total goals, skills, tasks, sessions, runs, acceptances, artifacts, reflections, and events",
         "blocked_signals": "Blocked Signals",
         "blocked_signals_desc": "Blocked goals + waiting human runs",
         "learning_signals": "Learning Signals",
-        "learning_signals_desc": "Reflections and published improvement paths",
+        "learning_signals_desc": "Acceptances, reflections, and published improvement paths",
         "control_board": "Control Board",
         "control_board_subtitle": "Live status distribution from /api/board",
         "api_entry_points": "API Entry Points",
@@ -86,12 +89,12 @@ TRANSLATIONS = {
         "quick_resource_peek": "Quick Resource Peek",
         "quick_resource_peek_subtitle": "Recent entity samples fetched from the API",
         "loading_resources_title": "Waiting for resources",
-        "loading_resources_body": "The page will automatically fetch goals / tasks / runs / reflections / artifacts.",
+        "loading_resources_body": "The page will automatically fetch goals / skills / tasks / sessions / runs / acceptances / reflections / artifacts / events.",
         "operating_rhythm": "Operating Rhythm",
         "operating_rhythm_subtitle": "Recommended workflow loop for the current MVP",
-        "timeline_1": "Import and compile a playbook, then turn it into a task DAG.",
-        "timeline_2": "Dispatch ready tasks into runs and capture traces plus artifact metadata.",
-        "timeline_3": "Reflect on outcomes, evaluate proposals, approve carefully, then publish safely.",
+        "timeline_1": "Users configure SOPs, skills, and tasks first; the system turns SOPs into executable task graphs.",
+        "timeline_2": "A supervisor session spawns worker sessions, executes runs, and records artifacts plus event traces.",
+        "timeline_3": "Results go through human acceptance and AI postmortems before SOP, skill, and knowledge updates are published.",
         "snapshot_json": "Snapshot JSON",
         "snapshot_json_subtitle": "Useful for debugging mismatches between UI and data",
         "footer": "PlaybookOS MVP · single-file dashboard · no external frontend dependencies",
@@ -114,9 +117,12 @@ TRANSLATIONS = {
             "goals": "Goals",
             "skills": "Skills",
             "tasks": "Tasks",
+            "sessions": "Sessions",
             "runs": "Runs",
+            "acceptances": "Acceptances",
             "artifacts": "Artifacts",
             "reflections": "Reflections",
+            "events": "Events",
         },
     },
 }
@@ -125,9 +131,12 @@ RESOURCE_SINGULAR = {
     "goals": "Goal",
     "skills": "Skill",
     "tasks": "Task",
+    "sessions": "Session",
     "runs": "Run",
+    "acceptances": "Acceptance",
     "artifacts": "Artifact",
     "reflections": "Reflection",
+    "events": "Event",
 }
 
 
@@ -446,16 +455,20 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
       }}
 
       async function refresh() {{
-        const [board, goals, tasks, runs, artifacts, reflections] = await Promise.all([
+        const [board, goals, skills, tasks, sessions, runs, acceptances, artifacts, reflections, events] = await Promise.all([
           fetchJson('board'),
           fetchJson('goals'),
+          fetchJson('skills'),
           fetchJson('tasks'),
+          fetchJson('sessions'),
           fetchJson('runs'),
+          fetchJson('acceptances'),
           fetchJson('artifacts'),
           fetchJson('reflections'),
+          fetchJson('events'),
         ]);
         renderSummary(board);
-        renderResourceRows({{ goals, tasks, runs, artifacts, reflections }});
+        renderResourceRows({{ goals, skills, tasks, sessions, runs, acceptances, artifacts, reflections, events }});
       }}
 
       document.getElementById('lang-zh').addEventListener('click', () => applyLanguage('zh'));

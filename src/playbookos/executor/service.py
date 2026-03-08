@@ -5,8 +5,9 @@ from typing import Any, Protocol
 from uuid import uuid4
 
 from playbookos.api.store import StoreProtocol
-from playbookos.domain.models import Artifact, GoalStatus, RunStatus, TaskStatus, utc_now
+from playbookos.domain.models import Artifact, GoalStatus, RunStatus, SessionStatus, TaskStatus, utc_now
 from playbookos.orchestrator.service import complete_task_in_store, dispatch_goal_in_store
+from playbookos.supervisor import append_event, ensure_worker_session_for_run, update_session_for_run
 from playbookos.reflection.service import reflect_run_in_store
 
 
@@ -140,6 +141,9 @@ class RunExecutor:
         if run.status not in {RunStatus.QUEUED, RunStatus.RUNNING}:
             raise ExecutionError(f"Run is not executable from status '{run.status.value}'")
 
+        worker_session = ensure_worker_session_for_run(store, run.id)
+        update_session_for_run(store, run.id, status=SessionStatus.RUNNING, summary=f"Started run for {task.name}")
+        append_event(store, entity_type="run", entity_id=run.id, event_type="run.execution_started", payload={"session_id": worker_session.id, "task_id": task.id})
         run.status = RunStatus.RUNNING
         run.started_at = run.started_at or utc_now()
         task.status = TaskStatus.RUNNING
@@ -198,6 +202,10 @@ class RunExecutor:
         )
         store.artifacts.save(artifact)
         result.artifact_ids.append(artifact.id)
+
+        session_status = SessionStatus.COMPLETED if result.status == RunStatus.SUCCEEDED else SessionStatus.WAITING_HUMAN if result.status == RunStatus.WAITING_HUMAN else SessionStatus.FAILED
+        update_session_for_run(store, run.id, status=session_status, summary=result.output_text, output_context={"trace_id": result.trace_id, "artifact_ids": result.artifact_ids, "run_status": result.status.value})
+        append_event(store, entity_type="run", entity_id=run.id, event_type="run.execution_finished", payload={"status": result.status.value, "task_id": task.id, "goal_id": goal.id})
 
         if result.status == RunStatus.SUCCEEDED:
             task.status = TaskStatus.REVIEW

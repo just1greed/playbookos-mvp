@@ -270,3 +270,87 @@ class Reflection:
             raise ValueError("Reflection.failure_category is required")
         if not self.summary.strip():
             raise ValueError("Reflection.summary is required")
+
+
+class SessionKind(StrEnum):
+    SUPERVISOR = "supervisor"
+    WORKER = "worker"
+
+
+class SessionStatus(StrEnum):
+    PLANNED = "planned"
+    RUNNING = "running"
+    WAITING_HUMAN = "waiting_human"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+class AcceptanceStatus(StrEnum):
+    PENDING = "pending"
+    ACCEPTED = "accepted"
+    REJECTED = "rejected"
+
+
+@dataclass(slots=True)
+class Session:
+    goal_id: str
+    title: str
+    kind: SessionKind
+    status: SessionStatus = SessionStatus.PLANNED
+    task_id: str | None = None
+    run_id: str | None = None
+    parent_session_id: str | None = None
+    objective: str = ""
+    input_context: dict[str, Any] = field(default_factory=dict)
+    output_context: dict[str, Any] = field(default_factory=dict)
+    summary: str = ""
+    id: str = field(default_factory=lambda: str(uuid4()))
+    created_at: datetime = field(default_factory=utc_now)
+    updated_at: datetime = field(default_factory=utc_now)
+
+    def __post_init__(self) -> None:
+        if not self.goal_id.strip():
+            raise ValueError("Session.goal_id is required")
+        if not self.title.strip():
+            raise ValueError("Session.title is required")
+
+
+@dataclass(slots=True)
+class Acceptance:
+    goal_id: str
+    task_id: str
+    criteria: list[str] = field(default_factory=list)
+    status: AcceptanceStatus = AcceptanceStatus.PENDING
+    artifact_ids: list[str] = field(default_factory=list)
+    reviewer_id: str | None = None
+    run_id: str | None = None
+    notes: str = ""
+    findings: list[str] = field(default_factory=list)
+    id: str = field(default_factory=lambda: str(uuid4()))
+    created_at: datetime = field(default_factory=utc_now)
+    updated_at: datetime = field(default_factory=utc_now)
+
+    def __post_init__(self) -> None:
+        if not self.goal_id.strip():
+            raise ValueError("Acceptance.goal_id is required")
+        if not self.task_id.strip():
+            raise ValueError("Acceptance.task_id is required")
+
+
+@dataclass(slots=True)
+class Event:
+    entity_type: str
+    entity_id: str
+    event_type: str
+    payload: dict[str, Any] = field(default_factory=dict)
+    source: str = "system"
+    id: str = field(default_factory=lambda: str(uuid4()))
+    created_at: datetime = field(default_factory=utc_now)
+
+    def __post_init__(self) -> None:
+        if not self.entity_type.strip():
+            raise ValueError("Event.entity_type is required")
+        if not self.entity_id.strip():
+            raise ValueError("Event.entity_id is required")
+        if not self.event_type.strip():
+            raise ValueError("Event.event_type is required")

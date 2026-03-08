@@ -10,9 +10,12 @@ from playbookos.domain.models import (
     GoalStatus,
     MCPServerStatus,
     PlaybookStatus,
+    AcceptanceStatus,
     ReflectionStatus,
     RiskLevel,
     RunStatus,
+    SessionKind,
+    SessionStatus,
     SkillStatus,
     TaskStatus,
 )
@@ -95,6 +98,64 @@ class GoalLearningRead(APIModel):
     failure_categories: dict[str, int]
     suggested_playbook_patches: list[dict[str, Any]]
 
+
+
+
+class SessionRead(APIModel):
+    id: str
+    goal_id: str
+    task_id: str | None = None
+    run_id: str | None = None
+    parent_session_id: str | None = None
+    title: str
+    kind: SessionKind
+    status: SessionStatus
+    objective: str
+    input_context: dict[str, Any] = Field(default_factory=dict)
+    output_context: dict[str, Any] = Field(default_factory=dict)
+    summary: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class TaskAcceptanceCreate(APIModel):
+    criteria: list[str] = Field(default_factory=list)
+    reviewer_id: str | None = None
+    accepted: bool = True
+    notes: str = ""
+    findings: list[str] = Field(default_factory=list)
+
+
+class AcceptanceRead(APIModel):
+    id: str
+    goal_id: str
+    task_id: str
+    run_id: str | None = None
+    criteria: list[str] = Field(default_factory=list)
+    status: AcceptanceStatus
+    artifact_ids: list[str] = Field(default_factory=list)
+    reviewer_id: str | None = None
+    notes: str = ""
+    findings: list[str] = Field(default_factory=list)
+    created_at: datetime
+    updated_at: datetime
+
+
+class TaskAcceptanceRead(APIModel):
+    acceptance: AcceptanceRead
+    task_status: TaskStatus
+    goal_status: GoalStatus
+    event_ids: list[str] = Field(default_factory=list)
+
+
+class EventRead(APIModel):
+    id: str
+    entity_type: str
+    entity_id: str
+    event_type: str
+    payload: dict[str, Any] = Field(default_factory=dict)
+    source: str
+    created_at: datetime
 
 class RunExecutionRead(APIModel):
     status: RunStatus
@@ -250,9 +311,12 @@ class BoardSnapshot(APIModel):
     goals: dict[str, int] = Field(default_factory=dict)
     skills: dict[str, int] = Field(default_factory=dict)
     tasks: dict[str, int] = Field(default_factory=dict)
+    sessions: dict[str, int] = Field(default_factory=dict)
     runs: dict[str, int] = Field(default_factory=dict)
     artifacts: dict[str, int] = Field(default_factory=dict)
+    acceptances: dict[str, int] = Field(default_factory=dict)
     reflections: dict[str, int] = Field(default_factory=dict)
+    events: dict[str, int] = Field(default_factory=dict)
 
 
 class EnumCatalog(APIModel):

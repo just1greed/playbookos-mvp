@@ -15,7 +15,10 @@ from urllib.parse import urlparse
 
 from playbookos.api.store import NotFoundError
 from playbookos.domain.models import (
+    Acceptance,
+    AcceptanceStatus,
     Artifact,
+    Event,
     Goal,
     GoalStatus,
     Skill,
@@ -24,6 +27,9 @@ from playbookos.domain.models import (
     PlaybookStatus,
     Reflection,
     ReflectionStatus,
+    Session,
+    SessionKind,
+    SessionStatus,
     RiskLevel,
     Run,
     RunStatus,
@@ -107,6 +113,30 @@ CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
 CREATE INDEX IF NOT EXISTS idx_tasks_goal_id ON tasks(goal_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_playbook_id ON tasks(playbook_id);
 
+CREATE TABLE IF NOT EXISTS sessions (
+    id TEXT PRIMARY KEY,
+    goal_id TEXT NOT NULL,
+    task_id TEXT,
+    run_id TEXT,
+    parent_session_id TEXT,
+    title TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    status TEXT NOT NULL,
+    objective TEXT NOT NULL,
+    input_context_json TEXT NOT NULL,
+    output_context_json TEXT NOT NULL,
+    summary TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(goal_id) REFERENCES goals(id),
+    FOREIGN KEY(task_id) REFERENCES tasks(id),
+    FOREIGN KEY(run_id) REFERENCES runs(id),
+    FOREIGN KEY(parent_session_id) REFERENCES sessions(id)
+);
+CREATE INDEX IF NOT EXISTS idx_sessions_goal_id ON sessions(goal_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_task_id ON sessions(task_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_status ON sessions(status);
+
 CREATE TABLE IF NOT EXISTS runs (
     id TEXT PRIMARY KEY,
     task_id TEXT NOT NULL,
@@ -142,6 +172,40 @@ CREATE TABLE IF NOT EXISTS reflections (
 );
 CREATE INDEX IF NOT EXISTS idx_reflections_eval_status ON reflections(eval_status);
 CREATE INDEX IF NOT EXISTS idx_reflections_run_id ON reflections(run_id);
+
+CREATE TABLE IF NOT EXISTS acceptances (
+    id TEXT PRIMARY KEY,
+    goal_id TEXT NOT NULL,
+    task_id TEXT NOT NULL,
+    run_id TEXT,
+    criteria_json TEXT NOT NULL,
+    status TEXT NOT NULL,
+    artifact_ids_json TEXT NOT NULL,
+    reviewer_id TEXT,
+    notes TEXT NOT NULL,
+    findings_json TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(goal_id) REFERENCES goals(id),
+    FOREIGN KEY(task_id) REFERENCES tasks(id),
+    FOREIGN KEY(run_id) REFERENCES runs(id)
+);
+CREATE INDEX IF NOT EXISTS idx_acceptances_goal_id ON acceptances(goal_id);
+CREATE INDEX IF NOT EXISTS idx_acceptances_task_id ON acceptances(task_id);
+CREATE INDEX IF NOT EXISTS idx_acceptances_status ON acceptances(status);
+
+CREATE TABLE IF NOT EXISTS events (
+    id TEXT PRIMARY KEY,
+    entity_type TEXT NOT NULL,
+    entity_id TEXT NOT NULL,
+    event_type TEXT NOT NULL,
+    payload_json TEXT NOT NULL,
+    source TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_events_entity_type ON events(entity_type);
+CREATE INDEX IF NOT EXISTS idx_events_entity_id ON events(entity_id);
+CREATE INDEX IF NOT EXISTS idx_events_event_type ON events(event_type);
 
 CREATE TABLE IF NOT EXISTS artifacts (
     id TEXT PRIMARY KEY,
@@ -273,6 +337,12 @@ class SQLiteStore:
             to_record=_task_to_record,
             from_row=_task_from_row,
         )
+        self.sessions = SQLiteRepository[Session](
+            db_path=self.db_path,
+            table_name="sessions",
+            to_record=_session_to_record,
+            from_row=_session_from_row,
+        )
         self.runs = SQLiteRepository[Run](
             db_path=self.db_path,
             table_name="runs",
@@ -285,11 +355,23 @@ class SQLiteStore:
             to_record=_artifact_to_record,
             from_row=_artifact_from_row,
         )
+        self.acceptances = SQLiteRepository[Acceptance](
+            db_path=self.db_path,
+            table_name="acceptances",
+            to_record=_acceptance_to_record,
+            from_row=_acceptance_from_row,
+        )
         self.reflections = SQLiteRepository[Reflection](
             db_path=self.db_path,
             table_name="reflections",
             to_record=_reflection_to_record,
             from_row=_reflection_from_row,
+        )
+        self.events = SQLiteRepository[Event](
+            db_path=self.db_path,
+            table_name="events",
+            to_record=_event_to_record,
+            from_row=_event_from_row,
         )
 
     def board_snapshot(self) -> dict[str, dict[str, int]]:
@@ -297,9 +379,12 @@ class SQLiteStore:
             "goals": self._status_counts("goals", "status"),
             "skills": self._status_counts("skills", "status"),
             "tasks": self._status_counts("tasks", "status"),
+            "sessions": self._status_counts("sessions", "status"),
             "runs": self._status_counts("runs", "status"),
             "artifacts": self._status_counts("artifacts", "kind"),
+            "acceptances": self._status_counts("acceptances", "status"),
             "reflections": self._status_counts("reflections", "eval_status"),
+            "events": self._status_counts("events", "entity_type"),
         }
 
     def _initialize_schema(self) -> None:
@@ -497,6 +582,44 @@ def _task_from_row(row: sqlite3.Row) -> Task:
 
 
 
+
+def _session_to_record(session: Session) -> dict[str, Any]:
+    return {
+        "id": session.id,
+        "goal_id": session.goal_id,
+        "task_id": session.task_id,
+        "run_id": session.run_id,
+        "parent_session_id": session.parent_session_id,
+        "title": session.title,
+        "kind": session.kind.value,
+        "status": session.status.value,
+        "objective": session.objective,
+        "input_context_json": _dump_json(session.input_context),
+        "output_context_json": _dump_json(session.output_context),
+        "summary": session.summary,
+        "created_at": session.created_at.isoformat(),
+        "updated_at": session.updated_at.isoformat(),
+    }
+
+
+def _session_from_row(row: sqlite3.Row) -> Session:
+    return Session(
+        id=row["id"],
+        goal_id=row["goal_id"],
+        task_id=row["task_id"],
+        run_id=row["run_id"],
+        parent_session_id=row["parent_session_id"],
+        title=row["title"],
+        kind=SessionKind(row["kind"]),
+        status=SessionStatus(row["status"]),
+        objective=row["objective"],
+        input_context=_load_json(row["input_context_json"], {}),
+        output_context=_load_json(row["output_context_json"], {}),
+        summary=row["summary"],
+        created_at=datetime.fromisoformat(row["created_at"]),
+        updated_at=datetime.fromisoformat(row["updated_at"]),
+    )
+
 def _run_to_record(run: Run) -> dict[str, Any]:
     return {
         "id": run.id,
@@ -573,6 +696,64 @@ def _reflection_from_row(row: sqlite3.Row) -> Reflection:
     )
 
 
+
+
+def _acceptance_to_record(acceptance: Acceptance) -> dict[str, Any]:
+    return {
+        "id": acceptance.id,
+        "goal_id": acceptance.goal_id,
+        "task_id": acceptance.task_id,
+        "run_id": acceptance.run_id,
+        "criteria_json": _dump_json(acceptance.criteria),
+        "status": acceptance.status.value,
+        "artifact_ids_json": _dump_json(acceptance.artifact_ids),
+        "reviewer_id": acceptance.reviewer_id,
+        "notes": acceptance.notes,
+        "findings_json": _dump_json(acceptance.findings),
+        "created_at": acceptance.created_at.isoformat(),
+        "updated_at": acceptance.updated_at.isoformat(),
+    }
+
+
+def _acceptance_from_row(row: sqlite3.Row) -> Acceptance:
+    return Acceptance(
+        id=row["id"],
+        goal_id=row["goal_id"],
+        task_id=row["task_id"],
+        run_id=row["run_id"],
+        criteria=_load_json(row["criteria_json"], []),
+        status=AcceptanceStatus(row["status"]),
+        artifact_ids=_load_json(row["artifact_ids_json"], []),
+        reviewer_id=row["reviewer_id"],
+        notes=row["notes"],
+        findings=_load_json(row["findings_json"], []),
+        created_at=datetime.fromisoformat(row["created_at"]),
+        updated_at=datetime.fromisoformat(row["updated_at"]),
+    )
+
+
+def _event_to_record(event: Event) -> dict[str, Any]:
+    return {
+        "id": event.id,
+        "entity_type": event.entity_type,
+        "entity_id": event.entity_id,
+        "event_type": event.event_type,
+        "payload_json": _dump_json(event.payload),
+        "source": event.source,
+        "created_at": event.created_at.isoformat(),
+    }
+
+
+def _event_from_row(row: sqlite3.Row) -> Event:
+    return Event(
+        id=row["id"],
+        entity_type=row["entity_type"],
+        entity_id=row["entity_id"],
+        event_type=row["event_type"],
+        payload=_load_json(row["payload_json"], {}),
+        source=row["source"],
+        created_at=datetime.fromisoformat(row["created_at"]),
+    )
 
 def _artifact_to_record(artifact: Artifact) -> dict[str, Any]:
     return {

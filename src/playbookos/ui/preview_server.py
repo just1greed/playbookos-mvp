@@ -19,6 +19,7 @@ from playbookos.observability import get_error_log_path, list_recorded_errors, r
 from playbookos.persistence import create_store_from_env
 from playbookos.planner.service import plan_goal_in_store
 from playbookos.reflection.service import approve_reflection_in_store, evaluate_reflection_in_store, publish_reflection_in_store
+from playbookos.supervisor import accept_task_in_store
 from playbookos.ui import build_dashboard_html
 
 
@@ -51,14 +52,23 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
             if path == "/api/tasks":
                 self._write_json(_serialize_items(self.server.store.tasks.list()))
                 return
+            if path == "/api/sessions":
+                self._write_json(_serialize_items(self.server.store.sessions.list()))
+                return
             if path == "/api/runs":
                 self._write_json(_serialize_items(self.server.store.runs.list()))
+                return
+            if path == "/api/acceptances":
+                self._write_json(_serialize_items(self.server.store.acceptances.list()))
                 return
             if path == "/api/artifacts":
                 self._write_json(_serialize_items(self.server.store.artifacts.list()))
                 return
             if path == "/api/reflections":
                 self._write_json(_serialize_items(self.server.store.reflections.list()))
+                return
+            if path == "/api/events":
+                self._write_json(_serialize_items(self.server.store.events.list()))
                 return
             if path == "/api/errors":
                 self._write_json(list_recorded_errors(path=self.server.error_log_path))
@@ -161,6 +171,10 @@ def build_demo_store() -> StoreProtocol:
         task.assigned_skill_id = reflection_skill.id
         store.tasks.save(task)
     result = autopilot_goal_in_store(store, second_goal.id, adapter=DeterministicExecutorAdapter())
+    succeeded_tasks = [task for task in store.tasks.list() if task.goal_id == second_goal.id and task.status.name in {"REVIEW", "DONE"}]
+    for task in succeeded_tasks:
+        accept_task_in_store(store, task.id, criteria=["Patch proposal is clear", "Evidence is attached"], reviewer_id="preview-reviewer", accepted=True, notes="Preview acceptance passed")
+
     if result.reflection_ids:
         reflection_id = result.reflection_ids[0]
         evaluation = evaluate_reflection_in_store(store, reflection_id)

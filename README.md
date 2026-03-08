@@ -46,15 +46,17 @@ PlaybookOS 用来把目标、SOP、技能、工具权限、执行记录和反思
 
 - 手动设置 Playbook / Task / Skill 的控制面基础能力
 - 产品与架构基线文档
-- 八个核心对象的 Python 领域模型
+- Goal / Playbook / Skill / Task / Session / Run / Acceptance / Artifact / Reflection / Event 领域模型
 - FastAPI 控制面 API 骨架
 - 基于 SQLite 的本地持久化数据流
 - Playbook 驱动的任务规划器
 - Orchestrator 调度核心与 Temporal-ready 工作流快照
+- Supervisor 主控会话 / 子会话编排链路
 - OpenAI Agents SDK 风格执行适配层
 - Run 级 Artifact 元数据持久化与查询
-- 一个优美的内置前端控制台首页（`GET /`）
+- 一个优美的内置前端控制台首页（`GET /`），并可中英文切换
 - SOP 自我迭代提案骨架
+- 用户可见的 Session / Acceptance / Event 追踪视图
 - PostgreSQL schema 文件，供后续正式部署接入
 
 ## 已实现 API
@@ -76,9 +78,15 @@ PlaybookOS 用来把目标、SOP、技能、工具权限、执行记录和反思
 - `POST /api/skills`
 - `GET /api/skills`
 - `GET /api/skills/{skill_id}`
+- `GET /api/sessions`
+- `GET /api/sessions/{session_id}`
+- `GET /api/acceptances`
+- `GET /api/acceptances/{acceptance_id}`
+- `GET /api/events`
 - `POST /api/tasks`
 - `GET /api/tasks`
 - `GET /api/tasks/{task_id}`
+- `POST /api/tasks/{task_id}/accept`
 - `POST /api/tasks/{task_id}/complete`
 - `POST /api/runs`
 - `GET /api/runs`
@@ -117,6 +125,9 @@ PlaybookOS 用来把目标、SOP、技能、工具权限、执行记录和反思
 
 - 把依赖已满足的 `inbox` 任务提升到 `ready`
 - 为 `ready` 任务创建 `Run`
+- 为每个 Goal 自动建立一个 `Supervisor Session`
+- 为每个 Run 自动建立一个 `Worker Session`
+- 调度与执行过程沉淀为 `Event` 流
 - 普通任务派发后进入 `running`
 - 需要审批的任务派发后进入 `waiting_human`
 - `POST /api/tasks/{task_id}/complete` 会完成当前任务，并自动推进下游节点
@@ -133,6 +144,7 @@ PlaybookOS 用来把目标、SOP、技能、工具权限、执行记录和反思
 - `POST /api/runs/{run_id}/execute` 会执行单个 `Run`
 - 每次执行会自动生成一个 `run_report` Artifact，沉淀输出、trace、tool_calls 和指标摘要
 - 成功执行后会把任务推进到完成链路，失败/审批等待则保留为阻塞信号
+- Run 对应的 Worker Session 会同步更新为 `running / waiting_human / completed / failed`
 
 ## 自我迭代能力
 
@@ -141,12 +153,18 @@ PlaybookOS 用来把目标、SOP、技能、工具权限、执行记录和反思
 目前已实现：
 
 - `POST /api/goals/{goal_id}/autopilot`：自动规划、调度、执行可自动完成的任务
+- `Session`：一个 Goal 对应主控会话，一个 Run 对应子会话
+- `POST /api/tasks/{task_id}/accept`：对任务结果做人类验收与签收
+- `Event`：记录调度、执行、验收等关键动作，便于用户可见与审计
 - `POST /api/runs/{run_id}/reflect`：从单次 Run 生成 SOP patch proposal
 - `GET /api/goals/{goal_id}/learning`：聚合一个 Goal 下的失败分类和 SOP 改进提案
 - 成功模式、审批瓶颈、执行波动都会沉淀为 `sop_patch` 提案
 
 当前还没做完的部分：
 
+- 用户直接在前端编辑 SOP / Skill / Task 的表单工作台
+- 主控会话自动拆分更多层级子会话并并行汇总
+- AI 主动改写 Skill / Knowledge Base 的专门 authoring 流程
 - 基于真实 OpenAI Agents SDK + MCP 调用结果的在线评测
 - publish 后自动把 proposal 合并回更细粒度的 Skill/Playbook 发布策略
 - Artifact blob 正式落到对象存储，而不只保存元数据
@@ -155,6 +173,7 @@ PlaybookOS 用来把目标、SOP、技能、工具权限、执行记录和反思
 
 - “自动跑大量相似任务”已经有骨架
 - “自动总结并提出 SOP 优化建议”已经有 proposal/evaluate/approve/publish 闭环
+- “主进程收集 / 检测 / 验收 / 记录子会话轨迹”已经有第一版 Session + Acceptance + Event 能力
 - “自动把建议无人工发布到生产”仍然没有做，而且按你的架构原则也不应该直接自动发布
 
 ## 存储说明
@@ -165,8 +184,12 @@ PlaybookOS 用来把目标、SOP、技能、工具权限、执行记录和反思
 
 - `goals`
 - `playbooks`
+- `skills`
 - `tasks`
+- `sessions`
 - `runs`
+- `acceptances`
+- `events`
 - `artifacts`
 - `reflections`
 

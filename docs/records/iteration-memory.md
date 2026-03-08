@@ -17,37 +17,39 @@
 
 ### 已实现
 
-- Goal / Playbook / Task / Run / Artifact / Reflection 的领域模型与持久化主链
+- Goal / Playbook / Skill / Task / Session / Run / Acceptance / Artifact / Reflection / Event 的领域模型与持久化主链
 - 手动导入 Playbook（SOP 的第一版承载）
 - 手动创建 Task
 - 手动创建 Skill，并可把 Skill 绑定到 Task
 - Planner: Playbook -> Task DAG
 - Orchestrator: dispatch / complete / waiting_human
+- Supervisor: Goal 主控会话、Run 子会话、事件流、任务验收
 - Executor: run 执行、trace、artifact metadata
 - Reflection: reflect / evaluate / approve / publish
 - 错误文件记录：`data/error_records.jsonl`
-- 内置 Dashboard：首页可中英文切换
+- 内置 Dashboard：首页可中英文切换，并可看到 sessions / acceptances / events
 
 ### 部分实现
 
 - SOP 手动设置：当前以 `Playbook import + compile` 表达，缺少真正可编辑的 SOP 工作台
-- AI 参与完善：已有 reflection proposal 与 autopilot 骨架，但还没有针对 Skill / Task / SOP 的专门“AI co-pilot authoring”接口
-- 验收：已有 review / human approval / publish gating，但没有独立的 acceptance checklist / sign-off 实体
-- 子会话：当前只有 `Run.session_id` 字段和 Task DAG / parent_task_id 能力，还没有显式的 session tree / sub-session orchestration
+- AI 参与完善：已有 reflection proposal、autopilot 与事件链路，但还没有针对 Skill / Task / SOP / 知识库的专门“AI co-pilot authoring”接口
+- 验收：已有独立的 acceptance 实体与 API，但还没有更细的 checklist 模板、评分和批量验收 UI
+- 子会话：当前已有 supervisor / worker session，可见且可追踪，但还没有更深层的 session tree / parallel sub-session orchestration
 
 ### 尚未完成
 
 - Skill 版本晋级与回滚流水线
 - 专门的 SOP 编辑 / diff / patch 审核界面
-- 验收记录、验收人、验收标准的独立模型与 API
-- 真正的多子会话执行与汇总
+- 知识库实体、知识更新和可见的知识回写链路
+- 真正的多层子会话执行、并行汇总与主进程仲裁
 - 真实 OpenAI Agents SDK + MCP 在线执行
 - Temporal 真正接入
 
 ## 推荐下一优先级
 
-1. Acceptance / Sign-off 模块
-2. 子会话 / session tree 模块
-3. SOP patch review / diff / publish UI
-4. Skill versioning / rollback
-5. 真实 executor + MCP 集成
+1. 前端可编辑 SOP / Skill / Task 工作台
+2. 知识库模型 + AI 回写链路
+3. 多层子会话 / session tree / 并行汇总
+4. SOP patch review / diff / publish UI
+5. Skill versioning / rollback
+6. 真实 executor + MCP 集成

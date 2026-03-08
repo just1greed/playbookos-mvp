@@ -27,7 +27,7 @@
 
 职责：
 
-- 八个核心对象模型
+- Goal / Playbook / Skill / Task / Session / Run / Acceptance / Artifact / Reflection / Event 核心对象模型
 - 枚举和值对象
 - 基础校验规则
 
@@ -66,7 +66,28 @@
 - `POST /api/goals/{goal_id}/dispatch`
 - `POST /api/tasks/{task_id}/complete`
 
-### 2.5 `executor`
+### 2.5 `supervisor`
+
+职责：
+
+- 为 Goal 建立主控会话
+- 为 Run 建立子会话
+- 维护用户可见的事件流
+- 维护任务验收与签收
+
+当前已实现：
+
+- `ensure_goal_supervisor_session`
+- `ensure_worker_session_for_run`
+- `update_session_for_run`
+- `accept_task_in_store`
+- `append_event`
+- `GET /api/sessions`
+- `GET /api/acceptances`
+- `GET /api/events`
+- `POST /api/tasks/{task_id}/accept`
+
+### 2.6 `executor`
 
 职责：
 
@@ -86,7 +107,7 @@
 - `POST /api/runs/{run_id}/execute`
 - `POST /api/goals/{goal_id}/autopilot`
 
-### 2.6 `reflection`
+### 2.7 `reflection`
 
 职责：
 
@@ -129,7 +150,19 @@
 - `POST /api/playbooks/{playbook_id}/compile`
 - `GET /api/playbooks/{playbook_id}`
 
-### 3.3 Tasks / Runs
+### 3.3 Skills / Sessions / Acceptances / Events
+
+- `POST /api/skills`
+- `GET /api/skills`
+- `GET /api/skills/{skill_id}`
+- `GET /api/sessions`
+- `GET /api/sessions/{session_id}`
+- `GET /api/acceptances`
+- `GET /api/acceptances/{acceptance_id}`
+- `GET /api/events`
+- `POST /api/tasks/{task_id}/accept`
+
+### 3.4 Tasks / Runs
 
 - `GET /api/tasks`
 - `GET /api/tasks/{task_id}`
@@ -140,7 +173,7 @@
 - `POST /api/runs/{run_id}/approve`
 - `POST /api/runs/{run_id}/reject`
 
-### 3.4 Reflections
+### 3.5 Reflections
 
 - `GET /api/reflections`
 - `POST /api/reflections/{reflection_id}/evaluate`
@@ -148,7 +181,7 @@
 - `POST /api/reflections/{reflection_id}/reject`
 - `POST /api/reflections/{reflection_id}/publish`
 
-### 3.5 Artifacts
+### 3.6 Artifacts
 
 - `POST /api/artifacts`
 - `GET /api/artifacts`
@@ -162,6 +195,7 @@
 - `src/playbookos/domain/`
 - `src/playbookos/planner/`
 - `src/playbookos/orchestrator/`
+- `src/playbookos/supervisor/`
 - `src/playbookos/executor/`
 - `src/playbookos/reflection/`
 - `src/playbookos/registry/`
@@ -177,11 +211,13 @@
 
 ### Milestone 2：控制面主链路
 
-- Goal / Playbook / Task / Run API
+- Goal / Playbook / Skill / Task / Run API
+- Session / Acceptance / Event API
 - Board 查询
-- Postgres 持久化
+- SQLite 持久化
 - Planner 任务拆解
 - Orchestrator 调度核心
+- Supervisor 可视化会话链路
 - Executor 适配层
 - Reflection 学习摘要
 
@@ -210,11 +246,14 @@
 - `persistence` 持久化 store
 - `planner` 从 Playbook 生成 Task DAG
 - `orchestrator` 推进任务和生成 `Run`
+- `supervisor` 维护主控会话、子会话、验收与事件流
 - `executor` 执行 `Run` 并支持 autopilot
 - `reflection` 为 SOP 生成改进 proposal
 
 下一步建议优先：
 
+- 前端可编辑 SOP / Skill / Task 工作台
+- 主控会话对子会话的更细粒度并行调度
 - 真实 OpenAI Agents SDK + MCP 调用
 - Artifact blob/object storage 持久化
-- Temporal workflow 对接 planner/orchestrator/executor
+- Temporal workflow 对接 planner/orchestrator/executor/supervisor

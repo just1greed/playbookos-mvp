@@ -1,9 +1,12 @@
 """PlaybookOS package."""
 
 from .domain.models import (
+    Acceptance,
     Artifact,
+    Event,
     Goal,
     MCPServer,
+    Session,
     Playbook,
     Reflection,
     Run,
@@ -12,9 +15,12 @@ from .domain.models import (
 )
 
 __all__ = [
+    "Acceptance",
     "Artifact",
+    "Event",
     "Goal",
     "MCPServer",
+    "Session",
     "Playbook",
     "Reflection",
     "Run",

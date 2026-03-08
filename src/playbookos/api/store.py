@@ -4,7 +4,7 @@ from collections import Counter
 from threading import RLock
 from typing import Generic, Protocol, TypeVar
 
-from playbookos.domain.models import Artifact, Goal, Playbook, Reflection, Run, Skill, Task
+from playbookos.domain.models import Acceptance, Artifact, Event, Goal, Playbook, Reflection, Run, Session, Skill, Task
 
 EntityT = TypeVar("EntityT")
 
@@ -26,9 +26,12 @@ class StoreProtocol(Protocol):
     playbooks: RepositoryProtocol[Playbook]
     skills: RepositoryProtocol[Skill]
     tasks: RepositoryProtocol[Task]
+    sessions: RepositoryProtocol[Session]
     runs: RepositoryProtocol[Run]
     artifacts: RepositoryProtocol[Artifact]
+    acceptances: RepositoryProtocol[Acceptance]
     reflections: RepositoryProtocol[Reflection]
+    events: RepositoryProtocol[Event]
 
     def board_snapshot(self) -> dict[str, dict[str, int]]: ...
 
@@ -62,22 +65,31 @@ class InMemoryStore:
         self.playbooks = InMemoryRepository[Playbook]()
         self.skills = InMemoryRepository[Skill]()
         self.tasks = InMemoryRepository[Task]()
+        self.sessions = InMemoryRepository[Session]()
         self.runs = InMemoryRepository[Run]()
         self.artifacts = InMemoryRepository[Artifact]()
+        self.acceptances = InMemoryRepository[Acceptance]()
         self.reflections = InMemoryRepository[Reflection]()
+        self.events = InMemoryRepository[Event]()
 
     def board_snapshot(self) -> dict[str, dict[str, int]]:
         goal_counts = Counter(goal.status.value for goal in self.goals.list())
         skill_counts = Counter(skill.status.value for skill in self.skills.list())
         task_counts = Counter(task.status.value for task in self.tasks.list())
+        session_counts = Counter(session.status.value for session in self.sessions.list())
         run_counts = Counter(run.status.value for run in self.runs.list())
         artifact_counts = Counter(artifact.kind for artifact in self.artifacts.list())
+        acceptance_counts = Counter(acceptance.status.value for acceptance in self.acceptances.list())
         reflection_counts = Counter(reflection.eval_status.value for reflection in self.reflections.list())
+        event_counts = Counter(event.entity_type for event in self.events.list())
         return {
             "goals": dict(goal_counts),
             "skills": dict(skill_counts),
             "tasks": dict(task_counts),
+            "sessions": dict(session_counts),
             "runs": dict(run_counts),
             "artifacts": dict(artifact_counts),
+            "acceptances": dict(acceptance_counts),
             "reflections": dict(reflection_counts),
+            "events": dict(event_counts),
         }
