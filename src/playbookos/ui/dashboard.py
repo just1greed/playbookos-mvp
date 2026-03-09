@@ -180,6 +180,8 @@ TRANSLATIONS = {
         "ingest_source_kind": "原始格式",
         "ingest_guidance_title": "Skill 配置引导",
         "ingest_guidance_empty": "导入 SOP 后，这里会显示推荐 Skill 与解析摘要。",
+        "ingest_source_saved": "原始 SOP 已保存",
+        "ingest_source_view": "查看原文",
         "action_ingest_playbook": "解析并导入",
         "action_create_skill_draft": "创建 Draft Skill",
         "action_create_bound_skill_draft": "创建并绑定步骤",
@@ -392,6 +394,8 @@ TRANSLATIONS = {
         "ingest_source_kind": "Source format",
         "ingest_guidance_title": "Skill setup guidance",
         "ingest_guidance_empty": "After ingesting an SOP, recommended skills and parsing notes appear here.",
+        "ingest_source_saved": "Raw SOP saved",
+        "ingest_source_view": "View source",
         "action_ingest_playbook": "Parse and ingest",
         "action_create_skill_draft": "Create Draft Skill",
         "action_create_bound_skill_draft": "Create + Bind Steps",
@@ -1129,6 +1133,16 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
           return;
         }}
         const notes = (result.parsing_notes || []).map((item) => `<li>${{escapeHtml(item)}}</li>`).join('');
+        const sourceObject = result.source_object || null;
+        const sourceObjectHtml = sourceObject && sourceObject.id
+          ? `
+            <div class="patch-changes">
+              <strong>${{escapeHtml(t('ingest_source_saved'))}}</strong>
+              <div class="patch-change"><code>${{escapeHtml(sourceObject.id)}}</code><a href="${{escapeHtml(`${{apiBase}}/objects/${{sourceObject.id}}/content`)}}" target="_blank" rel="noreferrer">${{escapeHtml(t('ingest_source_view'))}}</a></div>
+              <div class="patch-change"><span>${{escapeHtml(sourceObject.mime_type || 'application/octet-stream')}}</span><span>${{escapeHtml(String(sourceObject.size_bytes || 0))}} bytes</span></div>
+            </div>
+          `
+          : '';
         const skills = (result.suggested_skills || []).map((item, index) => `
           <div class="patch-review-card">
             <div class="patch-review-head"><div><strong>${{escapeHtml(item.name || `Skill ${{index + 1}}`)}}</strong><small>${{escapeHtml(item.rationale || '')}}</small></div></div>
@@ -1145,6 +1159,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         setIngestionGuidance(`
           <strong>${{escapeHtml(result.playbook && result.playbook.name ? result.playbook.name : 'Playbook')}}</strong>
           <small>${{escapeHtml(`steps: ${{result.step_count || 0}}, mcp: ${{(result.detected_mcp_servers || []).join(', ') || 'n/a'}}`)}}</small>
+          ${{sourceObjectHtml}}
           <ul style="margin:8px 0 12px 18px;">${{notes || `<li>${{escapeHtml(t('ingest_guidance_empty'))}}</li>`}}</ul>
           ${{skills || `<small>${{escapeHtml(t('ingest_guidance_empty'))}}</small>`}}
         `);

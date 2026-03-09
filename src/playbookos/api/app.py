@@ -9,7 +9,7 @@ def utc_now() -> datetime:
 
 
 from fastapi import Depends, FastAPI, HTTPException, status
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
 
 from playbookos.api.schemas import (
     AcceptanceRead,
@@ -29,6 +29,7 @@ from playbookos.api.schemas import (
     KnowledgeUpdateRead,
     PlaybookIngest,
     PlaybookIngestRead,
+    StoredObjectRead,
     PlaybookImport,
     PlaybookSkillDraftCreate,
     PlaybookSkillDraftRead,
@@ -79,6 +80,7 @@ from playbookos.domain.models import (
 from playbookos.authoring import apply_skill_authoring_pack_in_store, build_skill_authoring_pack_in_store
 from playbookos.executor import ExecutionError, OpenAIAgentsSDKAdapter, autopilot_goal_in_store, execute_run_in_store
 from playbookos.ingestion import SOPIngestionError, ingest_sop_in_store, materialize_suggested_skill_in_store
+from playbookos.object_store import attach_source_object_to_playbook, create_object_store_from_env
 from playbookos.observability import record_error
 from playbookos.knowledge import KnowledgeUpdateError, apply_knowledge_update_in_store, reject_knowledge_update_in_store
 from playbookos.skills_service import SkillLifecycleError, activate_skill_in_store, create_next_skill_version_in_store, deprecate_skill_in_store, rollback_skill_in_store
@@ -242,6 +244,14 @@ def create_app(store: StoreProtocol | None = None) -> FastAPI:
                 source_uri=payload.source_uri,
                 goal_id=payload.goal_id,
             )
+            source_object = attach_source_object_to_playbook(
+                result.playbook,
+                source_text=payload.source_text,
+                source_kind=payload.source_kind,
+                source_uri=payload.source_uri,
+                object_store=create_object_store_from_env(),
+            )
+            store.playbooks.save(result.playbook)
         except SOPIngestionError as exc:
             raise _conflict_http_exception(exc, operation="ingest_playbook", metadata={"goal_id": payload.goal_id}) from exc
         return PlaybookIngestRead(
@@ -250,6 +260,7 @@ def create_app(store: StoreProtocol | None = None) -> FastAPI:
             detected_mcp_servers=result.detected_mcp_servers,
             suggested_skills=[SkillSuggestionRead.model_validate(item) for item in result.suggested_skills],
             parsing_notes=result.parsing_notes,
+            source_object=StoredObjectRead.model_validate(source_object),
         )
 
     @api.post("/api/playbooks/{playbook_id}/skill-drafts", response_model=PlaybookSkillDraftRead, status_code=status.HTTP_201_CREATED)
@@ -553,6 +564,28 @@ def create_app(store: StoreProtocol | None = None) -> FastAPI:
     @api.get("/api/artifacts/{artifact_id}", response_model=ArtifactRead)
     def get_artifact(artifact_id: str, store: store_dep) -> ArtifactRead:
         return ArtifactRead.model_validate(_fetch(store.artifacts, artifact_id, "Artifact", operation="get_artifact", metadata={"artifact_id": artifact_id}))
+
+    @api.get("/api/objects", response_model=list[StoredObjectRead])
+    def list_objects() -> list[StoredObjectRead]:
+        return [StoredObjectRead.model_validate(item) for item in create_object_store_from_env().list_objects()]
+
+    @api.get("/api/objects/{object_id}", response_model=StoredObjectRead)
+    def get_object(object_id: str) -> StoredObjectRead:
+        try:
+            stored = create_object_store_from_env().get_meta(object_id)
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Object not found") from exc
+        return StoredObjectRead.model_validate(stored)
+
+    @api.get("/api/objects/{object_id}/content", response_class=Response)
+    def get_object_content(object_id: str) -> Response:
+        try:
+            object_store = create_object_store_from_env()
+            stored = object_store.get_meta(object_id)
+            body = object_store.get_bytes(object_id)
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Object not found") from exc
+        return Response(content=body, media_type=stored.mime_type)
 
     @api.post("/api/runs/{run_id}/reflect", response_model=RunReflectionRead)
     def reflect_run(run_id: str, store: store_dep) -> RunReflectionRead:

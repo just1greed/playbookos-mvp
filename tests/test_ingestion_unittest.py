@@ -3,6 +3,7 @@ import unittest
 from playbookos.api.store import InMemoryStore
 from playbookos.domain.models import Goal, PlaybookStatus
 from playbookos.ingestion import SOPIngestionError, ingest_sop_in_store, materialize_suggested_skill_in_store
+from playbookos.object_store import LocalObjectStore, attach_source_object_to_playbook
 
 
 class SOPIngestionTestCase(unittest.TestCase):
@@ -87,6 +88,31 @@ class SOPIngestionTestCase(unittest.TestCase):
         step_skills = [step.get("assigned_skill_id") for step in rebound_playbook.compiled_spec["steps"]]
         self.assertTrue(all(skill_id == materialized.skill.id for skill_id in step_skills))
         self.assertEqual(materialized.bound_step_count, 2)
+
+    def test_attach_source_object_can_follow_ingestion_result(self) -> None:
+        store = InMemoryStore()
+        result = ingest_sop_in_store(
+            store,
+            name="Documented SOP",
+            source_kind="markdown",
+            source_uri="file:///tmp/documented.md",
+            source_text="# Demo\n1. Prepare draft",
+        )
+
+        with self.subTest("object store attachment"):
+            from tempfile import TemporaryDirectory
+
+            with TemporaryDirectory() as tmpdir:
+                stored = attach_source_object_to_playbook(
+                    result.playbook,
+                    source_text="# Demo\n1. Prepare draft",
+                    source_kind="markdown",
+                    source_uri="file:///tmp/documented.md",
+                    object_store=LocalObjectStore(tmpdir),
+                )
+
+                self.assertEqual(result.playbook.compiled_spec["source_object_id"], stored.id)
+                self.assertEqual(result.playbook.compiled_spec["source_object_mime_type"], "text/markdown; charset=utf-8")
 
 
 if __name__ == "__main__":

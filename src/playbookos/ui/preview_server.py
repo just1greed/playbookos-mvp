@@ -17,6 +17,7 @@ from playbookos.domain.models import Goal, KnowledgeBase, Playbook, PlaybookStat
 from playbookos.authoring import apply_skill_authoring_pack_in_store, build_skill_authoring_pack_in_store
 from playbookos.executor.service import DeterministicExecutorAdapter, OpenAIAgentsSDKAdapter, autopilot_goal_in_store, execute_run_in_store
 from playbookos.ingestion import SOPIngestionError, ingest_sop_in_store, materialize_suggested_skill_in_store
+from playbookos.object_store import attach_source_object_to_playbook, create_object_store_from_env
 from playbookos.observability import get_error_log_path, list_recorded_errors, record_error
 from playbookos.persistence import create_store_from_env
 from playbookos.orchestrator.service import complete_task_in_store, dispatch_goal_in_store
@@ -52,6 +53,21 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
                 return
             if path == "/api/skills":
                 self._write_json(_serialize_items(self.server.store.skills.list()))
+                return
+            if path == "/api/objects":
+                object_store = create_object_store_from_env()
+                self._write_json(_to_jsonable(object_store.list_objects()))
+                return
+            if path.startswith("/api/objects/") and path.endswith("/content"):
+                object_id = path.split("/")[-2]
+                object_store = create_object_store_from_env()
+                stored = object_store.get_meta(object_id)
+                self._write_bytes(object_store.get_bytes(object_id), content_type=stored.mime_type)
+                return
+            if path.startswith("/api/objects/"):
+                object_id = path.split("/")[-1]
+                object_store = create_object_store_from_env()
+                self._write_json(_to_jsonable(object_store.get_meta(object_id)))
                 return
             if path.startswith("/api/skills/") and path.endswith("/authoring-pack"):
                 skill_id = path.split("/")[-2]
@@ -90,6 +106,9 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
 
             record_error("Route not found", component="preview_server", operation="do_GET", metadata={"path": path, "status_code": 404}, path=self.server.error_log_path)
             self._write_json({"detail": "Not found"}, status=HTTPStatus.NOT_FOUND)
+        except FileNotFoundError as exc:
+            record_error(exc, component="preview_server", operation="do_GET", metadata={"path": path, "status_code": 404}, path=self.server.error_log_path)
+            self._write_json({"detail": "Object not found"}, status=HTTPStatus.NOT_FOUND)
         except Exception as exc:
             record_error(exc, component="preview_server", operation="do_GET", metadata={"path": path}, path=self.server.error_log_path)
             self._write_json({"detail": "Internal server error"}, status=HTTPStatus.INTERNAL_SERVER_ERROR)
@@ -136,6 +155,14 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
                     source_uri=payload.get("source_uri") or None,
                     goal_id=payload.get("goal_id") or None,
                 )
+                source_object = attach_source_object_to_playbook(
+                    result.playbook,
+                    source_text=payload["source_text"],
+                    source_kind=payload.get("source_kind", "markdown"),
+                    source_uri=payload.get("source_uri") or None,
+                    object_store=create_object_store_from_env(),
+                )
+                self.server.store.playbooks.save(result.playbook)
                 self._write_json(
                     {
                         "playbook": _to_jsonable(result.playbook),
@@ -143,6 +170,7 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
                         "detected_mcp_servers": result.detected_mcp_servers,
                         "suggested_skills": _to_jsonable(result.suggested_skills),
                         "parsing_notes": result.parsing_notes,
+                        "source_object": _to_jsonable(source_object),
                     },
                     status=HTTPStatus.CREATED,
                 )
@@ -501,6 +529,13 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(encoded)))
         self.end_headers()
         self.wfile.write(encoded)
+
+    def _write_bytes(self, payload: bytes, *, status: HTTPStatus = HTTPStatus.OK, content_type: str = "application/octet-stream") -> None:
+        self.send_response(status)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(payload)))
+        self.end_headers()
+        self.wfile.write(payload)
 
 
 class PreviewHTTPServer(ThreadingHTTPServer):

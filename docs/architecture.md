@@ -162,4 +162,14 @@ PlaybookOS 推荐采用三层架构：
 
 当前仓库已经能跑通 `Goal -> Playbook -> Task -> Run -> Reflection` 主链，但尚未完整支持“上传任意格式 SOP 后自动解析成对象，并主动引导用户配置 Skill”的前置建模流程。
 
-本轮实现从第 1、2、3 项开始：先落一个最小可用闭环，让用户把原始 SOP 文本或文本文件导入为 Playbook，并获得可见的 Skill 建议。
+目前第 1、2、3、4 项已经落下第一版闭环：用户可导入原始 SOP 文本/文本文件，系统会解析为 Playbook、给出 MCP hints 与 Skill 建议，并通过 authoring wizard 主动引导补齐 Skill 配置。
+
+第 5 项也补上了最小实现：新增本地 `object_store`，把原始 SOP 原文保存为独立对象，并通过 `playbook.compiled_spec.source_object_*` 与 `/api/objects/*` 接口对外暴露，满足最基本的审计、回放和原文回看。
+
+截至 2026-03-09，距离“用户上传任意格式 SOP 后自动解析成各种对象，并主动引导用户配置 Skill”的目标，当前仍剩以下缺口：
+
+1. `任意格式` 仍未完成：现在稳定支持 `markdown/text/json/csv` 文本输入，尚未覆盖 PDF、Docx、图片、压缩包及多附件组合上传。
+2. `附件拆解` 仍未完成：对象存储当前只保留原始文本主体，尚未建立附件索引、分块、引用关系与解析产物树。
+3. `对象归一化` 仍未完成：已能生成 Playbook 与 Skill 草案，但 Knowledge、Task template、approval checklist 等派生对象还没有在 ingestion 阶段自动物化。
+4. `主动引导` 仍是第一版：authoring wizard 已能补齐 schema / approval / evaluation 默认值，但缺少逐步问答式确认、风险解释和发布门禁。
+5. `外部对象存储` 仍未完成：当前实现是本地文件目录，后续还需要升级到真正的云对象存储与评测数据集治理。

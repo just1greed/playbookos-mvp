@@ -64,3 +64,5 @@
 - 当前系统还不具备完整的“任意格式 SOP 上传 -> 自动解析成对象 -> 主动引导配置 Skill”前置建模链路。
 - 缺的核心不是后半段执行，而是前半段的 `ingestion + compiler + skill recommendation + authoring wizard`。
 - 因此后续实现顺序调整为：先补原始 SOP 接入与解析，再补 Skill 引导，再补原件/附件治理和更完整的 authoring workflow。
+- 现在第一版原件治理也已补上：原始 SOP 文本会落入本地对象存储，并可从导入引导区直接回看原文。
+- 当前最主要未完成项变为：非文本格式与多附件解析、自动派生更多对象（Knowledge / Task template / checklist）、以及更强的问答式 Skill authoring 与发布门禁。

@@ -167,3 +167,10 @@
 - 已新增 `GET /api/skills/{skill_id}/authoring-pack` 与 `POST /api/skills/{skill_id}/apply-authoring-pack`
 - Dashboard 已新增 `Skill Authoring Wizard` 区块，可对 draft Skill 一键应用推荐配置，并跳转到编辑器继续细修
 - 已新增 `tests/test_authoring_unittest.py`，当前全量单测已更新为 `40` 个并全部通过
+- 已新增 `src/playbookos/object_store/service.py` 与 `src/playbookos/object_store/__init__.py`，提供本地对象存储能力，用于持久化原始 SOP 文本与元数据 sidecar
+- `POST /api/playbooks/ingest` 与 preview server ingest 链路现在会自动保存原始 SOP，并把 `source_object_id / uri / checksum / mime_type` 回填到 `playbook.compiled_spec`
+- 已新增 `GET /api/objects`、`GET /api/objects/{object_id}`、`GET /api/objects/{object_id}/content`，支持列出原始对象、读取元数据与直接查看原文内容
+- Dashboard 的 `Skill 配置引导` 区块现会展示原始 SOP 已保存提示，并提供原文回看链接，方便用户在配置 Skill 时回审原文
+- 已新增 `tests/test_object_store_unittest.py`，并扩充 ingestion / dashboard 测试覆盖对象存储与前端呈现
+- 设计文档已更新：当前系统已具备“文本类 SOP 导入 -> Playbook/Skill 建议 -> authoring wizard 引导 -> 原文落对象存储”的第一版闭环；剩余缺口集中在任意格式附件解析、更多对象自动物化与更强的引导式配置
+

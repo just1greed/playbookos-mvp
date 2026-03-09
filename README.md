@@ -54,6 +54,7 @@ PlaybookOS 用来把目标、SOP、技能、工具权限、执行记录和反思
 - Supervisor 主控会话 / 子会话编排链路
 - OpenAI Agents SDK 风格执行适配层
 - Run 级 Artifact 元数据持久化与查询
+- 原始 SOP 文本对象存储与回看链接
 - 一个优美的内置前端控制台首页（`GET /`），并可中英文切换与直接录入 Goal / SOP / Skill / Knowledge / Task
 - SOP 自我迭代提案骨架
 - 用户可见的 Session / Acceptance / Event / Knowledge Update 追踪视图
@@ -117,6 +118,9 @@ PlaybookOS 用来把目标、SOP、技能、工具权限、执行记录和反思
 - `GET /api/errors`
 - `GET /api/board`
 - `GET /api/meta/enums`
+- `GET /api/objects`
+- `GET /api/objects/{object_id}`
+- `GET /api/objects/{object_id}/content`
 - `GET /healthz`
 
 ## Planner 规则
@@ -195,6 +199,8 @@ PlaybookOS 用来把目标、SOP、技能、工具权限、执行记录和反思
 
 当前版本已开始补齐“原始 SOP 接入”能力：支持把粘贴的 Markdown / text / JSON SOP 导入为 Playbook 草案，并返回解析摘要与 Skill 建议，供页面进一步引导配置。
 
+现在原始 SOP 还会被持久化到本地对象存储，并通过 `source_object_*` 元数据回链到 `playbook.compiled_spec`；前端导入引导区可直接打开原文内容进行审计。
+
 当前已接入持久化的主表：
 
 - `goals`
@@ -216,6 +222,7 @@ PlaybookOS 用来把目标、SOP、技能、工具权限、执行记录和反思
 - `DATABASE_URL=sqlite:///absolute/or/relative/path.db`：显式指定 SQLite URL
 - `DATABASE_URL=postgresql://...`：当前会给出明确提示；正式 PostgreSQL schema 已放在 `data/sql/postgres_schema.sql`
 - `PLAYBOOKOS_ERROR_LOG_PATH`：错误记录文件路径，默认是 `data/error_records.jsonl`
+- `PLAYBOOKOS_OBJECT_STORE_PATH`：原始 SOP / 本地对象存储目录，默认是 `data/object_store`
 - `PLAYBOOKOS_OPENAI_API_KEY` / `OPENAI_API_KEY`：真实执行时使用的 API Key
 - `PLAYBOOKOS_OPENAI_BASE_URL` / `OPENAI_BASE_URL`：API Base URL，默认 `https://api.openai.com/v1`
 - `PLAYBOOKOS_OPENAI_MODEL` / `OPENAI_MODEL`：默认模型，未配置时使用 `gpt-4.1`

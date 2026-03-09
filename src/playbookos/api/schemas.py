@@ -172,6 +172,18 @@ class RunExecutionRead(APIModel):
     artifact_ids: list[str] = Field(default_factory=list)
 
 
+class StoredObjectRead(APIModel):
+    id: str
+    kind: str
+    title: str
+    mime_type: str
+    uri: str
+    size_bytes: int
+    checksum: str
+    created_at: datetime
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
 class ArtifactCreate(APIModel):
     run_id: str
     kind: str
@@ -255,6 +267,7 @@ class PlaybookIngestRead(APIModel):
     detected_mcp_servers: list[str] = Field(default_factory=list)
     suggested_skills: list[SkillSuggestionRead] = Field(default_factory=list)
     parsing_notes: list[str] = Field(default_factory=list)
+    source_object: "StoredObjectRead | None" = None
 
 
 class PlaybookSkillDraftCreate(APIModel):
