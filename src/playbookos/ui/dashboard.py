@@ -48,6 +48,16 @@ TRANSLATIONS = {
         "review_ops_empty": "当前没有待审批或待验收项。",
         "learning_ops_title": "复盘 / 知识更新",
         "learning_ops_empty": "当前没有待处理的知识更新或反思提案。",
+        "session_tree_title": "主控 / 子会话树",
+        "session_tree_subtitle": "按 Goal 展示 supervisor 与 worker 的层级结构，帮助你看见主进程如何调度子会话",
+        "session_tree_empty": "当前还没有会话树数据。",
+        "session_goal_summary": "目标会话概览",
+        "session_children_count": "子会话数",
+        "session_kind_label": "会话类型",
+        "session_status_label": "状态",
+        "session_task_label": "任务",
+        "session_run_label": "运行",
+        "session_summary_label": "摘要",
         "action_plan": "规划",
         "action_dispatch": "派发",
         "action_autopilot": "自动执行",
@@ -191,6 +201,16 @@ TRANSLATIONS = {
         "review_ops_empty": "No pending approval or acceptance items.",
         "learning_ops_title": "Postmortem / Knowledge Updates",
         "learning_ops_empty": "No pending knowledge updates or reflection proposals.",
+        "session_tree_title": "Supervisor / Worker Tree",
+        "session_tree_subtitle": "Show supervisor and worker session hierarchy by goal so the main process stays visible",
+        "session_tree_empty": "No session tree data yet.",
+        "session_goal_summary": "Goal session overview",
+        "session_children_count": "Child sessions",
+        "session_kind_label": "Session kind",
+        "session_status_label": "Status",
+        "session_task_label": "Task",
+        "session_run_label": "Run",
+        "session_summary_label": "Summary",
         "action_plan": "Plan",
         "action_dispatch": "Dispatch",
         "action_autopilot": "Autopilot",
@@ -449,6 +469,19 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
       .action-buttons {{ display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }}
       .action-buttons .button {{ padding: 9px 12px; border-radius: 12px; box-shadow: none; }}
       .action-buttons .button.secondary {{ background: rgba(15, 23, 42, 0.82); }}
+      .session-groups {{ display: grid; gap: 16px; }}
+      .session-group {{ padding: 18px; border-radius: 20px; background: rgba(15, 23, 42, 0.62); border: 1px solid rgba(148, 163, 184, 0.12); }}
+      .session-group-header {{ display: flex; justify-content: space-between; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }}
+      .session-group-header strong {{ font-size: 16px; display: block; }}
+      .session-group-header span {{ color: var(--muted); font-size: 13px; }}
+      .session-tree {{ display: grid; gap: 12px; }}
+      .session-node {{ position: relative; padding: 14px 16px; border-radius: 16px; background: rgba(2, 6, 23, 0.58); border: 1px solid rgba(148, 163, 184, 0.08); }}
+      .session-node::before {{ content: ""; position: absolute; left: -10px; top: 18px; width: 10px; height: 1px; background: rgba(148, 163, 184, 0.25); }}
+      .session-node.depth-0::before {{ display: none; }}
+      .session-node-title {{ display: flex; justify-content: space-between; gap: 12px; align-items: center; flex-wrap: wrap; }}
+      .session-node-title strong {{ font-size: 14px; }}
+      .session-node-meta {{ margin-top: 8px; color: var(--muted); font-size: 13px; line-height: 1.6; white-space: pre-wrap; }}
+      .session-node-children {{ display: grid; gap: 10px; margin-top: 10px; padding-left: 18px; border-left: 1px dashed rgba(148, 163, 184, 0.18); }}
       .list-card {{ grid-column: span 8; }}
       .activity-card {{ grid-column: span 4; }}
       .rows {{ display: grid; gap: 10px; margin-top: 14px; }}
@@ -640,6 +673,13 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
       </section>
 
       <section class="section">
+        <article class="card workbench-card">
+          <div class="section-title"><h2 data-i18n="session_tree_title"></h2><span data-i18n="session_tree_subtitle"></span></div>
+          <div class="session-groups" id="session-groups"></div>
+        </article>
+      </section>
+
+      <section class="section">
         <div class="grid">
           <article class="card list-card">
             <div class="section-title"><h2 id="resource-peek-title"></h2><span id="resource-peek-subtitle"></span></div>
@@ -798,6 +838,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         renderEndpointCards();
         renderWorkbenchOptions();
         renderActionCenter();
+        renderSessionTree();
         if (!document.getElementById('editor-status').dataset.state) {{
           document.getElementById('editor-status').dataset.state = 'idle';
           document.getElementById('editor-status').textContent = t('editor_status_ready');
@@ -901,6 +942,57 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         renderGoalActions();
         renderReviewActions();
         renderLearningActions();
+      }}
+
+      function sessionTitleLine(session) {{
+        return `${{session.title || session.id}}`;
+      }}
+
+      function sessionDetailLines(session) {{
+        const lines = [
+          `${{t('session_kind_label')}}: ${{session.kind || ''}}`,
+          `${{t('session_status_label')}}: ${{session.status || ''}}`,
+        ];
+        if (session.task_id) lines.push(`${{t('session_task_label')}}: ${{session.task_id}}`);
+        if (session.run_id) lines.push(`${{t('session_run_label')}}: ${{session.run_id}}`);
+        if (session.summary) lines.push(`${{t('session_summary_label')}}: ${{session.summary}}`);
+        return lines.join('\\n');
+      }}
+
+      function renderSessionNode(session, childrenByParent, depth = 0) {{
+        const children = childrenByParent[session.id] || [];
+        const childrenHtml = children.length
+          ? `<div class="session-node-children">${{children.map((child) => renderSessionNode(child, childrenByParent, depth + 1)).join('')}}</div>`
+          : '';
+        return `<div class="session-node depth-${{depth}}" style="margin-left:${{depth * 4}}px;"><div class="session-node-title"><strong>${{escapeHtml(sessionTitleLine(session))}}</strong><span class="state">${{escapeHtml(formatStateLabel(session.status || 'planned'))}}</span></div><div class="session-node-meta">${{escapeHtml(sessionDetailLines(session))}}</div>${{childrenHtml}}</div>`;
+      }}
+
+      function renderSessionTree() {{
+        const sessions = latestResources.sessions || [];
+        const goals = latestResources.goals || [];
+        const container = document.getElementById('session-groups');
+        if (!sessions.length) {{
+          container.innerHTML = `<div class="session-group"><strong>${{escapeHtml(t('session_goal_summary'))}}</strong><span style="display:block;color:var(--muted);margin-top:8px;">${{escapeHtml(t('session_tree_empty'))}}</span></div>`;
+          return;
+        }}
+        const childrenByParent = {{}};
+        for (const session of sessions) {{
+          const key = session.parent_session_id || '__root__';
+          if (!childrenByParent[key]) childrenByParent[key] = [];
+          childrenByParent[key].push(session);
+        }}
+        for (const key of Object.keys(childrenByParent)) {{
+          childrenByParent[key].sort((left, right) => String(left.created_at || '').localeCompare(String(right.created_at || '')));
+        }}
+        const goalsWithSessions = Array.from(new Set(sessions.map((item) => item.goal_id)));
+        container.innerHTML = goalsWithSessions.map((goalId) => {{
+          const goal = goals.find((item) => item.id === goalId);
+          const goalSessions = sessions.filter((item) => item.goal_id === goalId);
+          const rootSessions = goalSessions.filter((item) => !item.parent_session_id);
+          const childCount = goalSessions.filter((item) => item.parent_session_id).length;
+          const treeHtml = rootSessions.map((item) => renderSessionNode(item, childrenByParent, 0)).join('');
+          return `<div class="session-group"><div class="session-group-header"><div><strong>${{escapeHtml(goal ? goal.title : goalId)}}</strong><span>${{escapeHtml(t('session_goal_summary'))}} · ${{goalSessions.length}} sessions</span></div><span class="pill">${{escapeHtml(t('session_children_count'))}} · ${{childCount}}</span></div><div class="session-tree">${{treeHtml}}</div></div>`;
+        }}).join('');
       }}
 
       function renderGoalActions() {{
@@ -1192,6 +1284,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         renderWorkbenchOptions();
         refreshEditorResourceOptions();
         renderActionCenter();
+        renderSessionTree();
         clearBootError();
       }}
 

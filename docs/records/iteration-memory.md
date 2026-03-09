@@ -31,6 +31,7 @@
 - 页面工作台已支持直接新建 Goal / SOP / Skill / Knowledge / Task
 - 页面编辑器已支持查看并修改既有 Goal / SOP / Skill / Knowledge / Task
 - 页面操作中心已支持 Goal 规划 / 派发 / 自动执行、Run 审批 / 执行、Task 验收、Knowledge Update apply/reject、Reflection evaluate/approve/reject/publish
+- 页面已新增主控 / 子会话树，可按 Goal 看到 supervisor 与 worker 层级结构；当前可视化已支持递归树展示，但实际编排深度仍主要是一层 worker
 
 ### 部分实现
 
