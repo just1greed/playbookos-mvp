@@ -209,6 +209,14 @@ TRANSLATIONS = {
         "dashboard_blockers_subtitle": "优先看卡住推进链路的 Goal、Run、Reflection 和工具缺口。",
         "dashboard_recommendations_title": "推荐动作区",
         "dashboard_recommendations_subtitle": "根据当前全局状态，给出下一步最值得打开的工作台和处理方向。",
+        "dashboard_active_tasks_title": "进行中任务区",
+        "dashboard_active_tasks_subtitle": "优先查看 ready / running / waiting_human 的任务，以及它们绑定的 Goal、SOP 和 Skill。",
+        "dashboard_task_pulse_title": "任务脉冲",
+        "dashboard_task_pulse_subtitle": "汇总任务队列、评审压力、执行状态和依赖阻塞。",
+        "dashboard_learning_feed_title": "自动迭代动态区",
+        "dashboard_learning_feed_subtitle": "查看最近的 reflection、knowledge update、发布中的 SOP 改进和新产生的草稿能力。",
+        "dashboard_learning_pulse_title": "学习脉冲",
+        "dashboard_learning_pulse_subtitle": "汇总待评测、待批准、待应用和已发布的学习项。",
         "route_focus_title": "重点摘要",
         "route_focus_subtitle": "围绕当前工作台节点，先看最重要的对象状态、缺口和待处理项。",
         "focus_total": "总量",
@@ -553,6 +561,14 @@ TRANSLATIONS = {
         "dashboard_blockers_subtitle": "See the goals, runs, reflections, and tooling gaps that are slowing the system first.",
         "dashboard_recommendations_title": "Recommended Actions",
         "dashboard_recommendations_subtitle": "Based on the global state, show the next workbench worth opening and the action worth taking.",
+        "dashboard_active_tasks_title": "Active Tasks",
+        "dashboard_active_tasks_subtitle": "Inspect ready, running, and waiting-human tasks first, along with their linked Goal, SOP, and Skill context.",
+        "dashboard_task_pulse_title": "Task Pulse",
+        "dashboard_task_pulse_subtitle": "Summarize queue pressure, review load, execution state, and dependency blockers.",
+        "dashboard_learning_feed_title": "Learning Feed",
+        "dashboard_learning_feed_subtitle": "Inspect recent reflections, knowledge updates, in-flight SOP improvements, and newly created draft capabilities.",
+        "dashboard_learning_pulse_title": "Learning Pulse",
+        "dashboard_learning_pulse_subtitle": "Summarize evaluation, approval, apply, and published learning signals.",
         "route_focus_title": "Key Highlights",
         "route_focus_subtitle": "See the most important states, gaps, and pending work for the current workbench first.",
         "focus_total": "Total",
@@ -1270,6 +1286,32 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         </div>
       </section>
 
+      <section class="section" id="dashboard-tasks-section" data-route-section>
+        <div class="dashboard-grid">
+          <article class="card list-card">
+            <div class="section-title"><h2 id="dashboard-active-tasks-title"></h2><span id="dashboard-active-tasks-subtitle"></span></div>
+            <div class="rows" id="dashboard-active-task-rows"></div>
+          </article>
+          <article class="card activity-card">
+            <div class="section-title"><h2 id="dashboard-task-pulse-title"></h2><span id="dashboard-task-pulse-subtitle"></span></div>
+            <div class="rows" id="dashboard-task-pulse-rows"></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" id="dashboard-learning-section" data-route-section>
+        <div class="dashboard-grid">
+          <article class="card list-card">
+            <div class="section-title"><h2 id="dashboard-learning-feed-title"></h2><span id="dashboard-learning-feed-subtitle"></span></div>
+            <div class="rows" id="dashboard-learning-feed-rows"></div>
+          </article>
+          <article class="card activity-card">
+            <div class="section-title"><h2 id="dashboard-learning-pulse-title"></h2><span id="dashboard-learning-pulse-subtitle"></span></div>
+            <div class="rows" id="dashboard-learning-pulse-rows"></div>
+          </article>
+        </div>
+      </section>
+
       <section class="section" id="settings-placeholder-section" data-route-section hidden>
         <article class="card workbench-card">
           <div class="section-title"><h2 data-i18n="route_placeholder_title"></h2><span data-i18n="route_placeholder_body"></span></div>
@@ -1334,7 +1376,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         system: {{ navKey: 'nav_versions', titleKey: 'page_system_title', subtitleKey: 'page_system_subtitle' }},
       }};
       const routeSections = {{
-        dashboard: ['dashboard-hero', 'dashboard-summary-section', 'dashboard-flow-section', 'dashboard-alerts-section', 'dashboard-api-section', 'action-center-section', 'supervisor-section', 'resource-peek-section', 'snapshot-section'],
+        dashboard: ['dashboard-hero', 'dashboard-summary-section', 'dashboard-flow-section', 'dashboard-alerts-section', 'dashboard-tasks-section', 'dashboard-learning-section', 'dashboard-api-section', 'action-center-section', 'supervisor-section', 'resource-peek-section', 'snapshot-section'],
         goals: ['route-focus-section', 'workbench-section', 'editor-section', 'action-center-section'],
         playbooks: ['route-focus-section', 'workbench-section', 'patch-review-section', 'editor-section'],
         skills: ['route-focus-section', 'workbench-section', 'authoring-section', 'skill-version-section', 'editor-section'],
@@ -1588,6 +1630,74 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         recommendationNode.innerHTML = recommendations.length ? recommendations.join('') : routeDetailRow(t('route_detail_empty'), [t('route_placeholder_body')], t('idle'));
       }}
 
+      function renderDashboardTaskSections() {{
+        const rowNode = document.getElementById('dashboard-active-task-rows');
+        const pulseNode = document.getElementById('dashboard-task-pulse-rows');
+        if (!rowNode || !pulseNode) return;
+        const goals = latestResources.goals || [];
+        const playbooks = latestResources.playbooks || [];
+        const skills = latestResources.skills || [];
+        const tasks = latestResources.tasks || [];
+        const runs = latestResources.runs || [];
+        const items = [...tasks]
+          .filter((item) => ['ready', 'running', 'waiting_human', 'review'].includes(String(item.status || '')))
+          .sort((left, right) => String(right.updated_at || right.created_at || '').localeCompare(String(left.updated_at || left.created_at || '')))
+          .slice(0, 6)
+          .map((item) => {{
+            const goal = goals.find((entry) => entry.id === item.goal_id);
+            const playbook = playbooks.find((entry) => entry.id === item.playbook_id);
+            const skill = skills.find((entry) => entry.id === item.assigned_skill_id);
+            return routeDetailRow(item.name || item.id, [
+              `${{t('detail_goal')}}: ${{goal ? (goal.title || goal.id) : 'n/a'}}`,
+              `${{t('detail_playbook')}}: ${{playbook ? (playbook.name || playbook.id) : 'n/a'}}`,
+              `${{t('detail_skill')}}: ${{skill ? (skill.name || skill.id) : 'n/a'}}`,
+            ], item.status || 'queued');
+          }});
+        const ready = tasks.filter((item) => item.status === 'ready').length;
+        const running = tasks.filter((item) => item.status === 'running').length;
+        const waiting = tasks.filter((item) => item.status === 'waiting_human').length;
+        const review = tasks.filter((item) => item.status === 'review').length;
+        const blocked = tasks.filter((item) => item.status === 'blocked').length;
+        const dependencyBlocked = tasks.filter((item) => (item.depends_on || []).length && item.status !== 'completed').length;
+        const failedRuns = runs.filter((item) => item.status === 'failed').length;
+        pulseNode.innerHTML = [
+          routeDetailRow('ready / running', [`ready: ${{ready}}`, `running: ${{running}}`], running ? 'running' : 'ready'),
+          routeDetailRow('review / waiting', [`review: ${{review}}`, `waiting_human: ${{waiting}}`], (review || waiting) ? 'review' : 'idle'),
+          routeDetailRow('blockers', [`blocked: ${{blocked}}`, `depends_on: ${{dependencyBlocked}}`, `failed runs: ${{failedRuns}}`], (blocked || failedRuns) ? 'blocked' : 'idle'),
+        ].join('');
+        rowNode.innerHTML = items.length ? items.join('') : routeDetailRow(t('route_detail_empty'), [t('route_placeholder_body')], t('idle'));
+      }}
+
+      function renderDashboardLearningSections() {{
+        const feedNode = document.getElementById('dashboard-learning-feed-rows');
+        const pulseNode = document.getElementById('dashboard-learning-pulse-rows');
+        if (!feedNode || !pulseNode) return;
+        const reflections = latestResources.reflections || [];
+        const updates = latestResources.knowledge_updates || [];
+        const skills = latestResources.skills || [];
+        const feed = [
+          ...[...reflections].sort((left, right) => String(right.updated_at || right.created_at || '').localeCompare(String(left.updated_at || left.created_at || ''))).slice(0, 3).map((item) => routeDetailRow(item.summary || item.id, [
+            `reflection: ${{item.eval_status || 'n/a'}} / ${{item.approval_status || 'n/a'}}`,
+            `run: ${{item.run_id || 'n/a'}}`,
+          ], item.eval_status || 'proposed')),
+          ...[...updates].sort((left, right) => String(right.updated_at || right.created_at || '').localeCompare(String(left.updated_at || left.created_at || ''))).slice(0, 3).map((item) => routeDetailRow(item.title || item.id, [
+            item.summary || 'n/a',
+            `${{t('detail_goal')}}: ${{item.goal_id || 'n/a'}}`,
+          ], item.status || 'proposed')),
+        ].slice(0, 6);
+        const proposedReflections = reflections.filter((item) => item.eval_status === 'proposed').length;
+        const publishedReflections = reflections.filter((item) => item.eval_status === 'published').length;
+        const proposedUpdates = updates.filter((item) => item.status === 'proposed').length;
+        const rejectedUpdates = updates.filter((item) => item.status === 'rejected').length;
+        const draftSkills = skills.filter((item) => item.status === 'draft').length;
+        pulseNode.innerHTML = [
+          routeDetailRow('reflection', [`proposed: ${{proposedReflections}}`, `published: ${{publishedReflections}}`], proposedReflections ? 'proposed' : 'idle'),
+          routeDetailRow('knowledge', [`proposed: ${{proposedUpdates}}`, `rejected: ${{rejectedUpdates}}`], proposedUpdates ? 'review' : 'idle'),
+          routeDetailRow('new drafts', [`skills: ${{draftSkills}}`, `updates: ${{updates.length}}`], draftSkills ? 'draft' : 'idle'),
+        ].join('');
+        feedNode.innerHTML = feed.length ? feed.join('') : routeDetailRow(t('route_detail_empty'), [t('route_placeholder_body')], t('idle'));
+      }}
+
       function renderSettingsPanels() {{
         const modelRows = document.getElementById('model-settings-rows');
         const globalRows = document.getElementById('global-settings-rows');
@@ -1723,6 +1833,14 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         document.getElementById('dashboard-blockers-subtitle').textContent = t('dashboard_blockers_subtitle');
         document.getElementById('dashboard-recommendations-title').textContent = t('dashboard_recommendations_title');
         document.getElementById('dashboard-recommendations-subtitle').textContent = t('dashboard_recommendations_subtitle');
+        document.getElementById('dashboard-active-tasks-title').textContent = t('dashboard_active_tasks_title');
+        document.getElementById('dashboard-active-tasks-subtitle').textContent = t('dashboard_active_tasks_subtitle');
+        document.getElementById('dashboard-task-pulse-title').textContent = t('dashboard_task_pulse_title');
+        document.getElementById('dashboard-task-pulse-subtitle').textContent = t('dashboard_task_pulse_subtitle');
+        document.getElementById('dashboard-learning-feed-title').textContent = t('dashboard_learning_feed_title');
+        document.getElementById('dashboard-learning-feed-subtitle').textContent = t('dashboard_learning_feed_subtitle');
+        document.getElementById('dashboard-learning-pulse-title').textContent = t('dashboard_learning_pulse_title');
+        document.getElementById('dashboard-learning-pulse-subtitle').textContent = t('dashboard_learning_pulse_subtitle');
         document.getElementById('footer-text').textContent = t('footer');
         document.getElementById('lang-zh').classList.toggle('active', currentLanguage === 'zh');
         document.getElementById('lang-en').classList.toggle('active', currentLanguage === 'en');
@@ -2919,6 +3037,8 @@ ${{t('skill_version_servers')}}: ${{(skill.required_mcp_servers || []).join(', '
         renderSummary(board);
         renderGlobalFlow();
         renderDashboardAlerts();
+        renderDashboardTaskSections();
+        renderDashboardLearningSections();
         renderResourceRows(payloads);
         renderRouteDetails();
         renderSettingsPanels();

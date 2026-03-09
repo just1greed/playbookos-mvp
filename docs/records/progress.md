@@ -210,3 +210,7 @@
 - 已继续推进前端重构第四、五阶段：`会话 / 自动迭代` 路由新增专属 `route detail` 内容区，`模型设置 / 全局设置 / 会话管理` 也开始展示实时摘要
 - `会话工作台` 现在会先展示最新 supervisor / worker 会话、绑定 task/run、child session 与 event 信号；`自动迭代工作台` 会先展示 reflection / knowledge update 流水线和待处理学习队列
 - 设置页不再只是静态占位卡：现已显示最近一次模型调用配置、当前 UI/API 状态和 session/event 实时计数
+
+- 已继续补完整局看板第三阶段：新增 `进行中任务区 / 自动迭代动态区`，首页现在会主动展示 ready/running/waiting_human 任务，以及最近的 reflection / knowledge update / draft capability 信号
+- 到目前为止，全局看板六块核心信息都已具备：系统摘要、流程总览、关键阻塞、推荐动作、进行中任务、自动迭代动态
+- 已补充 `tests/test_dashboard_unittest.py` 覆盖 `dashboard-tasks-section`、`dashboard-learning-section`、`renderDashboardTaskSections()` 与 `renderDashboardLearningSections()`
