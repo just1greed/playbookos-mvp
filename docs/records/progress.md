@@ -146,3 +146,6 @@
 - 已补上主控聚合会话刷新逻辑：supervisor 会按 Goal 自动汇总 task/run/acceptance/reflection/knowledge update/session/event 状态
 - 执行链路现在会在 worker 下生成可见子会话：`Context synthesis`、`AI execution`、`Supervisor verification`、`Reflection and learning`
 - Dashboard 已新增“主控聚合中心”，直接展示主进程收集、检测、学习与事件汇总结果
+- dispatch 现在会生成可见 `Dispatch wave` 会话，把同批 ready task 放进同一个并行波次父会话下
+- supervisor 现在会维护 `Supervisor arbitration` 子会话，并输出下一步推荐动作、待人工审批、待验收、待评测/发布学习项等仲裁结果
+- Dashboard 的主控聚合中心已扩展出仲裁区块，展示并行波次、推荐动作与待处理事项

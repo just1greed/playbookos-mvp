@@ -244,6 +244,7 @@ PYTHONPATH=src python3 -m playbookos.ui.preview_server --demo --port 8081
 现在还有专门的 “SOP 补丁审阅” 区，可集中查看 reflection proposal、变更清单、评测结果，以及 approve / reject / publish 操作。
 现在还新增了 “技能版本中心”，可集中查看 Skill 版本链、当前激活版本、回滚目标，以及 create-version / activate / deprecate / rollback 动作。
 现在页面还新增了 “主控聚合中心”，主进程会按 Goal 汇总子会话、Run、验收、复盘、知识更新与事件，同时 worker 下会展开 Context synthesis / AI execution / Supervisor verification / Reflection and learning 等多层子会话。
+现在又补上了“并行波次 + 主控仲裁”：dispatch 会生成可见的 `Dispatch wave` 批次会话，把同一批 ready task 挂到一个父会话下；supervisor 还会生成专门的 `Supervisor arbitration` 子会话，并在页面里显示下一步推荐动作、待审批项、待验收项、待发布 SOP 提案等主控决策信息。
 
 如果前端脚本启动失败，首页会在头部显示一个可见的错误面板，直接给出浏览器侧错误详情，避免再次出现只有外框没有内容的空白页。
 

@@ -98,6 +98,49 @@ def ensure_goal_supervisor_session(store: StoreProtocol, goal_id: str) -> Sessio
     return session
 
 
+def create_dispatch_wave_session(
+    store: StoreProtocol,
+    goal_id: str,
+    *,
+    task_ids: list[str],
+    queue_names: list[str] | None = None,
+) -> Session:
+    supervisor = ensure_goal_supervisor_session(store, goal_id)
+    existing_waves = [
+        session
+        for session in store.sessions.list()
+        if session.goal_id == goal_id
+        and session.parent_session_id == supervisor.id
+        and session.input_context.get("session_role") == "dispatch_wave"
+    ]
+    wave_index = len(existing_waves) + 1
+    wave = Session(
+        goal_id=goal_id,
+        parent_session_id=supervisor.id,
+        title=f"Dispatch wave · {wave_index}",
+        kind=SessionKind.WORKER,
+        status=SessionStatus.RUNNING,
+        objective="Coordinate a parallel batch of ready tasks",
+        input_context={
+            "session_role": "dispatch_wave",
+            "wave_index": wave_index,
+            "task_ids": task_ids,
+            "task_count": len(task_ids),
+            "queue_names": queue_names or [],
+        },
+        summary=f"Dispatching {len(task_ids)} ready task(s) in wave {wave_index}.",
+    )
+    store.sessions.save(wave)
+    append_event(
+        store,
+        entity_type="session",
+        entity_id=wave.id,
+        event_type="session.dispatch_wave_created",
+        payload={"goal_id": goal_id, "task_ids": task_ids, "wave_index": wave_index},
+    )
+    return wave
+
+
 def ensure_worker_session_for_run(store: StoreProtocol, run_id: str) -> Session:
     run = store.runs.get(run_id)
     if run.session_id:
@@ -105,11 +148,14 @@ def ensure_worker_session_for_run(store: StoreProtocol, run_id: str) -> Session:
 
     task = store.tasks.get(run.task_id)
     supervisor = ensure_goal_supervisor_session(store, task.goal_id)
+    parent_session_id = run.metrics.get("parent_session_id") if isinstance(run.metrics, dict) else None
+    if not parent_session_id:
+        parent_session_id = supervisor.id
     worker = Session(
         goal_id=task.goal_id,
         task_id=task.id,
         run_id=run.id,
-        parent_session_id=supervisor.id,
+        parent_session_id=parent_session_id,
         title=f"Worker · {task.name}",
         kind=SessionKind.WORKER,
         status=SessionStatus.PLANNED,
@@ -119,6 +165,7 @@ def ensure_worker_session_for_run(store: StoreProtocol, run_id: str) -> Session:
             "queue_name": task.queue_name,
             "approval_required": task.approval_required,
             "assigned_skill_id": task.assigned_skill_id,
+            "dispatch_wave_session_id": parent_session_id if parent_session_id != supervisor.id else None,
         },
     )
     store.sessions.save(worker)
@@ -129,7 +176,7 @@ def ensure_worker_session_for_run(store: StoreProtocol, run_id: str) -> Session:
         entity_type="session",
         entity_id=worker.id,
         event_type="session.worker_spawned",
-        payload={"goal_id": task.goal_id, "task_id": task.id, "run_id": run.id, "parent_session_id": supervisor.id},
+        payload={"goal_id": task.goal_id, "task_id": task.id, "run_id": run.id, "parent_session_id": parent_session_id},
     )
     return worker
 
@@ -253,6 +300,72 @@ def update_session_for_run(
     return session
 
 
+def _build_goal_arbitration(tasks: list[Any], runs: list[Any], reflections: list[Any], knowledge_updates: list[Any], acceptances: list[Any], sessions: list[Session]) -> dict[str, Any]:
+    queued_runs = [run for run in runs if run.status == RunStatus.QUEUED]
+    running_runs = [run for run in runs if run.status == RunStatus.RUNNING]
+    waiting_human_runs = [run for run in runs if run.status == RunStatus.WAITING_HUMAN]
+    review_tasks = [task for task in tasks if task.status == TaskStatus.REVIEW]
+    ready_tasks = [task for task in tasks if task.status == TaskStatus.READY]
+    blocked_tasks = [task for task in tasks if task.status in {TaskStatus.BLOCKED, TaskStatus.FAILED}]
+    proposed_reflections = [item for item in reflections if str(item.eval_status.value) == "proposed"]
+    approved_reflections = [item for item in reflections if str(item.eval_status.value) == "approved" and item.approval_status != "approved"]
+    proposed_knowledge_updates = [item for item in knowledge_updates if str(item.status.value) == "proposed"]
+    pending_acceptances = [task for task in review_tasks if not any(item.task_id == task.id and item.status == AcceptanceStatus.ACCEPTED for item in acceptances)]
+    dispatch_waves = [session for session in sessions if session.input_context.get("session_role") == "dispatch_wave"]
+
+    next_action = "stable"
+    recommendations: list[str] = []
+    if waiting_human_runs:
+        next_action = "human_approval"
+        recommendations.append(f"Approve or reject {len(waiting_human_runs)} run(s) waiting for human input")
+    if pending_acceptances:
+        if next_action == "stable":
+            next_action = "acceptance_review"
+        recommendations.append(f"Accept or reject {len(pending_acceptances)} reviewed task(s)")
+    if approved_reflections:
+        if next_action == "stable":
+            next_action = "publish_learning"
+        recommendations.append(f"Publish {len(approved_reflections)} approved SOP patch(es)")
+    if proposed_reflections:
+        if next_action == "stable":
+            next_action = "evaluate_learning"
+        recommendations.append(f"Evaluate {len(proposed_reflections)} reflection proposal(s)")
+    if proposed_knowledge_updates:
+        if next_action == "stable":
+            next_action = "knowledge_review"
+        recommendations.append(f"Review {len(proposed_knowledge_updates)} proposed knowledge update(s)")
+    if queued_runs:
+        if next_action == "stable":
+            next_action = "execute_queue"
+        recommendations.append(f"Execute {len(queued_runs)} queued run(s)")
+    if ready_tasks and not queued_runs and not running_runs and not waiting_human_runs:
+        if next_action == "stable":
+            next_action = "dispatch_ready_tasks"
+        recommendations.append(f"Dispatch {len(ready_tasks)} ready task(s) into the next wave")
+    if blocked_tasks and not recommendations:
+        next_action = "resolve_blockers"
+        recommendations.append(f"Resolve {len(blocked_tasks)} blocked or failed task(s)")
+    if not recommendations:
+        recommendations.append("System is stable; no immediate supervisor action required")
+
+    return {
+        "next_action": next_action,
+        "queued_run_ids": [run.id for run in queued_runs],
+        "running_run_ids": [run.id for run in running_runs],
+        "waiting_human_run_ids": [run.id for run in waiting_human_runs],
+        "review_task_ids": [task.id for task in review_tasks],
+        "ready_task_ids": [task.id for task in ready_tasks],
+        "blocked_task_ids": [task.id for task in blocked_tasks],
+        "pending_acceptance_task_ids": [task.id for task in pending_acceptances],
+        "proposed_reflection_ids": [item.id for item in proposed_reflections],
+        "approved_reflection_ids": [item.id for item in approved_reflections],
+        "proposed_knowledge_update_ids": [item.id for item in proposed_knowledge_updates],
+        "dispatch_wave_ids": [session.id for session in dispatch_waves],
+        "dispatch_wave_count": len(dispatch_waves),
+        "recommendations": recommendations,
+    }
+
+
 def refresh_goal_supervisor_session(store: StoreProtocol, goal_id: str) -> Session:
     goal = store.goals.get(goal_id)
     supervisor = ensure_goal_supervisor_session(store, goal_id)
@@ -290,6 +403,7 @@ def refresh_goal_supervisor_session(store: StoreProtocol, goal_id: str) -> Sessi
         "session_total": len(sessions),
         "child_session_total": len([session for session in sessions if session.parent_session_id]),
         "worker_session_total": len([session for session in sessions if session.kind == SessionKind.WORKER]),
+        "dispatch_wave_total": len([session for session in sessions if session.input_context.get("session_role") == "dispatch_wave"]),
         "event_count": len(events),
         "waiting_human_runs": len([run for run in runs if run.status == RunStatus.WAITING_HUMAN]),
         "review_tasks": len([task for task in tasks if task.status == TaskStatus.REVIEW]),
@@ -299,11 +413,14 @@ def refresh_goal_supervisor_session(store: StoreProtocol, goal_id: str) -> Sessi
         "latest_knowledge_update_id": knowledge_updates[-1].id if knowledge_updates else None,
     }
 
+    arbitration = _build_goal_arbitration(tasks, runs, reflections, knowledge_updates, acceptances, sessions)
+
     summary_parts = [
         f"{len([task for task in tasks if task.status in {TaskStatus.DONE, TaskStatus.LEARNED}])}/{len(tasks)} tasks closed" if tasks else "0 tasks",
         f"{aggregate['waiting_human_runs']} waiting human",
         f"{len(reflections)} reflections",
         f"{len(knowledge_updates)} knowledge updates",
+        f"next: {arbitration['next_action']}",
     ]
     latest_events = [event.event_type for event in sorted(events, key=lambda item: (item.created_at.isoformat(), item.id))[-4:]]
     changed = (
@@ -311,6 +428,7 @@ def refresh_goal_supervisor_session(store: StoreProtocol, goal_id: str) -> Sessi
         or supervisor.summary != " · ".join(summary_parts)
         or supervisor.output_context.get("aggregate") != aggregate
         or supervisor.output_context.get("latest_events") != latest_events
+        or supervisor.output_context.get("arbitration") != arbitration
     )
 
     supervisor.status = _goal_to_session_status(goal.status)
@@ -319,10 +437,23 @@ def refresh_goal_supervisor_session(store: StoreProtocol, goal_id: str) -> Sessi
         **supervisor.output_context,
         "aggregate": aggregate,
         "latest_events": latest_events,
+        "arbitration": arbitration,
         "goal_title": goal.title,
     }
     supervisor.updated_at = utc_now()
     store.sessions.save(supervisor)
+
+    record_child_session(
+        store,
+        goal_id=goal_id,
+        parent_session_id=supervisor.id,
+        title="Supervisor arbitration",
+        objective="Aggregate execution signals and decide the next visible action",
+        input_context={"session_role": "supervisor_arbitration", "goal_status": goal.status.value},
+        output_context=arbitration,
+        summary=(arbitration.get("recommendations") or ["System stable"])[0],
+        status=SessionStatus.WAITING_HUMAN if arbitration.get("next_action") in {"human_approval", "acceptance_review", "publish_learning", "evaluate_learning", "knowledge_review"} else SessionStatus.RUNNING,
+    )
 
     if changed:
         append_event(

@@ -28,11 +28,13 @@ class SupervisorFlowTestCase(unittest.TestCase):
         self.assertEqual(len(dispatch.created_run_ids), 1)
         sessions = store.sessions.list()
         self.assertEqual(len([item for item in sessions if item.kind == SessionKind.SUPERVISOR]), 1)
-        self.assertEqual(len([item for item in sessions if item.kind == SessionKind.WORKER]), 1)
+        self.assertGreaterEqual(len([item for item in sessions if item.kind == SessionKind.WORKER]), 1)
 
         run = store.runs.get(dispatch.created_run_ids[0])
         worker = store.sessions.get(run.session_id)
+        wave = next(item for item in sessions if item.input_context.get("session_role") == "dispatch_wave")
         self.assertEqual(worker.run_id, run.id)
+        self.assertEqual(worker.parent_session_id, wave.id)
         self.assertEqual(worker.status, SessionStatus.PLANNED)
 
         event_types = {event.event_type for event in store.events.list()}
@@ -83,6 +85,36 @@ class SupervisorFlowTestCase(unittest.TestCase):
         self.assertIn("run.execution_finished", event_types)
         self.assertIn("acceptance.recorded", event_types)
         self.assertIn("task.accepted", event_types)
+
+    def test_dispatch_creates_parallel_wave_and_supervisor_arbitration(self) -> None:
+        store = InMemoryStore()
+        goal = store.goals.save(Goal(title="Wave goal", objective="Dispatch a visible batch"))
+        store.playbooks.save(
+            Playbook(
+                name="Wave playbook",
+                source_kind="markdown",
+                source_uri="file:///tmp/wave.md",
+                goal_id=goal.id,
+                compiled_spec={"steps": ["Prepare", "Execute", "Review"]},
+            )
+        )
+
+        plan_goal_in_store(store, goal.id)
+        dispatch = dispatch_goal_in_store(store, goal.id)
+
+        sessions = store.sessions.list()
+        supervisor = next(item for item in sessions if item.kind == SessionKind.SUPERVISOR)
+        wave = next(item for item in sessions if item.input_context.get("session_role") == "dispatch_wave")
+        arbitration = next(item for item in sessions if item.title == "Supervisor arbitration")
+        run = store.runs.get(dispatch.created_run_ids[0])
+        worker = store.sessions.get(run.session_id)
+
+        self.assertEqual(worker.parent_session_id, wave.id)
+        self.assertEqual(wave.parent_session_id, supervisor.id)
+        self.assertEqual(arbitration.parent_session_id, supervisor.id)
+        self.assertEqual(supervisor.output_context["aggregate"]["dispatch_wave_total"], 1)
+        self.assertIn("arbitration", supervisor.output_context)
+        self.assertTrue(supervisor.output_context["arbitration"]["recommendations"])
 
 
 if __name__ == "__main__":

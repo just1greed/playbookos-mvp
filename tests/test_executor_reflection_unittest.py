@@ -113,7 +113,7 @@ class ExecutorReflectionTestCase(unittest.TestCase):
 
         sessions = [session for session in store.sessions.list() if session.goal_id == goal.id]
         supervisor = next(session for session in sessions if session.kind.value == "supervisor")
-        worker = next(session for session in sessions if session.run_id == run_id and session.parent_session_id == supervisor.id)
+        worker = next(session for session in sessions if session.run_id == run_id)
         worker_children = [session for session in sessions if session.parent_session_id == worker.id]
 
         self.assertGreaterEqual(len(worker_children), 3)

@@ -58,6 +58,7 @@ TRANSLATIONS = {
         "session_task_label": "任务",
         "session_run_label": "运行",
         "session_summary_label": "摘要",
+        "session_role_label": "会话角色",
         "supervisor_center_title": "主控聚合中心",
         "supervisor_center_subtitle": "主进程按 Goal 汇总子会话、Run、验收、复盘、知识更新与事件，帮助你看见编排是否闭环",
         "supervisor_center_empty": "当前还没有主控聚合数据。",
@@ -65,6 +66,9 @@ TRANSLATIONS = {
         "supervisor_center_runs": "运行结果",
         "supervisor_center_learning": "学习闭环",
         "supervisor_center_events": "最新事件",
+        "supervisor_center_arbitration": "主控仲裁",
+        "supervisor_center_recommendations": "建议动作",
+        "supervisor_center_waves": "并行波次",
         "supervisor_center_waiting": "待人工",
         "supervisor_center_closed_tasks": "已关闭任务",
         "patch_review_title": "SOP 补丁审阅",
@@ -241,6 +245,7 @@ TRANSLATIONS = {
         "session_task_label": "Task",
         "session_run_label": "Run",
         "session_summary_label": "Summary",
+        "session_role_label": "Session role",
         "supervisor_center_title": "Supervisor Aggregation Center",
         "supervisor_center_subtitle": "The main process aggregates child sessions, runs, acceptance, reflection, knowledge updates, and events by goal so orchestration stays visible.",
         "supervisor_center_empty": "No supervisor aggregation data yet.",
@@ -248,6 +253,9 @@ TRANSLATIONS = {
         "supervisor_center_runs": "Run Outcomes",
         "supervisor_center_learning": "Learning Loop",
         "supervisor_center_events": "Latest Events",
+        "supervisor_center_arbitration": "Supervisor Arbitration",
+        "supervisor_center_recommendations": "Recommended Actions",
+        "supervisor_center_waves": "Parallel Waves",
         "supervisor_center_waiting": "Waiting Human",
         "supervisor_center_closed_tasks": "Closed Tasks",
         "patch_review_title": "SOP Patch Review",
@@ -1135,6 +1143,8 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
           `${{t('session_kind_label')}}: ${{session.kind || ''}}`,
           `${{t('session_status_label')}}: ${{session.status || ''}}`,
         ];
+        const sessionRole = session.input_context && session.input_context.session_role;
+        if (sessionRole) lines.push(`${{t('session_role_label')}}: ${{sessionRole}}`);
         if (session.task_id) lines.push(`${{t('session_task_label')}}: ${{session.task_id}}`);
         if (session.run_id) lines.push(`${{t('session_run_label')}}: ${{session.run_id}}`);
         if (session.summary) lines.push(`${{t('session_summary_label')}}: ${{session.summary}}`);

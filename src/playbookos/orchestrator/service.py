@@ -3,8 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from playbookos.api.store import NotFoundError, StoreProtocol
-from playbookos.domain.models import GoalStatus, Run, RunStatus, Task, TaskStatus, utc_now
-from playbookos.supervisor import append_event, ensure_goal_supervisor_session, ensure_worker_session_for_run
+from playbookos.domain.models import GoalStatus, Run, RunStatus, SessionStatus, Task, TaskStatus, utc_now
+from playbookos.supervisor import append_event, create_dispatch_wave_session, ensure_goal_supervisor_session, ensure_worker_session_for_run, refresh_goal_supervisor_session
 
 ACTIVE_RUN_STATUSES = {RunStatus.QUEUED, RunStatus.RUNNING, RunStatus.WAITING_HUMAN}
 TERMINAL_TASK_STATUSES = {TaskStatus.DONE, TaskStatus.LEARNED}
@@ -72,17 +72,46 @@ class GoalOrchestrator:
         task_map = {task.id: task for task in tasks}
         active_runs_by_task = self._active_runs_by_task(store, tasks)
 
-        for task in sorted(tasks, key=lambda item: (item.priority, item.created_at)):
-            if task.status != TaskStatus.READY:
-                continue
-            if task.id in active_runs_by_task:
-                continue
+        dispatch_candidates = [
+            task
+            for task in sorted(tasks, key=lambda item: (item.priority, item.created_at))
+            if task.status == TaskStatus.READY and task.id not in active_runs_by_task
+        ]
+        dispatch_wave = None
+        if dispatch_candidates:
+            dispatch_wave = create_dispatch_wave_session(
+                store,
+                goal_id,
+                task_ids=[task.id for task in dispatch_candidates],
+                queue_names=sorted({task.queue_name for task in dispatch_candidates}),
+            )
 
+        for task in dispatch_candidates:
             run_status = RunStatus.WAITING_HUMAN if task.approval_required else RunStatus.QUEUED
-            run = Run(task_id=task.id, worker_type="temporal-worker", status=run_status)
+            run = Run(
+                task_id=task.id,
+                worker_type="temporal-worker",
+                status=run_status,
+                metrics={
+                    "parent_session_id": dispatch_wave.id if dispatch_wave is not None else supervisor.id,
+                    "dispatch_wave_session_id": dispatch_wave.id if dispatch_wave is not None else None,
+                    "dispatch_wave_index": dispatch_wave.input_context.get("wave_index") if dispatch_wave is not None else None,
+                },
+            )
             store.runs.save(run)
             ensure_worker_session_for_run(store, run.id)
-            append_event(store, entity_type="run", entity_id=run.id, event_type="run.created", payload={"goal_id": goal_id, "task_id": task.id, "approval_required": task.approval_required})
+            append_event(
+                store,
+                entity_type="run",
+                entity_id=run.id,
+                event_type="run.created",
+                payload={
+                    "goal_id": goal_id,
+                    "task_id": task.id,
+                    "approval_required": task.approval_required,
+                    "dispatch_wave_session_id": dispatch_wave.id if dispatch_wave is not None else None,
+                },
+            )
 
             task.status = TaskStatus.WAITING_HUMAN if task.approval_required else TaskStatus.RUNNING
             task.updated_at = utc_now()
@@ -93,6 +122,18 @@ class GoalOrchestrator:
             if task.approval_required:
                 waiting_human_task_ids.append(task.id)
 
+        if dispatch_wave is not None:
+            dispatch_wave.status = SessionStatus.WAITING_HUMAN if waiting_human_task_ids and len(waiting_human_task_ids) == len(dispatch_candidates) else SessionStatus.RUNNING
+            dispatch_wave.summary = f"Wave {dispatch_wave.input_context.get('wave_index')} dispatched {len(dispatch_candidates)} task(s), waiting human: {len(waiting_human_task_ids)}."
+            dispatch_wave.output_context = {
+                **dispatch_wave.output_context,
+                "run_ids": created_run_ids,
+                "waiting_human_task_ids": waiting_human_task_ids,
+                "dispatched_task_ids": dispatched_task_ids,
+            }
+            dispatch_wave.updated_at = utc_now()
+            store.sessions.save(dispatch_wave)
+
         goal_status = self._recalculate_goal_status(store, goal_id)
         goal.status = goal_status
         goal.updated_at = utc_now()
@@ -100,6 +141,7 @@ class GoalOrchestrator:
 
         tasks = self._goal_tasks(store, goal_id)
         temporal_spec = self._build_temporal_spec(goal_id, tasks)
+        refresh_goal_supervisor_session(store, goal_id)
         return GoalDispatchResult(
             goal_id=goal_id,
             promoted_task_ids=promoted_task_ids,
@@ -130,6 +172,7 @@ class GoalOrchestrator:
             store.goals.save(goal)
             dispatch_result.goal_status = goal_status
 
+        refresh_goal_supervisor_session(store, task.goal_id)
         return TaskCompletionResult(
             task_id=task.id,
             goal_id=task.goal_id,
