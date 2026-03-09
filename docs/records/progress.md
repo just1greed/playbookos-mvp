@@ -271,3 +271,6 @@
 - 已重写仓库根 `README.md`，把文档改为中英双语，并补齐项目定位、当前真实能力、快速启动、OpenClaw / 外部 agent 接入方式、关键接口、限制与文档索引
 
 - 已在 `README.md` 中补充 OpenClaw / 外部 agent 的 `5 分钟跑通示例`，包含 `manifest -> context -> intake -> delegation profile -> apply` 的完整 curl 流程
+
+- 已按“中文主 README + 英文独立 README-EN”重构仓库说明文档，去掉同段中英混排，并保持两份文档的结构一致
+- 已新增 `scripts/openclaw_demo.sh`，把 OpenClaw / 外部 agent 的演示升级为可执行脚本：自动完成 `manifest -> context -> intake -> delegation profile -> apply`
