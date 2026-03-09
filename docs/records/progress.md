@@ -269,3 +269,5 @@
 - 已把 agent 治理与错误日志等后续细节统一沉淀进文档 TODO，并明确当前策略是 `runnable-first`：先确保完整主链跑通，再逐步补日志、审计、回滚与托管巡检
 
 - 已重写仓库根 `README.md`，把文档改为中英双语，并补齐项目定位、当前真实能力、快速启动、OpenClaw / 外部 agent 接入方式、关键接口、限制与文档索引
+
+- 已在 `README.md` 中补充 OpenClaw / 外部 agent 的 `5 分钟跑通示例`，包含 `manifest -> context -> intake -> delegation profile -> apply` 的完整 curl 流程

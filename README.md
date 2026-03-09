@@ -134,6 +134,87 @@ curl -s http://127.0.0.1:8000/api/agent/context
 - 中文：当人类上传一份 Markdown SOP 时，agent 应优先把原始 SOP 发给 `/api/agent/intake`，让系统先产出结构化操作计划、Skill 建议、MCP 缺口和可复用候选，再决定是否 apply。
 - English: When a human uploads a Markdown SOP, the agent should first send it to `/api/agent/intake` so the system can produce a structured operation plan, Skill suggestions, MCP gaps, and reuse candidates before deciding whether to apply changes.
 
+### 5 分钟跑通示例 / 5-Minute Runnable Example
+
+- 中文：下面这组命令演示一个 OpenClaw-like agent 如何把一份 Markdown SOP 变成 `Playbook + draft Skill + draft MCP`。
+- English: The commands below show how an OpenClaw-like agent can turn one Markdown SOP into a `Playbook + draft Skill + draft MCP`.
+
+```bash
+cd /home/greed/playbookos-mvp
+
+cat > /tmp/weekly-report.md <<'EOF'
+# Weekly Report SOP
+
+1. Research competitor updates in Notion
+2. Draft the weekly summary
+3. Publish the summary to Slack
+EOF
+
+# 1) Discover the system
+curl -s http://127.0.0.1:8000/api/agent/manifest
+
+# 2) Sync the current board and blocked items
+curl -s http://127.0.0.1:8000/api/agent/context
+
+# 3) Ask PlaybookOS to analyze the human request + Markdown SOP
+curl -s http://127.0.0.1:8000/api/agent/intake \
+  -H 'Content-Type: application/json' \
+  -d @- <<'EOF'
+{
+  "message": "Import this SOP and prepare the required skill and MCP setup",
+  "resource_name": "Weekly Report SOP",
+  "markdown_sop": "# Weekly Report SOP\n\n1. Research competitor updates in Notion\n2. Draft the weekly summary\n3. Publish the summary to Slack\n"
+}
+EOF
+
+# 4) Create a delegation profile for the external agent
+curl -s http://127.0.0.1:8000/api/delegation-profiles \
+  -H 'Content-Type: application/json' \
+  -d @- <<'EOF'
+{
+  "name": "Managed OpenClaw Operator",
+  "description": "Allow SOP ingestion and draft capability creation",
+  "operator_agent_id": "openclaw-main",
+  "agent_type": "openclaw",
+  "allowed_endpoints": [
+    "/api/playbooks/ingest",
+    "/api/playbooks/{playbook_id}/skill-drafts",
+    "/api/playbooks/{playbook_id}/mcp-drafts"
+  ],
+  "approval_required_endpoints": [],
+  "scope_goal_ids": [],
+  "max_operations_per_apply": 6,
+  "status": "active",
+  "metadata": {"mode": "managed"}
+}
+EOF
+
+# 5) Apply the recommended builder operations
+# Replace DELEGATION_PROFILE_ID with the id returned from step 4.
+curl -s http://127.0.0.1:8000/api/agent/apply \
+  -H 'Content-Type: application/json' \
+  -d @- <<'EOF'
+{
+  "message": "Import this SOP and prepare the required skill and MCP setup",
+  "resource_name": "Weekly Report SOP",
+  "markdown_sop": "# Weekly Report SOP\n\n1. Research competitor updates in Notion\n2. Draft the weekly summary\n3. Publish the summary to Slack\n",
+  "agent_id": "openclaw-main",
+  "delegation_profile_id": "DELEGATION_PROFILE_ID",
+  "operation_ids": [
+    "ingest_playbook",
+    "create_skill_draft_0",
+    "create_mcp_draft_notion"
+  ]
+}
+EOF
+```
+
+- 中文：如果先看第 3 步的返回，通常会在 `recommended_operations` 里看到类似 `ingest_playbook`、`create_skill_draft_0`、`create_mcp_draft_*` 的操作 id；正式接入时，建议 agent 从这里读取，而不是把 id 硬编码。
+- English: If you inspect the step-3 response first, you will usually see operation ids like `ingest_playbook`, `create_skill_draft_0`, and `create_mcp_draft_*` under `recommended_operations`; in production, the agent should read these ids dynamically instead of hardcoding them.
+
+- 中文：成功后，`/api/agent/apply` 会返回 `created_resources`，其中应至少包含 `playbook`、`skill`、`mcp_server` 三类对象。
+- English: On success, `/api/agent/apply` returns `created_resources`, which should include at least `playbook`, `skill`, and `mcp_server`.
+
 ### 相关文件 / Relevant Files
 
 - `skills/playbookos-operator/SKILL.md`
