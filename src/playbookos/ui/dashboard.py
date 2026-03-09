@@ -115,6 +115,8 @@ TRANSLATIONS = {
         "editor_load": "载入",
         "editor_save": "保存修改",
         "editor_reset": "重置",
+        "boot_error_title": "前端启动失败",
+        "boot_error_body": "页面脚本发生错误，详情如下。",
         "section_labels": {
             "goals": "目标",
             "playbooks": "SOP",
@@ -225,6 +227,8 @@ TRANSLATIONS = {
         "editor_load": "Load",
         "editor_save": "Save changes",
         "editor_reset": "Reset",
+        "boot_error_title": "Frontend boot failed",
+        "boot_error_body": "The page script hit an error. Details are shown below.",
         "section_labels": {
             "goals": "Goals",
             "playbooks": "SOPs",
@@ -385,6 +389,11 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
       pre {{ margin: 0; padding: 18px; border-radius: 18px; overflow: auto; font-size: 13px; color: #cbd5e1; background: rgba(2, 6, 23, 0.74); border: 1px solid rgba(148, 163, 184, 0.08); }}
       .footer {{ margin-top: 20px; color: var(--muted); font-size: 13px; text-align: center; }}
       .editor-meta {{ margin-top: 12px; padding: 14px; border-radius: 14px; background: rgba(2, 6, 23, 0.74); border: 1px solid rgba(148, 163, 184, 0.12); color: var(--muted); font-size: 13px; line-height: 1.7; white-space: pre-wrap; }}
+      .boot-error {{ display: none; margin-top: 16px; padding: 16px 18px; border-radius: 18px; background: rgba(127, 29, 29, 0.28); border: 1px solid rgba(248, 113, 113, 0.28); color: #fecaca; box-shadow: var(--shadow); }}
+      .boot-error.visible {{ display: block; }}
+      .boot-error strong {{ display: block; font-size: 15px; margin-bottom: 6px; }}
+      .boot-error small {{ display: block; color: #fecaca; opacity: 0.9; }}
+      .boot-error-detail {{ margin-top: 12px; white-space: pre-wrap; word-break: break-word; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; line-height: 1.6; }}
       @media (max-width: 980px) {{
         .hero-meta {{ grid-template-columns: 1fr; }}
         .endpoint-card, .list-card, .activity-card, .form-card {{ grid-column: span 12; }}
@@ -420,6 +429,11 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
           <div class="meta-card"><div class="eyebrow" id="total-resources-label"></div><strong id="resource-total">0</strong><span id="total-resources-desc"></span></div>
           <div class="meta-card"><div class="eyebrow" id="blocked-signals-label"></div><strong id="blocked-total">0</strong><span id="blocked-signals-desc"></span></div>
           <div class="meta-card"><div class="eyebrow" id="learning-signals-label"></div><strong id="learning-total">0</strong><span id="learning-signals-desc"></span></div>
+        </div>
+        <div class="boot-error" id="boot-error">
+          <strong id="boot-error-title"></strong>
+          <small id="boot-error-body"></small>
+          <div class="boot-error-detail" id="boot-error-detail"></div>
         </div>
       </section>
 
@@ -597,7 +611,30 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
       }}
 
       function splitLines(value) {{
-        return String(value || '').split(/\n|,/).map((item) => item.trim()).filter(Boolean);
+        return String(value || '').split(/\\n|,/).map((item) => item.trim()).filter(Boolean);
+      }}
+
+      function bootText(key, fallback) {{
+        return (translations[currentLanguage] && translations[currentLanguage][key]) || (translations.zh && translations.zh[key]) || fallback;
+      }}
+
+      function clearBootError() {{
+        const panel = document.getElementById('boot-error');
+        if (!panel) return;
+        panel.classList.remove('visible');
+        document.getElementById('boot-error-title').textContent = '';
+        document.getElementById('boot-error-body').textContent = '';
+        document.getElementById('boot-error-detail').textContent = '';
+      }}
+
+      function showBootError(error) {{
+        const panel = document.getElementById('boot-error');
+        if (!panel) return;
+        panel.classList.add('visible');
+        document.getElementById('boot-error-title').textContent = bootText('boot_error_title', 'Frontend boot failed');
+        document.getElementById('boot-error-body').textContent = bootText('boot_error_body', 'The page script hit an error. Details are shown below.');
+        const detail = error && error.stack ? error.stack : error && error.message ? error.message : String(error || 'Unknown error');
+        document.getElementById('boot-error-detail').textContent = detail;
       }}
 
       function buildManualUri(kind, name) {{
@@ -617,6 +654,8 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         localStorage.setItem('playbookos-language', currentLanguage);
         document.documentElement.lang = t('html_lang');
         document.title = t('page_title');
+        document.getElementById('boot-error-title').textContent = bootText('boot_error_title', 'Frontend boot failed');
+        document.getElementById('boot-error-body').textContent = bootText('boot_error_body', 'The page script hit an error. Details are shown below.');
         document.getElementById('hero-badge').textContent = t('badge');
         document.getElementById('hero-title').textContent = t('hero_title');
         document.getElementById('hero-body').textContent = t('hero_body');
@@ -912,6 +951,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         renderResourceRows(payloads);
         renderWorkbenchOptions();
         refreshEditorResourceOptions();
+        clearBootError();
       }}
 
       async function handleGoalSubmit(event) {{
@@ -1022,6 +1062,14 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
       document.getElementById('knowledge-form').addEventListener('submit', (event) => handleWorkbenchSubmit(handleKnowledgeSubmit, event));
       document.getElementById('task-form').addEventListener('submit', (event) => handleWorkbenchSubmit(handleTaskSubmit, event));
 
+      window.addEventListener('error', (event) => {{
+        showBootError(event.error || event.message);
+      }});
+
+      window.addEventListener('unhandledrejection', (event) => {{
+        showBootError(event.reason);
+      }});
+
       document.getElementById('refresh-board').addEventListener('click', async () => {{
         const button = document.getElementById('refresh-board');
         button.textContent = currentLanguage === 'zh' ? '刷新中…' : 'Refreshing…';
@@ -1039,6 +1087,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
       applyLanguage(currentLanguage);
       document.getElementById('resource-rows').innerHTML = `<div class="row"><div><strong>${{escapeHtml(t('loading_resources_title'))}}</strong><small>${{escapeHtml(t('loading_resources_body'))}}</small></div><span class="state">${{escapeHtml(t('booting'))}}</span></div>`;
       refresh().catch((error) => {{
+        showBootError(error);
         document.getElementById('resource-rows').innerHTML = `<div class="row"><div><strong>${{escapeHtml(t('api_unavailable_title'))}}</strong><small>${{escapeHtml(error.message)}}</small></div><span class="state">${{escapeHtml(t('offline'))}}</span></div>`;
       }});
     </script>

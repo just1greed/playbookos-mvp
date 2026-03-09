@@ -239,6 +239,8 @@ PYTHONPATH=src python3 -m playbookos.ui.preview_server --demo --port 8081
 
 当前 8081 预览页已内置工作台表单，可直接创建 Goal、SOP、Skill、Knowledge 和 Task，并支持选择已有实体查看与编辑；知识更新提案会在资源区可见。
 
+如果前端脚本启动失败，首页会在头部显示一个可见的错误面板，直接给出浏览器侧错误详情，避免再次出现只有外框没有内容的空白页。
+
 ## 下一步
 
 下一步可以继续补：

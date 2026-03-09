@@ -129,3 +129,9 @@
 - Dashboard 已把 `knowledge_updates` 纳入资源可视区，Task 创建表单也可直接绑定 `knowledge_base_ids`
 - 已新增 `tests/test_knowledge_update_unittest.py`，并扩充 executor/reflection/dashboard/preview 测试
 - 已完成 `PYTHONPATH=src python3 -m unittest discover -s tests -p 'test*_unittest.py'`，共 25 项测试通过
+
+- 已修复 Dashboard 空白页问题，根因是生成 JS 时 `splitLines` 的换行正则被错误转义，导致浏览器脚本启动即报语法错误
+- Dashboard 现已新增页面内可见的 boot error 面板；如果前端再报错，用户可直接看到错误详情而不是只看到空框架
+- 已使用 `node --check` 校验生成后的前端脚本语法
+- 已使用 `PYTHONPATH=src python3 -m unittest discover -s tests -p 'test*_unittest.py'` 完成全量回归，25 项测试通过
+- 已重启本地 demo 预览服务到 `http://127.0.0.1:8081/` 并确认页面已渲染出“控制看板 / 配置工作台”等实际内容
