@@ -1,4 +1,4 @@
-from .models import KnowledgeBase, Acceptance, Artifact, Event, Goal, MCPServer, Playbook, Reflection, Run, Session, Skill, Task
+from .models import KnowledgeBase, KnowledgeUpdate, Acceptance, Artifact, Event, Goal, MCPServer, Playbook, Reflection, Run, Session, Skill, Task
 
 __all__ = [
     "Acceptance",
@@ -6,6 +6,7 @@ __all__ = [
     "Event",
     "Goal",
     "KnowledgeBase",
+    "KnowledgeUpdate",
     "MCPServer",
     "Session",
     "Playbook",

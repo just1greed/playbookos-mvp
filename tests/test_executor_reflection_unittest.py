@@ -59,6 +59,7 @@ class ExecutorReflectionTestCase(unittest.TestCase):
         self.assertEqual(reflection.proposal_type, "sop_patch")
         self.assertEqual(reflection.target, "playbook")
         self.assertIn("changes", reflection.reflection.proposal)
+        self.assertIsNotNone(reflection.knowledge_update_id)
 
     def test_autopilot_drives_similar_tasks_and_learning_summary(self) -> None:
         store = InMemoryStore()
@@ -89,6 +90,8 @@ class ExecutorReflectionTestCase(unittest.TestCase):
         self.assertEqual(store.goals.get(goal.id).status, GoalStatus.BLOCKED)
         self.assertGreaterEqual(learning.run_count, 3)
         self.assertGreaterEqual(len(learning.suggested_playbook_patches), 2)
+        self.assertGreaterEqual(len(learning.knowledge_update_ids), 2)
+        self.assertGreaterEqual(len(learning.suggested_knowledge_updates), 2)
 
 
 if __name__ == "__main__":

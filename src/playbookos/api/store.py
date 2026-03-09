@@ -4,7 +4,7 @@ from collections import Counter
 from threading import RLock
 from typing import Generic, Protocol, TypeVar
 
-from playbookos.domain.models import Acceptance, Artifact, Event, Goal, KnowledgeBase, Playbook, Reflection, Run, Session, Skill, Task
+from playbookos.domain.models import Acceptance, Artifact, Event, Goal, KnowledgeBase, KnowledgeUpdate, Playbook, Reflection, Run, Session, Skill, Task
 
 EntityT = TypeVar("EntityT")
 
@@ -26,6 +26,7 @@ class StoreProtocol(Protocol):
     playbooks: RepositoryProtocol[Playbook]
     skills: RepositoryProtocol[Skill]
     knowledge_bases: RepositoryProtocol[KnowledgeBase]
+    knowledge_updates: RepositoryProtocol[KnowledgeUpdate]
     tasks: RepositoryProtocol[Task]
     sessions: RepositoryProtocol[Session]
     runs: RepositoryProtocol[Run]
@@ -66,6 +67,7 @@ class InMemoryStore:
         self.playbooks = InMemoryRepository[Playbook]()
         self.skills = InMemoryRepository[Skill]()
         self.knowledge_bases = InMemoryRepository[KnowledgeBase]()
+        self.knowledge_updates = InMemoryRepository[KnowledgeUpdate]()
         self.tasks = InMemoryRepository[Task]()
         self.sessions = InMemoryRepository[Session]()
         self.runs = InMemoryRepository[Run]()
@@ -79,6 +81,7 @@ class InMemoryStore:
         playbook_counts = Counter(playbook.status.value for playbook in self.playbooks.list())
         skill_counts = Counter(skill.status.value for skill in self.skills.list())
         knowledge_counts = Counter(item.status.value for item in self.knowledge_bases.list())
+        knowledge_update_counts = Counter(item.status.value for item in self.knowledge_updates.list())
         task_counts = Counter(task.status.value for task in self.tasks.list())
         session_counts = Counter(session.status.value for session in self.sessions.list())
         run_counts = Counter(run.status.value for run in self.runs.list())
@@ -91,6 +94,7 @@ class InMemoryStore:
             "playbooks": dict(playbook_counts),
             "skills": dict(skill_counts),
             "knowledge_bases": dict(knowledge_counts),
+            "knowledge_updates": dict(knowledge_update_counts),
             "tasks": dict(task_counts),
             "sessions": dict(session_counts),
             "runs": dict(run_counts),

@@ -16,6 +16,7 @@ class StepBlueprint:
     name: str
     description: str
     depends_on_refs: list[str | int] = field(default_factory=list)
+    knowledge_base_ids: list[str] = field(default_factory=list)
     assigned_skill_id: str | None = None
     approval_required: bool = False
     queue_name: str = "default"
@@ -107,6 +108,7 @@ class PlaybookPlanner:
             name=name,
             description=description,
             depends_on_refs=depends_on_refs,
+            knowledge_base_ids=list(raw_step.get("knowledge_base_ids", [])),
             assigned_skill_id=raw_step.get("assigned_skill_id") or raw_step.get("skill_id"),
             approval_required=bool(raw_step.get("approval_required") or raw_step.get("requires_approval", False)),
             queue_name=str(raw_step.get("queue_name", "default")),
@@ -130,6 +132,7 @@ class PlaybookPlanner:
                 name=blueprint.name,
                 description=blueprint.description,
                 depends_on=depends_on,
+                knowledge_base_ids=blueprint.knowledge_base_ids,
                 assigned_skill_id=blueprint.assigned_skill_id,
                 approval_required=blueprint.approval_required,
                 queue_name=blueprint.queue_name,

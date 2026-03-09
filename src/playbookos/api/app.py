@@ -26,6 +26,7 @@ from playbookos.api.schemas import (
     GoalRead,
     KnowledgeBaseCreate,
     KnowledgeBaseRead,
+    KnowledgeUpdateRead,
     SkillCreate,
     SkillRead,
     PlaybookImport,
@@ -54,6 +55,7 @@ from playbookos.domain.models import (
     GoalStatus,
     KnowledgeBase,
     KnowledgeStatus,
+    KnowledgeUpdateStatus,
     MCPServerStatus,
     Playbook,
     PlaybookStatus,
@@ -69,6 +71,7 @@ from playbookos.domain.models import (
 )
 from playbookos.executor import ExecutionError, OpenAIAgentsSDKAdapter, autopilot_goal_in_store, execute_run_in_store
 from playbookos.observability import record_error
+from playbookos.knowledge import KnowledgeUpdateError, apply_knowledge_update_in_store, reject_knowledge_update_in_store
 from playbookos.orchestrator import OrchestrationError, complete_task_in_store, dispatch_goal_in_store
 from playbookos.persistence import create_store_from_env
 from playbookos.planner import PlanningError, plan_goal_in_store
@@ -119,6 +122,7 @@ def create_app(store: StoreProtocol | None = None) -> FastAPI:
             playbook_statuses=list(PlaybookStatus),
             skill_statuses=list(SkillStatus),
             knowledge_statuses=list(KnowledgeStatus),
+            knowledge_update_statuses=list(KnowledgeUpdateStatus),
             mcp_server_statuses=list(MCPServerStatus),
             task_statuses=list(TaskStatus),
             run_statuses=list(RunStatus),
@@ -294,6 +298,30 @@ def create_app(store: StoreProtocol | None = None) -> FastAPI:
     def get_knowledge_base(knowledge_id: str, store: store_dep) -> KnowledgeBaseRead:
         return KnowledgeBaseRead.model_validate(_fetch(store.knowledge_bases, knowledge_id, "KnowledgeBase", operation="get_knowledge_base", metadata={"knowledge_id": knowledge_id}))
 
+    @api.get("/api/knowledge-updates", response_model=list[KnowledgeUpdateRead])
+    def list_knowledge_updates(store: store_dep) -> list[KnowledgeUpdateRead]:
+        return [KnowledgeUpdateRead.model_validate(item) for item in store.knowledge_updates.list()]
+
+    @api.get("/api/knowledge-updates/{knowledge_update_id}", response_model=KnowledgeUpdateRead)
+    def get_knowledge_update(knowledge_update_id: str, store: store_dep) -> KnowledgeUpdateRead:
+        return KnowledgeUpdateRead.model_validate(_fetch(store.knowledge_updates, knowledge_update_id, "KnowledgeUpdate", operation="get_knowledge_update", metadata={"knowledge_update_id": knowledge_update_id}))
+
+    @api.post("/api/knowledge-updates/{knowledge_update_id}/apply", response_model=KnowledgeUpdateRead)
+    def apply_knowledge_update(knowledge_update_id: str, store: store_dep) -> KnowledgeUpdateRead:
+        try:
+            result = apply_knowledge_update_in_store(store, knowledge_update_id, applied_by="human")
+        except KnowledgeUpdateError as exc:
+            raise _conflict_http_exception(exc, operation="apply_knowledge_update", metadata={"knowledge_update_id": knowledge_update_id}) from exc
+        return KnowledgeUpdateRead.model_validate(result.knowledge_update)
+
+    @api.post("/api/knowledge-updates/{knowledge_update_id}/reject", response_model=KnowledgeUpdateRead)
+    def reject_knowledge_update(knowledge_update_id: str, store: store_dep) -> KnowledgeUpdateRead:
+        try:
+            item = reject_knowledge_update_in_store(store, knowledge_update_id, rejected_by="human")
+        except KnowledgeUpdateError as exc:
+            raise _conflict_http_exception(exc, operation="reject_knowledge_update", metadata={"knowledge_update_id": knowledge_update_id}) from exc
+        return KnowledgeUpdateRead.model_validate(item)
+
     @api.put("/api/knowledge-bases/{knowledge_id}", response_model=KnowledgeBaseRead)
     def update_knowledge_base(knowledge_id: str, payload: KnowledgeBaseCreate, store: store_dep) -> KnowledgeBaseRead:
         item = _fetch(store.knowledge_bases, knowledge_id, "KnowledgeBase", operation="update_knowledge_base", metadata={"knowledge_id": knowledge_id})
@@ -331,6 +359,8 @@ def create_app(store: StoreProtocol | None = None) -> FastAPI:
         _fetch(store.playbooks, payload.playbook_id, "Playbook", operation="create_task", metadata={"playbook_id": payload.playbook_id})
         if payload.assigned_skill_id is not None:
             _fetch(store.skills, payload.assigned_skill_id, "Skill", operation="create_task", metadata={"assigned_skill_id": payload.assigned_skill_id})
+        for knowledge_id in payload.knowledge_base_ids:
+            _fetch(store.knowledge_bases, knowledge_id, "KnowledgeBase", operation="create_task", metadata={"knowledge_id": knowledge_id})
         task = Task(**payload.model_dump())
         store.tasks.save(task)
         return TaskRead.model_validate(task)
@@ -350,6 +380,8 @@ def create_app(store: StoreProtocol | None = None) -> FastAPI:
         _fetch(store.playbooks, payload.playbook_id, "Playbook", operation="update_task", metadata={"playbook_id": payload.playbook_id})
         if payload.assigned_skill_id is not None:
             _fetch(store.skills, payload.assigned_skill_id, "Skill", operation="update_task", metadata={"assigned_skill_id": payload.assigned_skill_id})
+        for knowledge_id in payload.knowledge_base_ids:
+            _fetch(store.knowledge_bases, knowledge_id, "KnowledgeBase", operation="update_task", metadata={"knowledge_id": knowledge_id})
         for field_name, value in payload.model_dump().items():
             setattr(task, field_name, value)
         task.updated_at = utc_now()

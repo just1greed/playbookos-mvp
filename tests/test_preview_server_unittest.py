@@ -11,6 +11,7 @@ class PreviewServerTestCase(unittest.TestCase):
         self.assertGreaterEqual(sum(snapshot["goals"].values()), 2)
         self.assertGreaterEqual(sum(snapshot["playbooks"].values()), 2)
         self.assertGreaterEqual(sum(snapshot["knowledge_bases"].values()), 2)
+        self.assertGreaterEqual(sum(snapshot["knowledge_updates"].values()), 1)
         self.assertGreaterEqual(sum(snapshot["tasks"].values()), 2)
         self.assertGreaterEqual(sum(snapshot["runs"].values()), 2)
         self.assertGreaterEqual(sum(snapshot["sessions"].values()), 2)

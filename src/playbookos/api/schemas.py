@@ -12,6 +12,7 @@ from playbookos.domain.models import (
     PlaybookStatus,
     AcceptanceStatus,
     KnowledgeStatus,
+    KnowledgeUpdateStatus,
     ReflectionStatus,
     RiskLevel,
     RunStatus,
@@ -96,8 +97,10 @@ class GoalLearningRead(APIModel):
     run_count: int
     failed_run_count: int
     reflection_ids: list[str]
+    knowledge_update_ids: list[str] = Field(default_factory=list)
     failure_categories: dict[str, int]
     suggested_playbook_patches: list[dict[str, Any]]
+    suggested_knowledge_updates: list[dict[str, Any]] = Field(default_factory=list)
 
 
 
@@ -266,12 +269,30 @@ class KnowledgeBaseRead(KnowledgeBaseCreate):
     updated_at: datetime
 
 
+class KnowledgeUpdateRead(APIModel):
+    id: str
+    goal_id: str
+    task_id: str
+    run_id: str
+    title: str
+    summary: str
+    proposed_content: str
+    rationale: str = ""
+    knowledge_base_id: str | None = None
+    source_reflection_id: str | None = None
+    status: KnowledgeUpdateStatus
+    applied_by: str | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
 class TaskCreate(APIModel):
     goal_id: str
     playbook_id: str
     name: str
     description: str
     depends_on: list[str] = Field(default_factory=list)
+    knowledge_base_ids: list[str] = Field(default_factory=list)
     assigned_skill_id: str | None = None
     approval_required: bool = False
     queue_name: str = "default"
@@ -331,6 +352,7 @@ class BoardSnapshot(APIModel):
     playbooks: dict[str, int] = Field(default_factory=dict)
     skills: dict[str, int] = Field(default_factory=dict)
     knowledge_bases: dict[str, int] = Field(default_factory=dict)
+    knowledge_updates: dict[str, int] = Field(default_factory=dict)
     tasks: dict[str, int] = Field(default_factory=dict)
     sessions: dict[str, int] = Field(default_factory=dict)
     runs: dict[str, int] = Field(default_factory=dict)
@@ -345,6 +367,7 @@ class EnumCatalog(APIModel):
     playbook_statuses: list[PlaybookStatus]
     skill_statuses: list[SkillStatus]
     knowledge_statuses: list[KnowledgeStatus]
+    knowledge_update_statuses: list[KnowledgeUpdateStatus]
     mcp_server_statuses: list[MCPServerStatus]
     task_statuses: list[TaskStatus]
     run_statuses: list[RunStatus]

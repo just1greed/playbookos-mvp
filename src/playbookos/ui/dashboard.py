@@ -9,6 +9,7 @@ SECTION_ORDER = [
     "playbooks",
     "skills",
     "knowledge_bases",
+    "knowledge_updates",
     "tasks",
     "sessions",
     "runs",
@@ -29,7 +30,7 @@ TRANSLATIONS = {
         "view_board_json": "查看原始 Board JSON",
         "live_data_source": "实时数据源",
         "total_resources": "总资源数",
-        "total_resources_desc": "Goals、Playbooks、Skills、Knowledge、Tasks、Sessions、Runs、Acceptances、Artifacts、Reflections、Events 总量",
+        "total_resources_desc": "Goals、Playbooks、Skills、Knowledge、Knowledge Updates、Tasks、Sessions、Runs、Acceptances、Artifacts、Reflections、Events 总量",
         "blocked_signals": "阻塞信号",
         "blocked_signals_desc": "Blocked goals + waiting human runs",
         "learning_signals": "学习信号",
@@ -46,7 +47,7 @@ TRANSLATIONS = {
         "quick_resource_peek": "资源速览",
         "quick_resource_peek_subtitle": "从 API 抓取最近的实体样本",
         "loading_resources_title": "等待加载资源",
-        "loading_resources_body": "页面会自动抓取 goals / playbooks / skills / knowledge_bases / tasks / sessions / runs / acceptances / reflections / artifacts / events。",
+        "loading_resources_body": "页面会自动抓取 goals / playbooks / skills / knowledge_bases / knowledge_updates / tasks / sessions / runs / acceptances / reflections / artifacts / events。",
         "operating_rhythm": "运行节奏",
         "operating_rhythm_subtitle": "当前 MVP 推荐的执行循环",
         "timeline_1": "用户先配置 Goal / SOP / Skill / Knowledge / Task，系统再把 SOP 规划成可执行任务图。",
@@ -96,6 +97,7 @@ TRANSLATIONS = {
         "task_goal": "所属 Goal",
         "task_playbook": "所属 SOP",
         "task_skill": "执行 Skill（可选）",
+        "task_knowledge": "关联知识库 ID（每行一条，可选）",
         "task_queue": "队列名",
         "task_priority": "优先级",
         "task_approval_required": "需要人工审批",
@@ -118,6 +120,7 @@ TRANSLATIONS = {
             "playbooks": "SOP",
             "skills": "技能",
             "knowledge_bases": "知识库",
+            "knowledge_updates": "知识更新",
             "tasks": "任务",
             "sessions": "会话",
             "runs": "运行",
@@ -137,7 +140,7 @@ TRANSLATIONS = {
         "view_board_json": "Open Raw Board JSON",
         "live_data_source": "Live Data Source",
         "total_resources": "Total Resources",
-        "total_resources_desc": "Total goals, playbooks, skills, knowledge bases, tasks, sessions, runs, acceptances, artifacts, reflections, and events",
+        "total_resources_desc": "Total goals, playbooks, skills, knowledge bases, knowledge updates, tasks, sessions, runs, acceptances, artifacts, reflections, and events",
         "blocked_signals": "Blocked Signals",
         "blocked_signals_desc": "Blocked goals + waiting human runs",
         "learning_signals": "Learning Signals",
@@ -154,7 +157,7 @@ TRANSLATIONS = {
         "quick_resource_peek": "Quick Resource Peek",
         "quick_resource_peek_subtitle": "Recent entity samples fetched from the API",
         "loading_resources_title": "Waiting for resources",
-        "loading_resources_body": "The page will automatically fetch goals / playbooks / skills / knowledge_bases / tasks / sessions / runs / acceptances / reflections / artifacts / events.",
+        "loading_resources_body": "The page will automatically fetch goals / playbooks / skills / knowledge_bases / knowledge_updates / tasks / sessions / runs / acceptances / reflections / artifacts / events.",
         "operating_rhythm": "Operating Rhythm",
         "operating_rhythm_subtitle": "Recommended workflow loop for the current MVP",
         "timeline_1": "Users configure goals, SOPs, skills, knowledge, and tasks first; the system turns SOPs into executable task graphs.",
@@ -204,6 +207,7 @@ TRANSLATIONS = {
         "task_goal": "Goal",
         "task_playbook": "SOP",
         "task_skill": "Skill (optional)",
+        "task_knowledge": "Knowledge base IDs (one per line, optional)",
         "task_queue": "Queue name",
         "task_priority": "Priority",
         "task_approval_required": "Requires human approval",
@@ -226,6 +230,7 @@ TRANSLATIONS = {
             "playbooks": "SOPs",
             "skills": "Skills",
             "knowledge_bases": "Knowledge",
+            "knowledge_updates": "Knowledge Updates",
             "tasks": "Tasks",
             "sessions": "Sessions",
             "runs": "Runs",
@@ -242,6 +247,7 @@ RESOURCE_SINGULAR = {
     "playbooks": "SOP",
     "skills": "Skill",
     "knowledge_bases": "Knowledge",
+    "knowledge_updates": "Knowledge Update",
     "tasks": "Task",
     "sessions": "Session",
     "runs": "Run",
@@ -256,6 +262,7 @@ RESOURCE_PATHS = {
     "playbooks": "playbooks",
     "skills": "skills",
     "knowledge_bases": "knowledge-bases",
+    "knowledge_updates": "knowledge-updates",
     "tasks": "tasks",
     "sessions": "sessions",
     "runs": "runs",
@@ -484,6 +491,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
                 <div class="field"><label data-i18n="task_goal"></label><select id="task-goal-input" required></select></div>
                 <div class="field"><label data-i18n="task_playbook"></label><select id="task-playbook-input" required></select></div>
                 <div class="field"><label data-i18n="task_skill"></label><select id="task-skill-input"></select></div>
+                <div class="field"><label data-i18n="task_knowledge"></label><textarea id="task-knowledge-input"></textarea></div>
                 <div class="field"><label data-i18n="task_queue"></label><input id="task-queue-input" value="default" /></div>
                 <div class="field"><label data-i18n="task_priority"></label><input id="task-priority-input" type="number" value="0" /></div>
                 <div class="field"><label data-i18n="task_depends_on_ids"></label><textarea id="task-depends-on-input"></textarea></div>
@@ -847,6 +855,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
           name: item.name,
           description: item.description,
           depends_on: item.depends_on || [],
+          knowledge_base_ids: item.knowledge_base_ids || [],
           assigned_skill_id: item.assigned_skill_id,
           approval_required: item.approval_required,
           queue_name: item.queue_name,
@@ -966,6 +975,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
           goal_id: document.getElementById('task-goal-input').value,
           playbook_id: document.getElementById('task-playbook-input').value,
           assigned_skill_id: document.getElementById('task-skill-input').value || null,
+          knowledge_base_ids: splitLines(document.getElementById('task-knowledge-input').value),
           name: document.getElementById('task-name-input').value.trim(),
           description: document.getElementById('task-description-input').value.trim(),
           queue_name: document.getElementById('task-queue-input').value.trim() || 'default',
@@ -976,6 +986,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         event.target.reset();
         document.getElementById('task-queue-input').value = 'default';
         document.getElementById('task-priority-input').value = '0';
+        document.getElementById('task-knowledge-input').value = '';
       }}
 
       async function handleWorkbenchSubmit(handler, event) {{

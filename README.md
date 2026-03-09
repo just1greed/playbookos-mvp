@@ -56,7 +56,7 @@ PlaybookOS 用来把目标、SOP、技能、工具权限、执行记录和反思
 - Run 级 Artifact 元数据持久化与查询
 - 一个优美的内置前端控制台首页（`GET /`），并可中英文切换与直接录入 Goal / SOP / Skill / Knowledge / Task
 - SOP 自我迭代提案骨架
-- 用户可见的 Session / Acceptance / Event 追踪视图
+- 用户可见的 Session / Acceptance / Event / Knowledge Update 追踪视图
 - PostgreSQL schema 文件，供后续正式部署接入
 
 ## 已实现 API
@@ -81,6 +81,10 @@ PlaybookOS 用来把目标、SOP、技能、工具权限、执行记录和反思
 - `POST /api/knowledge-bases`
 - `GET /api/knowledge-bases`
 - `GET /api/knowledge-bases/{knowledge_id}`
+- `GET /api/knowledge-updates`
+- `GET /api/knowledge-updates/{knowledge_update_id}`
+- `POST /api/knowledge-updates/{knowledge_update_id}/apply`
+- `POST /api/knowledge-updates/{knowledge_update_id}/reject`
 - `GET /api/sessions`
 - `GET /api/sessions/{session_id}`
 - `GET /api/acceptances`
@@ -157,7 +161,9 @@ PlaybookOS 用来把目标、SOP、技能、工具权限、执行记录和反思
 
 - `POST /api/goals/{goal_id}/autopilot`：自动规划、调度、执行可自动完成的任务
 - `Session`：一个 Goal 对应主控会话，一个 Run 对应子会话
+- `Task.knowledge_base_ids`：任务可显式绑定知识库条目参与执行
 - `POST /api/tasks/{task_id}/accept`：对任务结果做人类验收与签收
+- `KnowledgeUpdate`：每次反思可生成知识回写提案，并支持人工应用 / 拒绝
 - `Event`：记录调度、执行、验收等关键动作，便于用户可见与审计
 - `POST /api/runs/{run_id}/reflect`：从单次 Run 生成 SOP patch proposal
 - `GET /api/goals/{goal_id}/learning`：聚合一个 Goal 下的失败分类和 SOP 改进提案
@@ -165,6 +171,7 @@ PlaybookOS 用来把目标、SOP、技能、工具权限、执行记录和反思
 
 当前还没做完的部分：
 
+- 知识提案在页面内的一键 apply/reject 操作入口（当前 API 已支持，UI 还未补按钮）
 - 更细的 patch diff、版本回放与审批工作流（当前已支持页面内直接编辑既有实体）
 - 主控会话自动拆分更多层级子会话并并行汇总
 - AI 主动改写 Skill / Knowledge Base 的专门 authoring 流程
@@ -189,6 +196,7 @@ PlaybookOS 用来把目标、SOP、技能、工具权限、执行记录和反思
 - `playbooks`
 - `skills`
 - `knowledge_bases`
+- `knowledge_updates`
 - `tasks`
 - `sessions`
 - `runs`
@@ -229,7 +237,7 @@ PYTHONPATH=src python3 -m playbookos.ui.preview_server --demo --port 8081
 
 然后访问：`http://127.0.0.1:8081/`
 
-当前 8081 预览页已内置工作台表单，可直接创建 Goal、SOP、Skill、Knowledge 和 Task，并支持选择已有实体查看与编辑。
+当前 8081 预览页已内置工作台表单，可直接创建 Goal、SOP、Skill、Knowledge 和 Task，并支持选择已有实体查看与编辑；知识更新提案会在资源区可见。
 
 ## 下一步
 

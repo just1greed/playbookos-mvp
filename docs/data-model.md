@@ -68,7 +68,26 @@
 - `created_at`
 - `updated_at`
 
-### 1.5 MCPServer
+### 1.5 KnowledgeUpdate
+
+字段建议：
+
+- `id`
+- `goal_id`
+- `task_id`
+- `run_id`
+- `knowledge_base_id`（可空）
+- `source_reflection_id`（可空）
+- `title`
+- `summary`
+- `proposed_content`
+- `rationale`
+- `status`
+- `applied_by`
+- `created_at`
+- `updated_at`
+
+### 1.6 MCPServer
 
 字段建议：
 
@@ -82,7 +101,7 @@
 - `created_at`
 - `updated_at`
 
-### 1.6 Task
+### 1.7 Task
 
 字段建议：
 
@@ -92,6 +111,7 @@
 - `parent_task_id`（可空）
 - `name`
 - `description`
+- `knowledge_base_ids_json`
 - `status`
 - `priority`
 - `depends_on_json`
@@ -101,7 +121,7 @@
 - `created_at`
 - `updated_at`
 
-### 1.7 Run
+### 1.8 Run
 
 字段建议：
 
@@ -119,7 +139,7 @@
 - `metrics_json`
 - `created_at`
 
-### 1.8 Artifact
+### 1.9 Artifact
 
 字段建议：
 
@@ -134,7 +154,7 @@
 - `metadata_json`
 - `created_at`
 
-### 1.9 Reflection
+### 1.10 Reflection
 
 字段建议：
 
@@ -150,7 +170,7 @@
 - `created_at`
 - `updated_at`
 
-### 1.10 Session
+### 1.11 Session
 
 字段建议：
 
@@ -169,7 +189,7 @@
 - `created_at`
 - `updated_at`
 
-### 1.11 Acceptance
+### 1.12 Acceptance
 
 字段建议：
 
@@ -186,7 +206,7 @@
 - `created_at`
 - `updated_at`
 
-### 1.12 Event
+### 1.13 Event
 
 字段建议：
 
@@ -229,6 +249,7 @@
 - `tasks`
 - `sessions`
 - `runs`
+- `knowledge_updates`
 - `acceptances`
 - `artifacts`
 - `reflections`
@@ -243,7 +264,9 @@
 - 一个 `Goal` 有一个主 `Supervisor Session`，并可派生多个子 `Worker Session`
 - 一个 `Run` 对应一个可见的 `Worker Session`
 - 一个 `Run` 可产出多个 `Artifact`
+- 一个 `Task` 可显式绑定多个 `KnowledgeBase`
 - 一个 `Task` 可对应多条 `Acceptance` 记录
+- 一个 `Run` 可生成一条 `KnowledgeUpdate` 提案用于知识回写
 - 一个 `Run` 最多关联一个主 `Reflection`
 - 一个 `Reflection` 可发布一个新的 `Playbook` 版本
 - 一个 `Skill` 可绑定多个 `Task`
@@ -309,6 +332,12 @@
 
 - `pending`
 - `accepted`
+- `rejected`
+
+### 4.8 KnowledgeUpdateStatus
+
+- `proposed`
+- `applied`
 - `rejected`
 
 ## 5. 事件流建议

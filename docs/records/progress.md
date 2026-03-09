@@ -120,3 +120,12 @@
 - Dashboard 已新增实体详情 / 编辑器面板，支持选择已有 Goal / SOP / Skill / Knowledge / Task 并保存修改
 - 已更新 `tests/test_dashboard_unittest.py`，覆盖编辑器入口与 `putJson` 客户端逻辑
 - 已再次完成 `PYTHONPATH=src python3 -m unittest discover -s tests -p 'test*_unittest.py'`，共 23 项测试通过
+
+- 已新增 `Task.knowledge_base_ids`，任务执行时可显式读取知识库条目
+- 已新增 `KnowledgeUpdate` 模型与 `src/playbookos/knowledge/service.py`，支持由执行/反思链路自动生成知识回写提案
+- `reflect_run_in_store` 现会同步生成 `KnowledgeUpdate`，`analyze_goal_learning` 也会聚合知识提案摘要
+- 已新增 `GET /api/knowledge-updates`、`GET /api/knowledge-updates/{knowledge_update_id}`、`POST /api/knowledge-updates/{knowledge_update_id}/apply`、`POST /api/knowledge-updates/{knowledge_update_id}/reject`
+- preview server 已支持 `knowledge_updates` 查询和 apply / reject API
+- Dashboard 已把 `knowledge_updates` 纳入资源可视区，Task 创建表单也可直接绑定 `knowledge_base_ids`
+- 已新增 `tests/test_knowledge_update_unittest.py`，并扩充 executor/reflection/dashboard/preview 测试
+- 已完成 `PYTHONPATH=src python3 -m unittest discover -s tests -p 'test*_unittest.py'`，共 25 项测试通过

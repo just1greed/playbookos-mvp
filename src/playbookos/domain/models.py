@@ -78,6 +78,12 @@ class ReflectionStatus(StrEnum):
     PUBLISHED = "published"
 
 
+class KnowledgeUpdateStatus(StrEnum):
+    PROPOSED = "proposed"
+    APPLIED = "applied"
+    REJECTED = "rejected"
+
+
 class RiskLevel(StrEnum):
     LOW = "low"
     MEDIUM = "medium"
@@ -176,6 +182,36 @@ class KnowledgeBase:
 
 
 @dataclass(slots=True)
+class KnowledgeUpdate:
+    goal_id: str
+    task_id: str
+    run_id: str
+    title: str
+    summary: str
+    proposed_content: str
+    rationale: str = ""
+    knowledge_base_id: str | None = None
+    source_reflection_id: str | None = None
+    status: KnowledgeUpdateStatus = KnowledgeUpdateStatus.PROPOSED
+    applied_by: str | None = None
+    id: str = field(default_factory=lambda: str(uuid4()))
+    created_at: datetime = field(default_factory=utc_now)
+    updated_at: datetime = field(default_factory=utc_now)
+
+    def __post_init__(self) -> None:
+        if not self.goal_id.strip():
+            raise ValueError("KnowledgeUpdate.goal_id is required")
+        if not self.task_id.strip():
+            raise ValueError("KnowledgeUpdate.task_id is required")
+        if not self.run_id.strip():
+            raise ValueError("KnowledgeUpdate.run_id is required")
+        if not self.title.strip():
+            raise ValueError("KnowledgeUpdate.title is required")
+        if not self.proposed_content.strip():
+            raise ValueError("KnowledgeUpdate.proposed_content is required")
+
+
+@dataclass(slots=True)
 class MCPServer:
     name: str
     transport: str
@@ -203,6 +239,7 @@ class Task:
     name: str
     description: str
     depends_on: list[str] = field(default_factory=list)
+    knowledge_base_ids: list[str] = field(default_factory=list)
     assigned_skill_id: str | None = None
     approval_required: bool = False
     queue_name: str = "default"

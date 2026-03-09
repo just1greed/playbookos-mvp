@@ -28,6 +28,7 @@ class ExecutionContext:
     playbook_version: str
     compiled_steps: list[dict[str, Any] | str]
     mcp_servers: list[str] = field(default_factory=list)
+    knowledge_items: list[dict[str, Any]] = field(default_factory=list)
     skill_id: str | None = None
     approval_required: bool = False
 
@@ -75,12 +76,14 @@ class DeterministicExecutorAdapter:
             status=RunStatus.SUCCEEDED,
             output_text=(
                 f"Executed '{context.task_name}' for goal '{context.goal_title}'. "
-                f"Playbook '{context.playbook_name}' supplied {len(context.compiled_steps)} step(s)."
+                f"Playbook '{context.playbook_name}' supplied {len(context.compiled_steps)} step(s). "
+                f"Knowledge items: {len(context.knowledge_items)}."
             ),
             trace_id=f"trace-{uuid4()}",
             metrics={
                 "mcp_server_count": len(context.mcp_servers),
                 "compiled_step_count": len(context.compiled_steps),
+                "knowledge_item_count": len(context.knowledge_items),
                 "adapter": "deterministic",
             },
             tool_calls=[
@@ -89,6 +92,7 @@ class DeterministicExecutorAdapter:
                     "action": "simulate_execution",
                     "task": context.task_name,
                     "mcp_servers": context.mcp_servers,
+                    "knowledge_item_count": len(context.knowledge_items),
                 }
             ],
         )
@@ -115,6 +119,7 @@ class OpenAIAgentsSDKAdapter:
                 "steps": context.compiled_steps,
             },
             "mcp_servers": context.mcp_servers,
+            "knowledge_items": context.knowledge_items,
             "skill_id": context.skill_id,
         }
         return ExecutionResult(
@@ -151,6 +156,17 @@ class RunExecutor:
         store.runs.save(run)
         store.tasks.save(task)
 
+        linked_knowledge_items = [
+            {
+                "id": item.id,
+                "name": item.name,
+                "description": item.description,
+                "content": item.content,
+                "tags": item.tags,
+            }
+            for item in [store.knowledge_bases.get(knowledge_id) for knowledge_id in task.knowledge_base_ids if knowledge_id]
+        ]
+
         context = ExecutionContext(
             goal_id=goal.id,
             goal_title=goal.title,
@@ -163,6 +179,7 @@ class RunExecutor:
             playbook_version=playbook.version,
             compiled_steps=playbook.compiled_spec.get("steps", []),
             mcp_servers=list(playbook.compiled_spec.get("mcp_servers", [])),
+            knowledge_items=linked_knowledge_items,
             skill_id=task.assigned_skill_id,
             approval_required=task.approval_required,
         )
@@ -191,6 +208,8 @@ class RunExecutor:
                 "goal_id": goal.id,
                 "task_id": task.id,
                 "playbook_id": playbook.id,
+                "knowledge_base_ids": task.knowledge_base_ids,
+                "knowledge_item_count": len(linked_knowledge_items),
                 "run_status": result.status.value,
                 "trace_id": result.trace_id,
                 "output_text": result.output_text,
@@ -204,7 +223,7 @@ class RunExecutor:
         result.artifact_ids.append(artifact.id)
 
         session_status = SessionStatus.COMPLETED if result.status == RunStatus.SUCCEEDED else SessionStatus.WAITING_HUMAN if result.status == RunStatus.WAITING_HUMAN else SessionStatus.FAILED
-        update_session_for_run(store, run.id, status=session_status, summary=result.output_text, output_context={"trace_id": result.trace_id, "artifact_ids": result.artifact_ids, "run_status": result.status.value})
+        update_session_for_run(store, run.id, status=session_status, summary=result.output_text, output_context={"trace_id": result.trace_id, "artifact_ids": result.artifact_ids, "run_status": result.status.value, "knowledge_base_ids": task.knowledge_base_ids})
         append_event(store, entity_type="run", entity_id=run.id, event_type="run.execution_finished", payload={"status": result.status.value, "task_id": task.id, "goal_id": goal.id})
 
         if result.status == RunStatus.SUCCEEDED:

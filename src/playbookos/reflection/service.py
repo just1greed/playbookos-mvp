@@ -5,7 +5,8 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from playbookos.api.store import StoreProtocol
-from playbookos.domain.models import Playbook, PlaybookStatus, Reflection, ReflectionStatus, RunStatus, utc_now
+from playbookos.domain.models import KnowledgeUpdate, Playbook, PlaybookStatus, Reflection, ReflectionStatus, RunStatus, utc_now
+from playbookos.knowledge import sync_knowledge_update_for_run
 
 
 class ReflectionError(ValueError):
@@ -17,6 +18,7 @@ class RunReflectionResult:
     reflection: Reflection
     proposal_type: str
     target: str
+    knowledge_update_id: str | None = None
 
 
 @dataclass(slots=True)
@@ -39,18 +41,22 @@ class LearningSummary:
     run_count: int
     failed_run_count: int
     reflection_ids: list[str] = field(default_factory=list)
+    knowledge_update_ids: list[str] = field(default_factory=list)
     failure_categories: dict[str, int] = field(default_factory=dict)
     suggested_playbook_patches: list[dict[str, Any]] = field(default_factory=list)
+    suggested_knowledge_updates: list[dict[str, Any]] = field(default_factory=list)
 
 
 class SOPReflector:
     def reflect_run(self, store: StoreProtocol, run_id: str) -> RunReflectionResult:
         existing = next((item for item in store.reflections.list() if item.run_id == run_id), None)
         if existing is not None:
+            existing_knowledge_update = next((item for item in store.knowledge_updates.list() if item.run_id == run_id), None)
             return RunReflectionResult(
                 reflection=existing,
                 proposal_type=existing.proposal.get("proposal_type", "unknown"),
                 target=existing.proposal.get("target", "unknown"),
+                knowledge_update_id=existing_knowledge_update.id if existing_knowledge_update is not None else None,
             )
 
         run = store.runs.get(run_id)
@@ -68,10 +74,12 @@ class SOPReflector:
             approval_status="pending",
         )
         store.reflections.save(reflection)
+        knowledge_update = sync_knowledge_update_for_run(store, run.id, source_reflection_id=reflection.id)
         return RunReflectionResult(
             reflection=reflection,
             proposal_type=proposal["proposal_type"],
             target=proposal["target"],
+            knowledge_update_id=knowledge_update.id,
         )
 
     def evaluate_reflection(self, store: StoreProtocol, reflection_id: str) -> ReflectionEvaluationResult:
@@ -148,6 +156,7 @@ class SOPReflector:
         runs = [run for run in store.runs.list() if run.task_id in task_ids]
         run_ids = {run.id for run in runs}
         reflections = [reflection for reflection in store.reflections.list() if reflection.run_id in run_ids]
+        knowledge_updates = [item for item in store.knowledge_updates.list() if item.run_id in run_ids]
         failure_categories = Counter(reflection.failure_category for reflection in reflections)
 
         suggested_playbook_patches: list[dict[str, Any]] = []
@@ -155,13 +164,26 @@ class SOPReflector:
             if reflection.proposal.get("proposal_type") == "sop_patch":
                 suggested_playbook_patches.append(reflection.proposal)
 
+        suggested_knowledge_updates = [
+            {
+                "id": item.id,
+                "title": item.title,
+                "summary": item.summary,
+                "status": item.status.value,
+                "knowledge_base_id": item.knowledge_base_id,
+            }
+            for item in knowledge_updates
+        ]
+
         return LearningSummary(
             goal_id=goal_id,
             run_count=len(runs),
             failed_run_count=sum(1 for run in runs if run.status == RunStatus.FAILED),
             reflection_ids=[reflection.id for reflection in reflections],
+            knowledge_update_ids=[item.id for item in knowledge_updates],
             failure_categories=dict(failure_categories),
             suggested_playbook_patches=suggested_playbook_patches,
+            suggested_knowledge_updates=suggested_knowledge_updates,
         )
 
     def _failure_category(self, run, task) -> str:

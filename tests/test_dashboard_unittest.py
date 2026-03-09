@@ -10,6 +10,7 @@ class DashboardHtmlTestCase(unittest.TestCase):
                 "goals": {"draft": 1, "blocked": 2},
                 "playbooks": {"compiled": 1},
                 "knowledge_bases": {"draft": 2},
+                "knowledge_updates": {"proposed": 1},
                 "tasks": {"ready": 3},
                 "runs": {"waiting_human": 1, "succeeded": 5},
                 "acceptances": {"accepted": 1},
@@ -33,7 +34,9 @@ class DashboardHtmlTestCase(unittest.TestCase):
         self.assertIn('id="editor-payload-input"', html)
         self.assertIn('resourcePaths = {"goals": "goals"', html)
         self.assertIn('"knowledge_bases": "knowledge-bases"', html)
+        self.assertIn('"knowledge_updates": "knowledge-updates"', html)
         self.assertIn("postJson('knowledge-bases'", html)
+        self.assertIn("knowledge_updates", html)
         self.assertIn("postJson('playbooks/import'", html)
         self.assertIn('async function putJson(path, payload)', html)
         self.assertIn('saveEditorSelection()', html)

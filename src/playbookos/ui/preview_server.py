@@ -55,6 +55,9 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
             if path == "/api/tasks":
                 self._write_json(_serialize_items(self.server.store.tasks.list()))
                 return
+            if path == "/api/knowledge-updates":
+                self._write_json(_serialize_items(self.server.store.knowledge_updates.list()))
+                return
             if path == "/api/sessions":
                 self._write_json(_serialize_items(self.server.store.sessions.list()))
                 return
@@ -144,18 +147,34 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
                 self.server.store.knowledge_bases.save(item)
                 self._write_json(_to_jsonable(item), status=HTTPStatus.CREATED)
                 return
+            if path.startswith("/api/knowledge-updates/") and path.endswith("/apply"):
+                knowledge_update_id = path.split("/")[-2]
+                from playbookos.knowledge import apply_knowledge_update_in_store
+                result = apply_knowledge_update_in_store(self.server.store, knowledge_update_id, applied_by="preview-human")
+                self._write_json(_to_jsonable(result.knowledge_update))
+                return
+            if path.startswith("/api/knowledge-updates/") and path.endswith("/reject"):
+                knowledge_update_id = path.split("/")[-2]
+                from playbookos.knowledge import reject_knowledge_update_in_store
+                item = reject_knowledge_update_in_store(self.server.store, knowledge_update_id, rejected_by="preview-human")
+                self._write_json(_to_jsonable(item))
+                return
             if path == "/api/tasks":
                 self.server.store.goals.get(payload["goal_id"])
                 self.server.store.playbooks.get(payload["playbook_id"])
                 assigned_skill_id = payload.get("assigned_skill_id") or None
                 if assigned_skill_id is not None:
                     self.server.store.skills.get(assigned_skill_id)
+                knowledge_base_ids = list(payload.get("knowledge_base_ids", []))
+                for knowledge_id in knowledge_base_ids:
+                    self.server.store.knowledge_bases.get(knowledge_id)
                 task = Task(
                     goal_id=payload["goal_id"],
                     playbook_id=payload["playbook_id"],
                     name=payload["name"],
                     description=payload["description"],
                     depends_on=list(payload.get("depends_on", [])),
+                    knowledge_base_ids=knowledge_base_ids,
                     assigned_skill_id=assigned_skill_id,
                     approval_required=bool(payload.get("approval_required", False)),
                     queue_name=payload.get("queue_name", "default"),
@@ -247,9 +266,13 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
                 assigned_skill_id = payload.get("assigned_skill_id") or None
                 if assigned_skill_id is not None:
                     self.server.store.skills.get(assigned_skill_id)
+                knowledge_base_ids = list(payload.get("knowledge_base_ids", []))
+                for knowledge_id in knowledge_base_ids:
+                    self.server.store.knowledge_bases.get(knowledge_id)
                 for field_name in ["goal_id", "playbook_id", "name", "description", "depends_on", "approval_required", "queue_name", "priority", "parent_task_id"]:
                     if field_name in payload:
                         setattr(item, field_name, payload[field_name])
+                item.knowledge_base_ids = knowledge_base_ids
                 item.assigned_skill_id = assigned_skill_id
                 item.updated_at = datetime.now(UTC)
                 self.server.store.tasks.save(item)

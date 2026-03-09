@@ -23,6 +23,8 @@ from playbookos.domain.models import (
     GoalStatus,
     KnowledgeBase,
     KnowledgeStatus,
+    KnowledgeUpdate,
+    KnowledgeUpdateStatus,
     Skill,
     SkillStatus,
     Playbook,
@@ -108,6 +110,31 @@ CREATE TABLE IF NOT EXISTS knowledge_bases (
 CREATE INDEX IF NOT EXISTS idx_knowledge_bases_goal_id ON knowledge_bases(goal_id);
 CREATE INDEX IF NOT EXISTS idx_knowledge_bases_status ON knowledge_bases(status);
 
+CREATE TABLE IF NOT EXISTS knowledge_updates (
+    id TEXT PRIMARY KEY,
+    goal_id TEXT NOT NULL,
+    task_id TEXT NOT NULL,
+    run_id TEXT NOT NULL,
+    knowledge_base_id TEXT,
+    source_reflection_id TEXT,
+    title TEXT NOT NULL,
+    summary TEXT NOT NULL,
+    proposed_content TEXT NOT NULL,
+    rationale TEXT NOT NULL,
+    status TEXT NOT NULL,
+    applied_by TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(goal_id) REFERENCES goals(id),
+    FOREIGN KEY(task_id) REFERENCES tasks(id),
+    FOREIGN KEY(run_id) REFERENCES runs(id),
+    FOREIGN KEY(knowledge_base_id) REFERENCES knowledge_bases(id),
+    FOREIGN KEY(source_reflection_id) REFERENCES reflections(id)
+);
+CREATE INDEX IF NOT EXISTS idx_knowledge_updates_goal_id ON knowledge_updates(goal_id);
+CREATE INDEX IF NOT EXISTS idx_knowledge_updates_task_id ON knowledge_updates(task_id);
+CREATE INDEX IF NOT EXISTS idx_knowledge_updates_status ON knowledge_updates(status);
+
 CREATE TABLE IF NOT EXISTS tasks (
     id TEXT PRIMARY KEY,
     goal_id TEXT NOT NULL,
@@ -118,6 +145,7 @@ CREATE TABLE IF NOT EXISTS tasks (
     status TEXT NOT NULL,
     priority INTEGER NOT NULL,
     depends_on_json TEXT NOT NULL,
+    knowledge_base_ids_json TEXT NOT NULL,
     assigned_skill_id TEXT,
     approval_required INTEGER NOT NULL,
     queue_name TEXT NOT NULL,
@@ -355,6 +383,12 @@ class SQLiteStore:
             to_record=_knowledge_base_to_record,
             from_row=_knowledge_base_from_row,
         )
+        self.knowledge_updates = SQLiteRepository[KnowledgeUpdate](
+            db_path=self.db_path,
+            table_name="knowledge_updates",
+            to_record=_knowledge_update_to_record,
+            from_row=_knowledge_update_from_row,
+        )
         self.tasks = SQLiteRepository[Task](
             db_path=self.db_path,
             table_name="tasks",
@@ -404,6 +438,7 @@ class SQLiteStore:
             "playbooks": self._status_counts("playbooks", "status"),
             "skills": self._status_counts("skills", "status"),
             "knowledge_bases": self._status_counts("knowledge_bases", "status"),
+            "knowledge_updates": self._status_counts("knowledge_updates", "status"),
             "tasks": self._status_counts("tasks", "status"),
             "sessions": self._status_counts("sessions", "status"),
             "runs": self._status_counts("runs", "status"),
@@ -417,12 +452,18 @@ class SQLiteStore:
         with sqlite3.connect(self.db_path) as connection:
             connection.executescript(SQLITE_SCHEMA)
             self._ensure_reflection_columns(connection)
+            self._ensure_task_columns(connection)
             connection.commit()
 
     def _ensure_reflection_columns(self, connection: sqlite3.Connection) -> None:
         columns = {row[1] for row in connection.execute("PRAGMA table_info(reflections)").fetchall()}
         if "published_target_version" not in columns:
             connection.execute("ALTER TABLE reflections ADD COLUMN published_target_version TEXT")
+
+    def _ensure_task_columns(self, connection: sqlite3.Connection) -> None:
+        columns = {row[1] for row in connection.execute("PRAGMA table_info(tasks)").fetchall()}
+        if "knowledge_base_ids_json" not in columns:
+            connection.execute('ALTER TABLE tasks ADD COLUMN knowledge_base_ids_json TEXT NOT NULL DEFAULT "[]"')
 
     def _status_counts(self, table_name: str, status_column: str) -> dict[str, int]:
         query = f"SELECT {status_column} AS status, COUNT(*) AS count FROM {table_name} GROUP BY {status_column}"
@@ -597,6 +638,43 @@ def _knowledge_base_from_row(row: sqlite3.Row) -> KnowledgeBase:
         updated_at=datetime.fromisoformat(row["updated_at"]),
     )
 
+def _knowledge_update_to_record(item: KnowledgeUpdate) -> dict[str, Any]:
+    return {
+        "id": item.id,
+        "goal_id": item.goal_id,
+        "task_id": item.task_id,
+        "run_id": item.run_id,
+        "knowledge_base_id": item.knowledge_base_id,
+        "source_reflection_id": item.source_reflection_id,
+        "title": item.title,
+        "summary": item.summary,
+        "proposed_content": item.proposed_content,
+        "rationale": item.rationale,
+        "status": item.status.value,
+        "applied_by": item.applied_by,
+        "created_at": item.created_at.isoformat(),
+        "updated_at": item.updated_at.isoformat(),
+    }
+
+
+def _knowledge_update_from_row(row: sqlite3.Row) -> KnowledgeUpdate:
+    return KnowledgeUpdate(
+        id=row["id"],
+        goal_id=row["goal_id"],
+        task_id=row["task_id"],
+        run_id=row["run_id"],
+        knowledge_base_id=row["knowledge_base_id"],
+        source_reflection_id=row["source_reflection_id"],
+        title=row["title"],
+        summary=row["summary"],
+        proposed_content=row["proposed_content"],
+        rationale=row["rationale"],
+        status=KnowledgeUpdateStatus(row["status"]),
+        applied_by=row["applied_by"],
+        created_at=datetime.fromisoformat(row["created_at"]),
+        updated_at=datetime.fromisoformat(row["updated_at"]),
+    )
+
 def _task_to_record(task: Task) -> dict[str, Any]:
     return {
         "id": task.id,
@@ -608,6 +686,7 @@ def _task_to_record(task: Task) -> dict[str, Any]:
         "status": task.status.value,
         "priority": task.priority,
         "depends_on_json": _dump_json(task.depends_on),
+        "knowledge_base_ids_json": _dump_json(task.knowledge_base_ids),
         "assigned_skill_id": task.assigned_skill_id,
         "approval_required": int(task.approval_required),
         "queue_name": task.queue_name,
@@ -628,6 +707,7 @@ def _task_from_row(row: sqlite3.Row) -> Task:
         status=TaskStatus(row["status"]),
         priority=row["priority"],
         depends_on=_load_json(row["depends_on_json"], []),
+        knowledge_base_ids=_load_json(row["knowledge_base_ids_json"], []),
         assigned_skill_id=row["assigned_skill_id"],
         approval_required=bool(row["approval_required"]),
         queue_name=row["queue_name"],
