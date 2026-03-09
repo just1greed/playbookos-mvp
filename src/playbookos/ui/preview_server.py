@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 from dataclasses import asdict, is_dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from decimal import Decimal
 from enum import Enum
 from http import HTTPStatus
@@ -173,6 +173,95 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
             self._write_json({"detail": f"Missing field: {exc.args[0]}"}, status=HTTPStatus.BAD_REQUEST)
         except Exception as exc:
             record_error(exc, component="preview_server", operation="do_POST", metadata={"path": path}, path=self.server.error_log_path)
+            self._write_json({"detail": str(exc)}, status=HTTPStatus.BAD_REQUEST)
+
+    def do_PUT(self) -> None:
+        parsed = urlparse(self.path)
+        path = parsed.path
+
+        try:
+            payload = self._read_json_body()
+            parts = [part for part in path.split("/") if part]
+            if len(parts) != 3 or parts[0] != "api":
+                self._write_json({"detail": "Not found"}, status=HTTPStatus.NOT_FOUND)
+                return
+
+            resource_name, item_id = parts[1], parts[2]
+            if resource_name == "goals":
+                item = self.server.store.goals.get(item_id)
+                item.title = payload["title"]
+                item.objective = payload["objective"]
+                item.constraints = list(payload.get("constraints", []))
+                item.definition_of_done = list(payload.get("definition_of_done", []))
+                item.risk_level = item.risk_level.__class__(payload.get("risk_level", item.risk_level.value))
+                item.budget_amount = payload.get("budget_amount")
+                item.budget_currency = payload.get("budget_currency", item.budget_currency)
+                item.due_at = payload.get("due_at")
+                item.owner_id = payload.get("owner_id")
+                item.updated_at = datetime.now(UTC)
+                self.server.store.goals.save(item)
+                self._write_json(_to_jsonable(item))
+                return
+            if resource_name == "playbooks":
+                item = self.server.store.playbooks.get(item_id)
+                goal_id = payload.get("goal_id") or None
+                if goal_id is not None:
+                    self.server.store.goals.get(goal_id)
+                item.name = payload["name"]
+                item.source_kind = payload.get("source_kind", "markdown")
+                item.source_uri = payload["source_uri"]
+                item.goal_id = goal_id
+                item.compiled_spec = dict(payload.get("compiled_spec", {}))
+                if item.status == PlaybookStatus.DRAFT and item.compiled_spec.get("steps"):
+                    item.status = PlaybookStatus.COMPILED
+                item.updated_at = datetime.now(UTC)
+                self.server.store.playbooks.save(item)
+                self._write_json(_to_jsonable(item))
+                return
+            if resource_name == "skills":
+                item = self.server.store.skills.get(item_id)
+                for field_name in ["name", "description", "input_schema", "output_schema", "required_mcp_servers", "approval_policy", "evaluation_policy", "rollback_version", "version", "status"]:
+                    if field_name in payload:
+                        setattr(item, field_name, payload[field_name])
+                item.updated_at = datetime.now(UTC)
+                self.server.store.skills.save(item)
+                self._write_json(_to_jsonable(item))
+                return
+            if resource_name == "knowledge-bases":
+                item = self.server.store.knowledge_bases.get(item_id)
+                goal_id = payload.get("goal_id") or None
+                if goal_id is not None:
+                    self.server.store.goals.get(goal_id)
+                for field_name in ["name", "description", "content", "tags", "source_uri", "status"]:
+                    if field_name in payload:
+                        setattr(item, field_name, payload[field_name])
+                item.goal_id = goal_id
+                item.updated_at = datetime.now(UTC)
+                self.server.store.knowledge_bases.save(item)
+                self._write_json(_to_jsonable(item))
+                return
+            if resource_name == "tasks":
+                item = self.server.store.tasks.get(item_id)
+                self.server.store.goals.get(payload["goal_id"])
+                self.server.store.playbooks.get(payload["playbook_id"])
+                assigned_skill_id = payload.get("assigned_skill_id") or None
+                if assigned_skill_id is not None:
+                    self.server.store.skills.get(assigned_skill_id)
+                for field_name in ["goal_id", "playbook_id", "name", "description", "depends_on", "approval_required", "queue_name", "priority", "parent_task_id"]:
+                    if field_name in payload:
+                        setattr(item, field_name, payload[field_name])
+                item.assigned_skill_id = assigned_skill_id
+                item.updated_at = datetime.now(UTC)
+                self.server.store.tasks.save(item)
+                self._write_json(_to_jsonable(item))
+                return
+
+            self._write_json({"detail": "Not found"}, status=HTTPStatus.NOT_FOUND)
+        except KeyError as exc:
+            record_error(exc, component="preview_server", operation="do_PUT", metadata={"path": path}, path=self.server.error_log_path)
+            self._write_json({"detail": f"Missing field: {exc.args[0]}"}, status=HTTPStatus.BAD_REQUEST)
+        except Exception as exc:
+            record_error(exc, component="preview_server", operation="do_PUT", metadata={"path": path}, path=self.server.error_log_path)
             self._write_json({"detail": str(exc)}, status=HTTPStatus.BAD_REQUEST)
 
     def log_message(self, format: str, *args: Any) -> None:

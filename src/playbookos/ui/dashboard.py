@@ -103,6 +103,16 @@ TRANSLATIONS = {
         "submit_create": "创建",
         "optional_none": "无",
         "input_placeholder_uri": "例如 file:///workspace/sop.md",
+        "editor_title": "实体详情 / 编辑器",
+        "editor_subtitle": "选择已有 Goal、SOP、Skill、Knowledge 或 Task，查看详情并直接编辑。",
+        "editor_status_ready": "编辑器已就绪。",
+        "editor_resource_type": "资源类型",
+        "editor_resource_id": "实体",
+        "editor_payload": "可编辑 JSON",
+        "editor_meta": "实体详情",
+        "editor_load": "载入",
+        "editor_save": "保存修改",
+        "editor_reset": "重置",
         "section_labels": {
             "goals": "目标",
             "playbooks": "SOP",
@@ -201,6 +211,16 @@ TRANSLATIONS = {
         "submit_create": "Create",
         "optional_none": "None",
         "input_placeholder_uri": "For example file:///workspace/sop.md",
+        "editor_title": "Entity Detail / Editor",
+        "editor_subtitle": "Choose an existing goal, SOP, skill, knowledge item, or task to inspect and edit.",
+        "editor_status_ready": "Editor is ready.",
+        "editor_resource_type": "Resource type",
+        "editor_resource_id": "Entity",
+        "editor_payload": "Editable JSON",
+        "editor_meta": "Entity details",
+        "editor_load": "Load",
+        "editor_save": "Save changes",
+        "editor_reset": "Reset",
         "section_labels": {
             "goals": "Goals",
             "playbooks": "SOPs",
@@ -357,6 +377,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
       .timeline-item::before {{ content: ""; position: absolute; left: 0; top: 10px; width: 8px; height: 8px; border-radius: 999px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); box-shadow: 0 0 18px rgba(99, 102, 241, 0.55); }}
       pre {{ margin: 0; padding: 18px; border-radius: 18px; overflow: auto; font-size: 13px; color: #cbd5e1; background: rgba(2, 6, 23, 0.74); border: 1px solid rgba(148, 163, 184, 0.08); }}
       .footer {{ margin-top: 20px; color: var(--muted); font-size: 13px; text-align: center; }}
+      .editor-meta {{ margin-top: 12px; padding: 14px; border-radius: 14px; background: rgba(2, 6, 23, 0.74); border: 1px solid rgba(148, 163, 184, 0.12); color: var(--muted); font-size: 13px; line-height: 1.7; white-space: pre-wrap; }}
       @media (max-width: 980px) {{
         .hero-meta {{ grid-template-columns: 1fr; }}
         .endpoint-card, .list-card, .activity-card, .form-card {{ grid-column: span 12; }}
@@ -475,6 +496,34 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
       </section>
 
       <section class="section">
+        <article class="card workbench-card">
+          <div class="section-title"><h2 data-i18n="editor_title"></h2><span data-i18n="editor_subtitle"></span></div>
+          <div class="workbench-status" id="editor-status"></div>
+          <div class="workbench-grid">
+            <div class="form-card">
+              <h3 data-i18n="editor_title"></h3>
+              <div class="field-grid">
+                <div class="field"><label data-i18n="editor_resource_type"></label><select id="editor-resource-type"></select></div>
+                <div class="field"><label data-i18n="editor_resource_id"></label><select id="editor-resource-id"></select></div>
+                <div class="field"><label data-i18n="editor_payload"></label><textarea id="editor-payload-input" style="min-height: 280px;"></textarea></div>
+              </div>
+              <div class="form-actions" style="justify-content: space-between; gap: 12px;">
+                <button class="button secondary" id="editor-reset-button" type="button" data-i18n="editor_reset"></button>
+                <div style="display:flex; gap:12px;">
+                  <button class="button secondary" id="editor-load-button" type="button" data-i18n="editor_load"></button>
+                  <button class="button" id="editor-save-button" type="button" data-i18n="editor_save"></button>
+                </div>
+              </div>
+            </div>
+            <div class="form-card">
+              <h3 data-i18n="editor_meta"></h3>
+              <div class="editor-meta" id="editor-meta"></div>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="section">
         <div class="grid">
           <article class="card list-card">
             <div class="section-title"><h2 id="resource-peek-title"></h2><span id="resource-peek-subtitle"></span></div>
@@ -507,6 +556,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
       const translations = {translations_json};
       let currentSnapshot = {snapshot_json};
       let latestResources = {{}};
+      const editableSections = ['goals', 'playbooks', 'skills', 'knowledge_bases', 'tasks'];
       let currentLanguage = localStorage.getItem('playbookos-language') || 'zh';
 
       function t(key) {{
@@ -595,6 +645,11 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         renderSummary(currentSnapshot);
         renderEndpointCards();
         renderWorkbenchOptions();
+        if (!document.getElementById('editor-status').dataset.state) {{
+          document.getElementById('editor-status').dataset.state = 'idle';
+          document.getElementById('editor-status').textContent = t('editor_status_ready');
+        }}
+        refreshEditorResourceOptions();
       }}
 
       function renderSummary(snapshot) {{
@@ -667,6 +722,19 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         return data;
       }}
 
+      async function putJson(path, payload) {{
+        const response = await fetch(`${{apiBase}}/${{path}}`, {{
+          method: 'PUT',
+          headers: {{ 'Content-Type': 'application/json' }},
+          body: JSON.stringify(payload),
+        }});
+        const data = await response.json().catch(() => ({{}}));
+        if (!response.ok) {{
+          throw new Error(data.detail || `Failed to update ${{path}}: ${{response.status}}`);
+        }}
+        return data;
+      }}
+
       function renderResourceRows(payloads) {{
         latestResources = payloads;
         const rows = [];
@@ -714,6 +782,119 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         populateSelect('task-skill-input', latestResources.skills || [], (item) => `${{item.name}} · ${{item.id.slice(0, 8)}}`);
       }}
 
+      function currentEditorSection() {{
+        return document.getElementById('editor-resource-type').value || editableSections[0];
+      }}
+
+      function currentEditorItem() {{
+        const section = currentEditorSection();
+        const itemId = document.getElementById('editor-resource-id').value;
+        return (latestResources[section] || []).find((item) => item.id === itemId) || null;
+      }}
+
+      function sanitizeEditableItem(section, item) {{
+        if (!item) return {{}};
+        if (section === 'goals') {{
+          return {{
+            title: item.title,
+            objective: item.objective,
+            constraints: item.constraints || [],
+            definition_of_done: item.definition_of_done || [],
+            risk_level: item.risk_level,
+            budget_amount: item.budget_amount,
+            budget_currency: item.budget_currency,
+            due_at: item.due_at,
+            owner_id: item.owner_id,
+          }};
+        }}
+        if (section === 'playbooks') {{
+          return {{
+            name: item.name,
+            source_kind: item.source_kind,
+            source_uri: item.source_uri,
+            goal_id: item.goal_id,
+            compiled_spec: item.compiled_spec || {{}},
+          }};
+        }}
+        if (section === 'skills') {{
+          return {{
+            name: item.name,
+            description: item.description,
+            input_schema: item.input_schema || {{}},
+            output_schema: item.output_schema || {{}},
+            required_mcp_servers: item.required_mcp_servers || [],
+            approval_policy: item.approval_policy || {{}},
+            evaluation_policy: item.evaluation_policy || {{}},
+            rollback_version: item.rollback_version,
+            version: item.version,
+            status: item.status,
+          }};
+        }}
+        if (section === 'knowledge_bases') {{
+          return {{
+            name: item.name,
+            description: item.description,
+            content: item.content,
+            tags: item.tags || [],
+            source_uri: item.source_uri,
+            goal_id: item.goal_id,
+            status: item.status,
+          }};
+        }}
+        return {{
+          goal_id: item.goal_id,
+          playbook_id: item.playbook_id,
+          name: item.name,
+          description: item.description,
+          depends_on: item.depends_on || [],
+          assigned_skill_id: item.assigned_skill_id,
+          approval_required: item.approval_required,
+          queue_name: item.queue_name,
+          priority: item.priority,
+          parent_task_id: item.parent_task_id,
+        }};
+      }}
+
+      function renderEditorMeta(item) {{
+        const meta = document.getElementById('editor-meta');
+        if (!item) {{
+          meta.textContent = t('editor_status_ready');
+          return;
+        }}
+        meta.textContent = [
+          `id: ${{item.id}}`,
+          `created_at: ${{item.created_at || ''}}`,
+          `updated_at: ${{item.updated_at || ''}}`,
+          `status: ${{item.status || item.eval_status || item.kind || ''}}`,
+        ].join('\n');
+      }}
+
+      function refreshEditorResourceOptions() {{
+        populateSelect('editor-resource-type', editableSections.map((section) => ({{ id: section, label: sectionLabel(section) }})), (item) => item.label, {{ includeBlank: false }});
+        const section = currentEditorSection();
+        populateSelect('editor-resource-id', latestResources[section] || [], (item) => `${{item.title || item.name || item.id}} · ${{item.id.slice(0, 8)}}`, {{ includeBlank: false }});
+        loadEditorSelection(false);
+      }}
+
+      function loadEditorSelection(updateStatus = true) {{
+        const item = currentEditorItem();
+        document.getElementById('editor-payload-input').value = JSON.stringify(sanitizeEditableItem(currentEditorSection(), item), null, 2);
+        renderEditorMeta(item);
+        if (updateStatus) {{
+          document.getElementById('editor-status').textContent = t('editor_status_ready');
+        }}
+      }}
+
+      async function saveEditorSelection() {{
+        const section = currentEditorSection();
+        const item = currentEditorItem();
+        if (!item) {{
+          throw new Error(currentLanguage === 'zh' ? '没有可编辑实体' : 'No editable entity selected');
+        }}
+        const payload = JSON.parse(document.getElementById('editor-payload-input').value || '{{}}');
+        await putJson(`${{resourcePath(section)}}/${{item.id}}`, payload);
+      }}
+
       async function refresh() {{
         const board = await fetchJson('board');
         const resourcePairs = await Promise.all(sectionOrder.map(async (section) => [section, await fetchJson(resourcePath(section))]));
@@ -721,6 +902,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         renderSummary(board);
         renderResourceRows(payloads);
         renderWorkbenchOptions();
+        refreshEditorResourceOptions();
       }}
 
       async function handleGoalSubmit(event) {{
@@ -810,6 +992,20 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
       document.getElementById('lang-zh').addEventListener('click', () => applyLanguage('zh'));
       document.getElementById('lang-en').addEventListener('click', () => applyLanguage('en'));
       document.getElementById('goal-form').addEventListener('submit', (event) => handleWorkbenchSubmit(handleGoalSubmit, event));
+      document.getElementById('editor-resource-type').addEventListener('change', () => refreshEditorResourceOptions());
+      document.getElementById('editor-resource-id').addEventListener('change', () => loadEditorSelection());
+      document.getElementById('editor-load-button').addEventListener('click', () => loadEditorSelection());
+      document.getElementById('editor-reset-button').addEventListener('click', () => loadEditorSelection());
+      document.getElementById('editor-save-button').addEventListener('click', async () => {{
+        try {{
+          document.getElementById('editor-status').textContent = currentLanguage === 'zh' ? '保存中…' : 'Saving…';
+          await saveEditorSelection();
+          await refresh();
+          document.getElementById('editor-status').textContent = t('workbench_status_success');
+        }} catch (error) {{
+          document.getElementById('editor-status').textContent = `${{t('workbench_status_error')}}: ${{error.message}}`;
+        }}
+      }});
       document.getElementById('playbook-form').addEventListener('submit', (event) => handleWorkbenchSubmit(handlePlaybookSubmit, event));
       document.getElementById('skill-form').addEventListener('submit', (event) => handleWorkbenchSubmit(handleSkillSubmit, event));
       document.getElementById('knowledge-form').addEventListener('submit', (event) => handleWorkbenchSubmit(handleKnowledgeSubmit, event));

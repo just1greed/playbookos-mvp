@@ -114,3 +114,9 @@
 - preview server 已支持 `POST /api/goals`、`POST /api/playbooks/import`、`POST /api/skills`、`POST /api/knowledge-bases`、`POST /api/tasks`
 - 已新增 `tests/test_knowledge_store_unittest.py`，并更新 dashboard / preview / store 相关测试
 - 已完成 `PYTHONPATH=src python3 -m unittest discover -s tests -p 'test*_unittest.py'`，共 23 项测试通过
+
+- 已新增 `PUT /api/goals/{goal_id}`、`PUT /api/playbooks/{playbook_id}`、`PUT /api/skills/{skill_id}`、`PUT /api/knowledge-bases/{knowledge_id}`、`PUT /api/tasks/{task_id}`
+- preview server 已支持对应 `PUT` 能力，使 8081 工作台可以直接编辑既有实体
+- Dashboard 已新增实体详情 / 编辑器面板，支持选择已有 Goal / SOP / Skill / Knowledge / Task 并保存修改
+- 已更新 `tests/test_dashboard_unittest.py`，覆盖编辑器入口与 `putJson` 客户端逻辑
+- 已再次完成 `PYTHONPATH=src python3 -m unittest discover -s tests -p 'test*_unittest.py'`，共 23 项测试通过

@@ -144,6 +144,15 @@ def create_app(store: StoreProtocol | None = None) -> FastAPI:
     def get_goal(goal_id: str, store: store_dep) -> GoalRead:
         return GoalRead.model_validate(_fetch(store.goals, goal_id, "Goal", operation="get_goal", metadata={"goal_id": goal_id}))
 
+    @api.put("/api/goals/{goal_id}", response_model=GoalRead)
+    def update_goal(goal_id: str, payload: GoalCreate, store: store_dep) -> GoalRead:
+        goal = _fetch(store.goals, goal_id, "Goal", operation="update_goal", metadata={"goal_id": goal_id})
+        for field_name, value in payload.model_dump().items():
+            setattr(goal, field_name, value)
+        goal.updated_at = utc_now()
+        store.goals.save(goal)
+        return GoalRead.model_validate(goal)
+
     @api.post("/api/goals/{goal_id}/plan", response_model=GoalPlanRead)
     def plan_goal(goal_id: str, store: store_dep) -> GoalPlanRead:
         try:
@@ -216,6 +225,22 @@ def create_app(store: StoreProtocol | None = None) -> FastAPI:
     def get_playbook(playbook_id: str, store: store_dep) -> PlaybookRead:
         return PlaybookRead.model_validate(_fetch(store.playbooks, playbook_id, "Playbook", operation="get_playbook", metadata={"playbook_id": playbook_id}))
 
+    @api.put("/api/playbooks/{playbook_id}", response_model=PlaybookRead)
+    def update_playbook(playbook_id: str, payload: PlaybookImport, store: store_dep) -> PlaybookRead:
+        playbook = _fetch(store.playbooks, playbook_id, "Playbook", operation="update_playbook", metadata={"playbook_id": playbook_id})
+        if payload.goal_id is not None:
+            _fetch(store.goals, payload.goal_id, "Goal", operation="update_playbook", metadata={"goal_id": payload.goal_id})
+        playbook.name = payload.name
+        playbook.source_kind = payload.source_kind
+        playbook.source_uri = payload.source_uri
+        playbook.goal_id = payload.goal_id
+        playbook.compiled_spec = dict(payload.compiled_spec)
+        if playbook.status == PlaybookStatus.DRAFT and playbook.compiled_spec.get("steps"):
+            playbook.status = PlaybookStatus.COMPILED
+        playbook.updated_at = utc_now()
+        store.playbooks.save(playbook)
+        return PlaybookRead.model_validate(playbook)
+
     @api.post("/api/playbooks/{playbook_id}/compile", response_model=PlaybookRead)
     def compile_playbook(playbook_id: str, store: store_dep) -> PlaybookRead:
         playbook = _fetch(store.playbooks, playbook_id, "Playbook", operation="compile_playbook", metadata={"playbook_id": playbook_id})
@@ -244,6 +269,15 @@ def create_app(store: StoreProtocol | None = None) -> FastAPI:
     def get_skill(skill_id: str, store: store_dep) -> SkillRead:
         return SkillRead.model_validate(_fetch(store.skills, skill_id, "Skill", operation="get_skill", metadata={"skill_id": skill_id}))
 
+    @api.put("/api/skills/{skill_id}", response_model=SkillRead)
+    def update_skill(skill_id: str, payload: SkillCreate, store: store_dep) -> SkillRead:
+        skill = _fetch(store.skills, skill_id, "Skill", operation="update_skill", metadata={"skill_id": skill_id})
+        for field_name, value in payload.model_dump().items():
+            setattr(skill, field_name, value)
+        skill.updated_at = utc_now()
+        store.skills.save(skill)
+        return SkillRead.model_validate(skill)
+
     @api.post("/api/knowledge-bases", response_model=KnowledgeBaseRead, status_code=status.HTTP_201_CREATED)
     def create_knowledge_base(payload: KnowledgeBaseCreate, store: store_dep) -> KnowledgeBaseRead:
         if payload.goal_id is not None:
@@ -259,6 +293,17 @@ def create_app(store: StoreProtocol | None = None) -> FastAPI:
     @api.get("/api/knowledge-bases/{knowledge_id}", response_model=KnowledgeBaseRead)
     def get_knowledge_base(knowledge_id: str, store: store_dep) -> KnowledgeBaseRead:
         return KnowledgeBaseRead.model_validate(_fetch(store.knowledge_bases, knowledge_id, "KnowledgeBase", operation="get_knowledge_base", metadata={"knowledge_id": knowledge_id}))
+
+    @api.put("/api/knowledge-bases/{knowledge_id}", response_model=KnowledgeBaseRead)
+    def update_knowledge_base(knowledge_id: str, payload: KnowledgeBaseCreate, store: store_dep) -> KnowledgeBaseRead:
+        item = _fetch(store.knowledge_bases, knowledge_id, "KnowledgeBase", operation="update_knowledge_base", metadata={"knowledge_id": knowledge_id})
+        if payload.goal_id is not None:
+            _fetch(store.goals, payload.goal_id, "Goal", operation="update_knowledge_base", metadata={"goal_id": payload.goal_id})
+        for field_name, value in payload.model_dump().items():
+            setattr(item, field_name, value)
+        item.updated_at = utc_now()
+        store.knowledge_bases.save(item)
+        return KnowledgeBaseRead.model_validate(item)
 
     @api.get("/api/sessions", response_model=list[SessionRead])
     def list_sessions(store: store_dep) -> list[SessionRead]:
@@ -297,6 +342,19 @@ def create_app(store: StoreProtocol | None = None) -> FastAPI:
     @api.get("/api/tasks/{task_id}", response_model=TaskRead)
     def get_task(task_id: str, store: store_dep) -> TaskRead:
         return TaskRead.model_validate(_fetch(store.tasks, task_id, "Task", operation="get_task", metadata={"task_id": task_id}))
+
+    @api.put("/api/tasks/{task_id}", response_model=TaskRead)
+    def update_task(task_id: str, payload: TaskCreate, store: store_dep) -> TaskRead:
+        task = _fetch(store.tasks, task_id, "Task", operation="update_task", metadata={"task_id": task_id})
+        _fetch(store.goals, payload.goal_id, "Goal", operation="update_task", metadata={"goal_id": payload.goal_id})
+        _fetch(store.playbooks, payload.playbook_id, "Playbook", operation="update_task", metadata={"playbook_id": payload.playbook_id})
+        if payload.assigned_skill_id is not None:
+            _fetch(store.skills, payload.assigned_skill_id, "Skill", operation="update_task", metadata={"assigned_skill_id": payload.assigned_skill_id})
+        for field_name, value in payload.model_dump().items():
+            setattr(task, field_name, value)
+        task.updated_at = utc_now()
+        store.tasks.save(task)
+        return TaskRead.model_validate(task)
 
     @api.post("/api/tasks/{task_id}/accept", response_model=TaskAcceptanceRead)
     def accept_task(task_id: str, payload: TaskAcceptanceCreate, store: store_dep) -> TaskAcceptanceRead:

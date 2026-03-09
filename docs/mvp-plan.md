@@ -253,7 +253,7 @@
 
 下一步建议优先：
 
-- 页面内编辑既有实体与详情视图
+- patch diff、版本回放与审批视图
 - 主控会话对子会话的更细粒度并行调度
 - 真实 OpenAI Agents SDK + MCP 调用
 - Artifact blob/object storage 持久化

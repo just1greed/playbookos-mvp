@@ -29,10 +29,11 @@
 - 错误文件记录：`data/error_records.jsonl`
 - 内置 Dashboard：首页可中英文切换，并可看到 playbooks / knowledge / sessions / acceptances / events
 - 页面工作台已支持直接新建 Goal / SOP / Skill / Knowledge / Task
+- 页面编辑器已支持查看并修改既有 Goal / SOP / Skill / Knowledge / Task
 
 ### 部分实现
 
-- SOP 手动设置：已具备页面内新建工作台，但还缺少对既有 SOP 的编辑 / diff / patch UI
+- SOP 手动设置：已具备页面内新建与基础编辑，但还缺少 diff / patch / 版本审批 UI
 - AI 参与完善：已有 reflection proposal、autopilot 与事件链路，但还没有针对 Skill / Task / SOP / 知识库的专门“AI co-pilot authoring”接口
 - 验收：已有独立的 acceptance 实体与 API，但还没有更细的 checklist 模板、评分和批量验收 UI
 - 知识库：已有 `KnowledgeBase` 实体与手动录入工作台，但还没有 AI 回写、检索和版本化链路
@@ -49,9 +50,8 @@
 
 ## 推荐下一优先级
 
-1. 既有 SOP / Skill / Task / Knowledge 的页面内编辑与详情页
-2. 知识库检索 + AI 回写链路
-3. 多层子会话 / session tree / 并行汇总
-4. SOP patch review / diff / publish UI
-5. Skill versioning / rollback
-6. 真实 executor + MCP 集成
+1. 知识库检索 + AI 回写链路
+2. 多层子会话 / session tree / 并行汇总
+3. SOP patch review / diff / publish UI
+4. Skill versioning / rollback
+5. 真实 executor + MCP 集成

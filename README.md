@@ -165,7 +165,7 @@ PlaybookOS 用来把目标、SOP、技能、工具权限、执行记录和反思
 
 当前还没做完的部分：
 
-- 更细的更新/编辑能力与详情页（当前已支持直接新建，还未支持页面内编辑既有实体）
+- 更细的 patch diff、版本回放与审批工作流（当前已支持页面内直接编辑既有实体）
 - 主控会话自动拆分更多层级子会话并并行汇总
 - AI 主动改写 Skill / Knowledge Base 的专门 authoring 流程
 - 基于真实 OpenAI Agents SDK + MCP 调用结果的在线评测
@@ -229,7 +229,7 @@ PYTHONPATH=src python3 -m playbookos.ui.preview_server --demo --port 8081
 
 然后访问：`http://127.0.0.1:8081/`
 
-当前 8081 预览页已内置工作台表单，可直接创建 Goal、SOP、Skill、Knowledge 和 Task。
+当前 8081 预览页已内置工作台表单，可直接创建 Goal、SOP、Skill、Knowledge 和 Task，并支持选择已有实体查看与编辑。
 
 ## 下一步
 
