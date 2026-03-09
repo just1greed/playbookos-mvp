@@ -230,3 +230,8 @@
 - 已新增 `PUT /api/sessions/{session_id}`（FastAPI 与 Preview Server 均已接入），`会话管理` 页面现支持按 Goal / Run 过滤 session，并修改 session 的状态、标题、objective 与 summary
 - 已扩展 `tests/test_runtime_settings_unittest.py` 覆盖全局设置字段，并扩展 `tests/test_dashboard_unittest.py` 覆盖 `global-settings` / `session-admin` 新表单与会话保存入口
 
+- 已继续增强 `模型设置`：运行时设置现在会返回 `provider_presets`，并内置 `OpenAI / Responses`、`OpenAI / Chat Completions` 与 `Custom OpenAI-Compatible` 三个 preset
+- 已新增 `RuntimeSettingsStore.test_model_settings()` 与 `POST /api/runtime-settings/test`（FastAPI / Preview Server 均已接入），可对当前模型配置执行轻量 probe，并返回 `missing_api_key / ok / error` 等明确状态
+- Dashboard 的 `模型设置` 页面已新增 preset 下拉、一键应用 preset 按钮和 `测试连通性` 按钮；测试结果会在设置摘要区和状态栏中直接回显
+- 已扩展 `tests/test_runtime_settings_unittest.py` 覆盖 preset 列表、missing key probe、transport probe；并扩展 `tests/test_dashboard_unittest.py` 覆盖 preset/test 控件与 `runtime-settings/test` 调用入口
+

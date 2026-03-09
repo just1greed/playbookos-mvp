@@ -167,6 +167,10 @@ def create_app(store: StoreProtocol | None = None) -> FastAPI:
     def update_runtime_settings(payload: dict[str, Any]) -> dict[str, Any]:
         return api.state.runtime_settings.update_settings(payload)
 
+    @api.post("/api/runtime-settings/test", response_model=dict[str, Any])
+    def test_runtime_settings(payload: dict[str, Any]) -> dict[str, Any]:
+        return api.state.runtime_settings.test_model_settings(payload.get("model", payload))
+
     @api.post("/api/goals", response_model=GoalRead, status_code=status.HTTP_201_CREATED)
     def create_goal(payload: GoalCreate, store: store_dep) -> GoalRead:
         goal = Goal(**payload.model_dump())

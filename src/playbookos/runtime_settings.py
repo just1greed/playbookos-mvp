@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import json
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from threading import RLock
 from typing import Any
 
 from playbookos.executor import OpenAIExecutionConfig
+from playbookos.executor.service import ExecutionError, OpenAITransport, UrllibOpenAITransport
 
 _ALLOWED_LANGUAGES = {"zh", "en"}
 _ALLOWED_SCOPE_KINDS = {"all", "goal", "playbook", "status"}
@@ -28,6 +29,32 @@ _ALLOWED_ROUTES = {
     "session-admin",
     "system",
 }
+_PROVIDER_PRESETS = [
+    {
+        "id": "openai-responses",
+        "label": "OpenAI / Responses",
+        "base_url": "https://api.openai.com/v1",
+        "api_format": "responses",
+        "model": "gpt-4.1",
+        "description": "Default OpenAI Responses API preset.",
+    },
+    {
+        "id": "openai-chat",
+        "label": "OpenAI / Chat Completions",
+        "base_url": "https://api.openai.com/v1",
+        "api_format": "chat.completions",
+        "model": "gpt-4.1-mini",
+        "description": "Compatibility preset using chat.completions.",
+    },
+    {
+        "id": "custom-compatible",
+        "label": "Custom OpenAI-Compatible",
+        "base_url": "",
+        "api_format": "responses",
+        "model": "",
+        "description": "Fill in your own compatible gateway and model.",
+    },
+]
 
 
 @dataclass(slots=True)
@@ -203,6 +230,7 @@ class RuntimeSettingsStore:
             return {
                 "model": self._model_settings.to_public_dict(effective=effective),
                 "global": self._global_settings.effective(),
+                "provider_presets": provider_presets(),
             }
 
     def update_model_settings(self, payload: dict[str, Any]) -> dict[str, Any]:
@@ -221,33 +249,104 @@ class RuntimeSettingsStore:
             else:
                 model_payload = dict(payload)
                 global_payload = {}
-            self._apply_model_settings(model_payload)
+            self._apply_model_settings_to(self._model_settings, model_payload)
             self._apply_global_settings(global_payload)
             self._save()
             return self.get_settings()
 
-    def _apply_model_settings(self, payload: dict[str, Any]) -> None:
+    def test_model_settings(
+        self,
+        payload: dict[str, Any] | None = None,
+        *,
+        transport: OpenAITransport | None = None,
+    ) -> dict[str, Any]:
+        with self._lock:
+            candidate = replace(self._model_settings)
+            self._apply_model_settings_to(candidate, dict(payload or {}))
+            effective = candidate.merge(OpenAIExecutionConfig.from_env())
+        request_url = effective.request_url()
+        result: dict[str, Any] = {
+            "ok": False,
+            "request_url": request_url,
+            "api_format": effective.api_format,
+            "model": effective.model,
+            "base_url": effective.base_url,
+            "has_api_key": bool(effective.api_key),
+            "mode": "probe",
+        }
+        if not effective.api_key:
+            result.update(
+                {
+                    "status": "missing_api_key",
+                    "message": "No API key configured. Save a key or provide one before testing connectivity.",
+                }
+            )
+            return result
+        probe_payload = _probe_payload(effective)
+        probe_transport = transport or UrllibOpenAITransport()
+        try:
+            response = probe_transport.post_json(
+                request_url,
+                effective.headers(),
+                probe_payload,
+                min(float(effective.timeout_seconds), 10.0),
+            )
+        except ExecutionError as exc:
+            result.update(
+                {
+                    "status": "error",
+                    "message": str(exc),
+                    "error_class": exc.__class__.__name__,
+                }
+            )
+            return result
+        result.update(
+            {
+                "ok": True,
+                "status": "ok",
+                "message": "Connectivity test succeeded.",
+                "response_id": response.get("id"),
+                "response_model": response.get("model", effective.model),
+                "usage": response.get("usage", {}),
+                "output_preview": _probe_output_preview(effective.api_format, response),
+            }
+        )
+        return result
+
+    def _apply_model_settings_to(self, target: RuntimeModelSettings, payload: dict[str, Any]) -> None:
         if not payload:
             return
+        preset_id = str(payload.get("provider_preset") or "").strip()
+        if preset_id:
+            preset = provider_preset_by_id(preset_id)
+            if preset is not None:
+                preset_payload = {
+                    "base_url": preset.get("base_url", ""),
+                    "api_format": preset.get("api_format", "responses"),
+                    "model": preset.get("model", ""),
+                }
+                for field_name in ["base_url", "api_format", "model"]:
+                    if field_name not in payload:
+                        payload[field_name] = preset_payload[field_name]
         if payload.get("clear_api_key"):
-            self._model_settings.api_key = None
+            target.api_key = None
         elif "api_key" in payload and str(payload.get("api_key") or "").strip():
-            self._model_settings.api_key = str(payload.get("api_key") or "").strip()
+            target.api_key = str(payload.get("api_key") or "").strip()
         for field_name in ["base_url", "model", "api_format", "organization", "project"]:
             if field_name in payload:
                 value = str(payload.get(field_name) or "").strip() or None
-                setattr(self._model_settings, field_name, value)
+                setattr(target, field_name, value)
         if "timeout_seconds" in payload:
             value = payload.get("timeout_seconds")
-            self._model_settings.timeout_seconds = float(value) if value not in {None, ""} else None
+            target.timeout_seconds = float(value) if value not in {None, ""} else None
         if "temperature" in payload:
             value = payload.get("temperature")
-            self._model_settings.temperature = float(value) if value not in {None, ""} else None
+            target.temperature = float(value) if value not in {None, ""} else None
         if "max_output_tokens" in payload:
             value = payload.get("max_output_tokens")
-            self._model_settings.max_output_tokens = int(value) if value not in {None, ""} else None
-        if self._model_settings.api_format not in {None, "responses", "chat.completions"}:
-            self._model_settings.api_format = "responses"
+            target.max_output_tokens = int(value) if value not in {None, ""} else None
+        if target.api_format not in {None, "responses", "chat.completions"}:
+            target.api_format = "responses"
 
     def _apply_global_settings(self, payload: dict[str, Any]) -> None:
         if not payload:
@@ -272,6 +371,63 @@ class RuntimeSettingsStore:
 def create_runtime_settings_store_from_env() -> RuntimeSettingsStore:
     raw_path = (os.getenv("PLAYBOOKOS_RUNTIME_SETTINGS_PATH") or "data/runtime_settings.json").strip()
     return RuntimeSettingsStore(Path(raw_path) if raw_path else None)
+
+
+def provider_presets() -> list[dict[str, Any]]:
+    return [dict(item) for item in _PROVIDER_PRESETS]
+
+
+def provider_preset_by_id(preset_id: str) -> dict[str, Any] | None:
+    target = str(preset_id or "").strip()
+    for item in _PROVIDER_PRESETS:
+        if item["id"] == target:
+            return dict(item)
+    return None
+
+
+def _probe_payload(config: OpenAIExecutionConfig) -> dict[str, Any]:
+    if config.api_format == "chat.completions":
+        return {
+            "model": config.model,
+            "messages": [
+                {"role": "system", "content": "Reply with a short connectivity confirmation."},
+                {"role": "user", "content": "Reply with the single word PONG."},
+            ],
+            "max_tokens": 16,
+            "temperature": 0,
+        }
+    return {
+        "model": config.model,
+        "input": [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "input_text", "text": "Reply with the single word PONG."},
+                ],
+            }
+        ],
+        "max_output_tokens": 16,
+        "temperature": 0,
+    }
+
+
+def _probe_output_preview(api_format: str, response: dict[str, Any]) -> str:
+    if api_format == "chat.completions":
+        choices = response.get("choices") or []
+        if choices and isinstance(choices[0], dict):
+            message = choices[0].get("message") or {}
+            content = message.get("content")
+            if isinstance(content, str):
+                return content[:120]
+        return ""
+    output = response.get("output") or []
+    for item in output:
+        if not isinstance(item, dict):
+            continue
+        for content in item.get("content") or []:
+            if isinstance(content, dict) and content.get("type") in {"output_text", "text"}:
+                return str(content.get("text") or "")[:120]
+    return str(response.get("output_text") or "")[:120]
 
 
 def _default_language_from_env() -> str:

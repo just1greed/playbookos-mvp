@@ -728,11 +728,24 @@
   - 选择具体 session
   - 更新 session 的状态 / 标题 / objective / summary
 
+### 当前新增（模型设置增强）
+
+本轮继续把 `模型设置` 从“纯参数编辑”推进到“可切换、可验证”：
+
+- 已新增 `provider preset`：
+  - `OpenAI / Responses`
+  - `OpenAI / Chat Completions`
+  - `Custom OpenAI-Compatible`
+- 前端支持一键把 preset 回填到 `base_url / api_format / model`
+- 已新增 `POST /api/runtime-settings/test`，可对当前表单里的模型配置做连通性探测
+- 没有 API Key 时，测试接口会返回明确的 `missing_api_key`，而不是前端直接报错
+- 连接成功时会回显 `response_id / response_model / output_preview`，方便快速确认网关与模型是否通
+
 ### 下一步设置方向
 
 设置页后续仍缺：
 
 - `全局设置` 里的更多系统级参数（对象存储路径、错误日志策略、实验开关）
 - `会话管理` 的批量治理动作（归档、批量关闭、异常会话清理）
-- 模型设置里的 provider preset / connection test / 保存历史
+- 模型设置里的保存历史 / 最近成功配置 / 多环境切换
 

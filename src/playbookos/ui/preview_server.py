@@ -131,6 +131,10 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
 
         try:
             payload = self._read_json_body()
+            if path == "/api/runtime-settings/test":
+                result = self.server.runtime_settings.test_model_settings(payload.get("model", payload))
+                self._write_json(result)
+                return
             if path == "/api/goals":
                 goal = Goal(
                     title=payload["title"],

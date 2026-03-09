@@ -288,6 +288,13 @@ TRANSLATIONS = {
         "model_settings_status_ready": "模型设置已载入。",
         "model_settings_status_saving": "正在保存模型设置…",
         "model_settings_status_saved": "模型设置已保存并生效。",
+        "model_settings_provider_preset": "Provider 预设",
+        "model_settings_provider_manual": "手动填写",
+        "model_settings_apply_preset": "应用预设",
+        "model_settings_test_connection": "测试连通性",
+        "model_settings_status_testing": "正在测试模型接口…",
+        "model_settings_status_test_ok": "模型接口连通性测试成功。",
+        "model_settings_status_test_failed": "模型接口连通性测试失败。",
         "global_settings_default_language": "默认语言",
         "global_settings_auto_refresh_seconds": "自动刷新间隔（秒，0 表示关闭）",
         "global_settings_default_scope": "默认范围",
@@ -678,6 +685,13 @@ TRANSLATIONS = {
         "model_settings_status_ready": "Model settings loaded.",
         "model_settings_status_saving": "Saving model settings…",
         "model_settings_status_saved": "Model settings saved and applied.",
+        "model_settings_provider_preset": "Provider Preset",
+        "model_settings_provider_manual": "Manual",
+        "model_settings_apply_preset": "Apply Preset",
+        "model_settings_test_connection": "Test Connection",
+        "model_settings_status_testing": "Testing model connectivity…",
+        "model_settings_status_test_ok": "Model connectivity test succeeded.",
+        "model_settings_status_test_failed": "Model connectivity test failed.",
         "global_settings_default_language": "Default Language",
         "global_settings_auto_refresh_seconds": "Auto Refresh (seconds, 0 to disable)",
         "global_settings_default_scope": "Default Scope",
@@ -1401,6 +1415,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
               <p data-i18n="settings_model_card"></p>
               <div class="rows" id="model-settings-rows"></div>
               <div class="field-grid" style="margin-top:14px;">
+                <div class="field"><label data-i18n="model_settings_provider_preset"></label><select id="model-settings-provider-preset-input"></select></div>
                 <div class="field"><label data-i18n="model_settings_base_url"></label><input id="model-settings-base-url-input" /></div>
                 <div class="field"><label data-i18n="model_settings_model"></label><input id="model-settings-model-input" /></div>
                 <div class="field"><label data-i18n="model_settings_api_format"></label><select id="model-settings-api-format-input"><option value="responses">responses</option><option value="chat.completions">chat.completions</option></select></div>
@@ -1413,7 +1428,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
                 <label class="inline-checkbox"><input id="model-settings-clear-api-key-input" type="checkbox" /><span data-i18n="model_settings_clear_api_key"></span></label>
               </div>
               <div class="workbench-status" id="model-settings-status"></div>
-              <div class="form-actions"><button class="button" id="model-settings-save-button" type="button" data-i18n="model_settings_save"></button></div>
+              <div class="form-actions"><button class="button secondary" id="model-settings-apply-preset-button" type="button" data-i18n="model_settings_apply_preset"></button><button class="button secondary" id="model-settings-test-button" type="button" data-i18n="model_settings_test_connection"></button><button class="button" id="model-settings-save-button" type="button" data-i18n="model_settings_save"></button></div>
             </div>
             <div class="placeholder-card" id="global-settings-panel" data-settings-panel="global-settings">
               <h3 data-i18n="nav_global_settings"></h3>
@@ -1790,7 +1805,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
           routeDetailRow('ready / running', [`ready: ${{ready}}`, `running: ${{running}}`], running ? 'running' : 'ready'),
           routeDetailRow('review / waiting', [`review: ${{review}}`, `waiting_human: ${{waiting}}`], (review || waiting) ? 'review' : 'idle'),
           routeDetailRow('blockers', [`blocked: ${{blocked}}`, `depends_on: ${{dependencyBlocked}}`, `failed runs: ${{failedRuns}}`], (blocked || failedRuns) ? 'blocked' : 'idle'),
-        ].join('');
+        ].concat(testLines).join('');
         rowNode.innerHTML = items.length ? items.join('') : routeDetailRow(t('route_detail_empty'), [t('route_placeholder_body')], t('idle'));
       }}
 
@@ -1859,10 +1874,38 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         syncAutoRefreshTimer();
       }}
 
+      function modelProviderPresets() {{
+        return (runtimeSettings && runtimeSettings.provider_presets) || [];
+      }}
+
+      function renderModelPresetOptions() {{
+        const presetSelect = document.getElementById('model-settings-provider-preset-input');
+        if (!presetSelect) return;
+        const options = [`<option value="">${{escapeHtml(t('model_settings_provider_manual'))}}</option>`]
+          .concat(modelProviderPresets().map((item) => `<option value="${{escapeHtml(item.id)}}">${{escapeHtml(item.label)}}</option>`));
+        presetSelect.innerHTML = options.join('');
+        presetSelect.value = '';
+      }}
+
+      function applyModelPreset(presetId) {{
+        const preset = modelProviderPresets().find((item) => item.id === presetId) || null;
+        if (!preset) return false;
+        document.getElementById('model-settings-base-url-input').value = preset.base_url || '';
+        document.getElementById('model-settings-model-input').value = preset.model || '';
+        document.getElementById('model-settings-api-format-input').value = preset.api_format || 'responses';
+        const statusNode = document.getElementById('model-settings-status');
+        if (statusNode) {{
+          statusNode.dataset.state = 'idle';
+          statusNode.textContent = `${{t('model_settings_apply_preset')}}: ${{preset.label}}`;
+        }}
+        return true;
+      }}
+
       function renderModelSettingsForm() {{
         const model = (runtimeSettings && runtimeSettings.model) || {{}};
         const statusNode = document.getElementById('model-settings-status');
         if (!document.getElementById('model-settings-base-url-input')) return;
+        renderModelPresetOptions();
         document.getElementById('model-settings-base-url-input').value = model.base_url || '';
         document.getElementById('model-settings-model-input').value = model.model || '';
         document.getElementById('model-settings-api-format-input').value = model.api_format || 'responses';
@@ -1977,6 +2020,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         const config = metrics.openai_config || {{}};
         const runtimeModel = (runtimeSettings && runtimeSettings.model) || {{}};
         const runtimeGlobal = runtimeGlobalSettings();
+        const testLines = latestModelConnectionTest ? [routeDetailRow('connection test', [`status: ${{latestModelConnectionTest.status || (latestModelConnectionTest.ok ? 'ok' : 'error')}}`, `message: ${{latestModelConnectionTest.message || 'n/a'}}`, `response: ${{latestModelConnectionTest.response_model || latestModelConnectionTest.response_id || latestModelConnectionTest.request_url || 'n/a'}}`], latestModelConnectionTest.ok ? 'active' : 'blocked')] : [];
         modelRows.innerHTML = [
           routeDetailRow(runtimeModel.model || config.model || 'n/a', [
             `format: ${{runtimeModel.api_format || metrics.openai_request_format || 'n/a'}}`,
@@ -3725,6 +3769,41 @@ ${{t('skill_version_servers')}}: ${{(skill.required_mcp_servers || []).join(', '
         applyGlobalScope(currentScopeKind, event.target.value || '', true);
       }});
 
+      document.getElementById('model-settings-apply-preset-button').addEventListener('click', () => {{
+        applyModelPreset(document.getElementById('model-settings-provider-preset-input').value || '');
+      }});
+
+      document.getElementById('model-settings-test-button').addEventListener('click', async () => {{
+        const statusNode = document.getElementById('model-settings-status');
+        try {{
+          statusNode.dataset.state = 'saving';
+          statusNode.textContent = t('model_settings_status_testing');
+          latestModelConnectionTest = await postJson('runtime-settings/test', {{
+            model: {{
+              provider_preset: document.getElementById('model-settings-provider-preset-input').value || '',
+              base_url: document.getElementById('model-settings-base-url-input').value.trim(),
+              model: document.getElementById('model-settings-model-input').value.trim(),
+              api_format: document.getElementById('model-settings-api-format-input').value,
+              timeout_seconds: document.getElementById('model-settings-timeout-input').value.trim(),
+              temperature: document.getElementById('model-settings-temperature-input').value.trim(),
+              max_output_tokens: document.getElementById('model-settings-max-output-input').value.trim(),
+              organization: document.getElementById('model-settings-organization-input').value.trim(),
+              project: document.getElementById('model-settings-project-input').value.trim(),
+              api_key: document.getElementById('model-settings-api-key-input').value,
+              clear_api_key: document.getElementById('model-settings-clear-api-key-input').checked,
+            }},
+          }});
+          renderSettingsPanels();
+          statusNode.dataset.state = latestModelConnectionTest.ok ? 'success' : 'error';
+          statusNode.textContent = latestModelConnectionTest.ok
+            ? `${{t('model_settings_status_test_ok')}} ${{latestModelConnectionTest.output_preview || ''}}`.trim()
+            : `${{t('model_settings_status_test_failed')}} ${{latestModelConnectionTest.message || ''}}`.trim();
+        }} catch (error) {{
+          statusNode.dataset.state = 'error';
+          statusNode.textContent = `${{t('workbench_status_error')}}: ${{error.message}}`;
+        }}
+      }});
+
       document.getElementById('model-settings-save-button').addEventListener('click', async () => {{
         const statusNode = document.getElementById('model-settings-status');
         try {{
@@ -3732,6 +3811,7 @@ ${{t('skill_version_servers')}}: ${{(skill.required_mcp_servers || []).join(', '
           statusNode.textContent = t('model_settings_status_saving');
           await putJson('runtime-settings', {{
             model: {{
+              provider_preset: document.getElementById('model-settings-provider-preset-input').value || '',
               base_url: document.getElementById('model-settings-base-url-input').value.trim(),
               model: document.getElementById('model-settings-model-input').value.trim(),
               api_format: document.getElementById('model-settings-api-format-input').value,

@@ -4,6 +4,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+from playbookos.executor.service import ExecutionError
 from playbookos.runtime_settings import RuntimeSettingsStore
 
 try:
@@ -14,6 +15,24 @@ except ModuleNotFoundError:
     TestClient = None
     create_app = None
     InMemoryStore = None
+
+
+class FakeProbeTransport:
+    def __init__(self, response_payload: dict | None = None, error: Exception | None = None) -> None:
+        self.response_payload = response_payload or {}
+        self.error = error
+        self.calls: list[dict] = []
+
+    def post_json(self, url: str, headers: dict[str, str], payload: dict[str, object], timeout_seconds: float) -> dict:
+        self.calls.append({
+            "url": url,
+            "headers": headers,
+            "payload": payload,
+            "timeout_seconds": timeout_seconds,
+        })
+        if self.error is not None:
+            raise self.error
+        return self.response_payload
 
 
 class RuntimeSettingsStoreTestCase(unittest.TestCase):
@@ -43,6 +62,46 @@ class RuntimeSettingsStoreTestCase(unittest.TestCase):
         self.assertEqual(settings["global"]["default_route"], "dashboard")
         self.assertEqual(settings["global"]["auto_refresh_seconds"], 0)
         self.assertTrue(settings["global"]["show_system_group"])
+        self.assertEqual(settings["provider_presets"][0]["id"], "openai-responses")
+
+    def test_model_connectivity_probe_handles_missing_key(self) -> None:
+        with patch.dict(os.environ, {"PLAYBOOKOS_OPENAI_API_KEY": ""}, clear=False):
+            store = RuntimeSettingsStore(path=None)
+            result = store.test_model_settings({"model": "gpt-4.1"})
+
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["status"], "missing_api_key")
+        self.assertIn("No API key configured", result["message"])
+
+    def test_model_connectivity_probe_uses_transport(self) -> None:
+        transport = FakeProbeTransport(
+            response_payload={
+                "id": "resp-123",
+                "model": "gpt-4.1-mini",
+                "output": [
+                    {"content": [{"type": "output_text", "text": "PONG"}]}
+                ],
+                "usage": {"total_tokens": 9},
+            }
+        )
+        with patch.dict(
+            os.environ,
+            {
+                "PLAYBOOKOS_OPENAI_API_KEY": "env-secret-key",
+                "PLAYBOOKOS_OPENAI_BASE_URL": "https://api.openai.com/v1",
+                "PLAYBOOKOS_OPENAI_MODEL": "gpt-4.1",
+            },
+            clear=False,
+        ):
+            store = RuntimeSettingsStore(path=None)
+            result = store.test_model_settings({"provider_preset": "openai-responses", "model": "gpt-4.1-mini"}, transport=transport)
+
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["status"], "ok")
+        self.assertEqual(result["response_id"], "resp-123")
+        self.assertEqual(result["output_preview"], "PONG")
+        self.assertEqual(transport.calls[0]["url"], "https://api.openai.com/v1/responses")
+        self.assertEqual(transport.calls[0]["payload"]["model"], "gpt-4.1-mini")
 
     def test_store_persists_overrides_and_clears_api_key(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir, patch.dict(
