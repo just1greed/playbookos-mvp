@@ -3,7 +3,7 @@
 ## 当前状态
 
 - 仓库位置：`/home/greed/playbookos-mvp`
-- Git 状态：`master` 分支持续开发中，最近一次已推送提交为 `82421cf`（`Add prompt-driven tooling guidance for SOP ingestion`）
+- Git 状态：`master` 分支持续开发中，本文件会随每轮实现持续补记并在完成后推送
 - 项目结构：`src/`、`tests/`、`docs/`、`data/` 已形成可运行 MVP，覆盖控制面、持久化、预览服务与前端 Dashboard
 - 约束文件：当前未在仓库内发现额外的仓库级 `AGENTS.md`
 
@@ -218,3 +218,10 @@
 - 已把顶部 `全局范围` 做成真实筛选器：新增二级值选择，支持按 `Goal / SOP / 状态` 过滤页面数据，而不再只是静态下拉框
 - 当前筛选会联动全局看板、工作台摘要、资源速览、操作区、会话/学习/设置页摘要，以及左侧导航计数
 - 已补充 `tests/test_dashboard_unittest.py` 覆盖 `global-scope-value-select`、`applyGlobalScope()`、`scopeOptions()` 与 `filterResourcesByScope()`
+
+- 已继续完成设置页第一块真实可编辑能力：新增 `src/playbookos/runtime_settings.py`，把模型运行时配置从纯环境变量读取扩展为“环境变量默认值 + 本地 JSON 覆盖”的统一存储层
+- Preview Server 与 FastAPI API 均已新增 `GET /api/runtime-settings`、`PUT /api/runtime-settings`，并把 `autopilot / execute` 的 `OpenAIAgentsSDKAdapter` 配置切换为运行时设置对象
+- Dashboard 的 `模型设置` 页面已从静态摘要升级为可编辑表单，支持修改 `base_url / model / api_format / timeout / temperature / max_output_tokens / organization / project / api_key`，并支持 masked API Key 展示与保存后即时刷新
+- 已新增 `tests/test_runtime_settings_unittest.py`，覆盖运行时设置存储的 merge / 持久化 / clear api key；并扩展 `tests/test_dashboard_unittest.py` 校验模型设置入口、读写 API 调用与保存按钮
+- 本轮已再次通过 `python3 -m compileall src tests`、`PYTHONPATH=src python3 -m unittest tests/test_dashboard_unittest.py tests/test_runtime_settings_unittest.py tests/test_preview_server_unittest.py` 与 `node --check /tmp/playbookos_dashboard_runtime.js`
+

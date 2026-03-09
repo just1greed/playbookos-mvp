@@ -672,3 +672,46 @@
 - 2026-03-09：已补上首页剩余两块核心区：`进行中任务区 / 自动迭代动态区`。现在默认首页已经具备系统摘要、流程总览、关键阻塞、推荐动作、进行中任务和学习动态六块核心信息。
 
 - 2026-03-09：已把顶部全局范围从静态文案升级为真实筛选联动，支持 `全部 / 按 Goal / 按 SOP / 按状态` 两级过滤；当前页面摘要、路由内容区、资源速览、操作区和侧边导航计数都会跟随过滤结果刷新。
+
+---
+
+## 10. 当前已落地（2026-03-09，模型设置）
+
+本轮已经把“设置页可编辑能力”的第一块真正落地：`模型设置` 不再只是摘要卡，而是具备运行时可编辑表单。
+
+### 已实现
+
+- 新增运行时设置存储：`data/runtime_settings.json`
+- 新增统一运行时设置层：`src/playbookos/runtime_settings.py`
+- Dashboard 设置页已支持编辑以下字段：
+  - `base_url`
+  - `model`
+  - `api_format`
+  - `timeout_seconds`
+  - `temperature`
+  - `max_output_tokens`
+  - `organization`
+  - `project`
+  - `api_key`
+- 前端已接入：
+  - `GET /api/runtime-settings`
+  - `PUT /api/runtime-settings`
+- Preview Server 与 FastAPI App 的执行入口，现统一读取运行时模型配置，而不再只依赖进程启动时环境变量
+
+### 当前意义
+
+这意味着：
+
+- 用户可以直接在 UI 中切换模型网关和模型名
+- 可以先保留环境变量默认值，再按页面覆盖部分字段
+- API Key 不会明文回显，只展示 masked preview
+- 后续做“多模型 / 环境切换 / provider presets”时，已经有统一状态入口
+
+### 下一步设置方向
+
+设置页后续仍缺：
+
+- `全局设置` 的真正可编辑项（默认执行策略、自动刷新、默认语言、对象落盘策略）
+- `会话管理` 的治理动作（清理、归档、按 Goal/Run 检索）
+- 模型设置里的 provider preset / connection test / 保存历史
+

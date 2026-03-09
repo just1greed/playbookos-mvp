@@ -274,6 +274,20 @@ TRANSLATIONS = {
         "settings_model_card": "模型配置会集中展示 provider、model、base url、timeout 和输出参数。",
         "settings_global_card": "全局设置会管理语言、刷新频率、对象存储路径和实验性开关。",
         "settings_session_card": "会话管理会展示 supervisor / worker session 总量、异常状态与治理动作。",
+        "model_settings_base_url": "Base URL",
+        "model_settings_model": "模型",
+        "model_settings_api_format": "接口格式",
+        "model_settings_timeout": "超时（秒）",
+        "model_settings_temperature": "Temperature",
+        "model_settings_max_output": "最大输出 Token",
+        "model_settings_organization": "Organization",
+        "model_settings_project": "Project",
+        "model_settings_api_key": "API Key（留空则保持不变）",
+        "model_settings_clear_api_key": "清空已保存 API Key",
+        "model_settings_save": "保存模型设置",
+        "model_settings_status_ready": "模型设置已载入。",
+        "model_settings_status_saving": "正在保存模型设置…",
+        "model_settings_status_saved": "模型设置已保存并生效。",
         "tracked_items": "个跟踪对象",
         "overview_suffix": "概览",
         "last_updated": "最近刷新",
@@ -628,6 +642,20 @@ TRANSLATIONS = {
         "settings_model_card": "Model settings will surface provider, model, base URL, timeout, and output parameters.",
         "settings_global_card": "Global settings will manage language, refresh cadence, object-store paths, and experimental toggles.",
         "settings_session_card": "Session admin will show supervisor / worker totals, abnormal states, and governance actions.",
+        "model_settings_base_url": "Base URL",
+        "model_settings_model": "Model",
+        "model_settings_api_format": "API Format",
+        "model_settings_timeout": "Timeout (seconds)",
+        "model_settings_temperature": "Temperature",
+        "model_settings_max_output": "Max Output Tokens",
+        "model_settings_organization": "Organization",
+        "model_settings_project": "Project",
+        "model_settings_api_key": "API Key (leave blank to keep current)",
+        "model_settings_clear_api_key": "Clear saved API key",
+        "model_settings_save": "Save Model Settings",
+        "model_settings_status_ready": "Model settings loaded.",
+        "model_settings_status_saving": "Saving model settings…",
+        "model_settings_status_saved": "Model settings saved and applied.",
         "tracked_items": "tracked items",
         "overview_suffix": "overview",
         "last_updated": "Last updated",
@@ -1328,6 +1356,20 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
               <h3 data-i18n="nav_model_settings"></h3>
               <p data-i18n="settings_model_card"></p>
               <div class="rows" id="model-settings-rows"></div>
+              <div class="field-grid" style="margin-top:14px;">
+                <div class="field"><label data-i18n="model_settings_base_url"></label><input id="model-settings-base-url-input" /></div>
+                <div class="field"><label data-i18n="model_settings_model"></label><input id="model-settings-model-input" /></div>
+                <div class="field"><label data-i18n="model_settings_api_format"></label><select id="model-settings-api-format-input"><option value="responses">responses</option><option value="chat.completions">chat.completions</option></select></div>
+                <div class="field"><label data-i18n="model_settings_timeout"></label><input id="model-settings-timeout-input" type="number" step="1" min="1" /></div>
+                <div class="field"><label data-i18n="model_settings_temperature"></label><input id="model-settings-temperature-input" type="number" step="0.1" min="0" /></div>
+                <div class="field"><label data-i18n="model_settings_max_output"></label><input id="model-settings-max-output-input" type="number" step="1" min="1" /></div>
+                <div class="field"><label data-i18n="model_settings_organization"></label><input id="model-settings-organization-input" /></div>
+                <div class="field"><label data-i18n="model_settings_project"></label><input id="model-settings-project-input" /></div>
+                <div class="field"><label data-i18n="model_settings_api_key"></label><input id="model-settings-api-key-input" type="password" /></div>
+                <label class="inline-checkbox"><input id="model-settings-clear-api-key-input" type="checkbox" /><span data-i18n="model_settings_clear_api_key"></span></label>
+              </div>
+              <div class="workbench-status" id="model-settings-status"></div>
+              <div class="form-actions"><button class="button" id="model-settings-save-button" type="button" data-i18n="model_settings_save"></button></div>
             </div>
             <div class="placeholder-card" id="global-settings-panel" data-settings-panel="global-settings">
               <h3 data-i18n="nav_global_settings"></h3>
@@ -1359,6 +1401,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
       let latestResources = {{}};
       let latestIngestionResult = null;
       let latestAuthoringPacks = {{}};
+      let runtimeSettings = {{ model: {{}} }};
       const editableSections = ['goals', 'playbooks', 'skills', 'mcp_servers', 'knowledge_bases', 'tasks'];
       let currentLanguage = localStorage.getItem('playbookos-language') || 'zh';
       let currentRoute = (window.location.hash || '#dashboard').replace(/^#/, '') || 'dashboard';
@@ -1710,6 +1753,27 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         feedNode.innerHTML = feed.length ? feed.join('') : routeDetailRow(t('route_detail_empty'), [t('route_placeholder_body')], t('idle'));
       }}
 
+      function renderModelSettingsForm() {{
+        const model = (runtimeSettings && runtimeSettings.model) || {{}};
+        const statusNode = document.getElementById('model-settings-status');
+        if (!document.getElementById('model-settings-base-url-input')) return;
+        document.getElementById('model-settings-base-url-input').value = model.base_url || '';
+        document.getElementById('model-settings-model-input').value = model.model || '';
+        document.getElementById('model-settings-api-format-input').value = model.api_format || 'responses';
+        document.getElementById('model-settings-timeout-input').value = model.timeout_seconds ?? '';
+        document.getElementById('model-settings-temperature-input').value = model.temperature ?? '';
+        document.getElementById('model-settings-max-output-input').value = model.max_output_tokens ?? '';
+        document.getElementById('model-settings-organization-input').value = model.organization || '';
+        document.getElementById('model-settings-project-input').value = model.project || '';
+        document.getElementById('model-settings-api-key-input').value = '';
+        document.getElementById('model-settings-api-key-input').placeholder = model.api_key_preview || '';
+        document.getElementById('model-settings-clear-api-key-input').checked = false;
+        if (statusNode && !statusNode.dataset.state) {{
+          statusNode.dataset.state = 'idle';
+          statusNode.textContent = t('model_settings_status_ready');
+        }}
+      }}
+
       function renderSettingsPanels() {{
         const modelRows = document.getElementById('model-settings-rows');
         const globalRows = document.getElementById('global-settings-rows');
@@ -1721,17 +1785,19 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         const latestRun = [...runs].sort((left, right) => String(right.updated_at || right.created_at || '').localeCompare(String(left.updated_at || left.created_at || '')))[0] || null;
         const metrics = (latestRun && latestRun.metrics) || {{}};
         const config = metrics.openai_config || {{}};
+        const runtimeModel = (runtimeSettings && runtimeSettings.model) || {{}};
         modelRows.innerHTML = [
-          routeDetailRow(config.model || 'n/a', [
-            `mode: ${{metrics.openai_mode || metrics.adapter || 'n/a'}}`,
-            `format: ${{metrics.openai_request_format || 'n/a'}}`,
-            `url: ${{metrics.openai_request_url || 'n/a'}}`,
+          routeDetailRow(runtimeModel.model || config.model || 'n/a', [
+            `format: ${{runtimeModel.api_format || metrics.openai_request_format || 'n/a'}}`,
+            `url: ${{runtimeModel.base_url || config.base_url || 'n/a'}}`,
+            `api key: ${{runtimeModel.api_key_preview || (runtimeModel.has_api_key ? 'configured' : 'not set')}}`,
           ], latestRun ? (latestRun.status || 'idle') : 'idle'),
           routeDetailRow('tool calls', [
             `${{t('execution_inspector_calls')}}: ${{((metrics.tool_calls || []).length)}}`,
             `response: ${{metrics.openai_response_id || 'n/a'}}`,
           ], ((metrics.tool_calls || []).length) ? 'active' : 'idle'),
         ].join('');
+        renderModelSettingsForm();
         globalRows.innerHTML = [
           routeDetailRow('ui', [
             `language: ${{currentLanguage}}`,
@@ -3188,8 +3254,14 @@ ${{t('skill_version_servers')}}: ${{(skill.required_mcp_servers || []).join(', '
         }} catch (error) {{
           showBootError(new Error(`Failed to load board: ${{error.message}}`));
         }}
+        let settingsPayload = runtimeSettings;
+        try {{
+          settingsPayload = await fetchJson('runtime-settings');
+        }} catch (error) {{
+          settingsPayload = runtimeSettings;
+        }}
         const resourceResults = await Promise.allSettled(sectionOrder.map((section) => fetchJson(resourcePath(section))));
-        const payloads = {{ ...latestResources }};
+        const payloads = {{ ...allResources }};
         const failures = [];
         resourceResults.forEach((result, index) => {{
           const section = sectionOrder[index];
@@ -3200,6 +3272,7 @@ ${{t('skill_version_servers')}}: ${{(skill.required_mcp_servers || []).join(', '
             failures.push(`${{section}}: ${{result.reason && result.reason.message ? result.reason.message : String(result.reason)}}`);
           }}
         }});
+        runtimeSettings = settingsPayload || runtimeSettings;
         rawSnapshot = board;
         allResources = payloads;
         applyGlobalScope(currentScopeKind, currentScopeValue, false);
@@ -3442,6 +3515,34 @@ ${{t('skill_version_servers')}}: ${{(skill.required_mcp_servers || []).join(', '
 
       document.getElementById('global-scope-value-select').addEventListener('change', (event) => {{
         applyGlobalScope(currentScopeKind, event.target.value || '', true);
+      }});
+
+      document.getElementById('model-settings-save-button').addEventListener('click', async () => {{
+        const statusNode = document.getElementById('model-settings-status');
+        try {{
+          statusNode.dataset.state = 'saving';
+          statusNode.textContent = t('model_settings_status_saving');
+          await putJson('runtime-settings', {{
+            model: {{
+              base_url: document.getElementById('model-settings-base-url-input').value.trim(),
+              model: document.getElementById('model-settings-model-input').value.trim(),
+              api_format: document.getElementById('model-settings-api-format-input').value,
+              timeout_seconds: document.getElementById('model-settings-timeout-input').value.trim(),
+              temperature: document.getElementById('model-settings-temperature-input').value.trim(),
+              max_output_tokens: document.getElementById('model-settings-max-output-input').value.trim(),
+              organization: document.getElementById('model-settings-organization-input').value.trim(),
+              project: document.getElementById('model-settings-project-input').value.trim(),
+              api_key: document.getElementById('model-settings-api-key-input').value,
+              clear_api_key: document.getElementById('model-settings-clear-api-key-input').checked,
+            }},
+          }});
+          await refresh();
+          statusNode.dataset.state = 'success';
+          statusNode.textContent = t('model_settings_status_saved');
+        }} catch (error) {{
+          statusNode.dataset.state = 'error';
+          statusNode.textContent = `${{t('workbench_status_error')}}: ${{error.message}}`;
+        }}
       }});
 
       document.getElementById('refresh-board').addEventListener('click', async () => {{

@@ -103,6 +103,7 @@ from playbookos.reflection import (
     reject_reflection_in_store,
 )
 from playbookos.supervisor import AcceptanceError, accept_task_in_store
+from playbookos.runtime_settings import create_runtime_settings_store_from_env
 from playbookos.ui import build_dashboard_html
 
 
@@ -113,9 +114,13 @@ def create_app(store: StoreProtocol | None = None) -> FastAPI:
         description="MVP control plane API for PlaybookOS.",
     )
     api.state.store = store or create_store_from_env()
+    api.state.runtime_settings = create_runtime_settings_store_from_env()
 
     def get_store() -> StoreProtocol:
         return api.state.store
+
+    def get_runtime_settings():
+        return api.state.runtime_settings
 
     store_dep = Annotated[StoreProtocol, Depends(get_store)]
 
@@ -151,6 +156,14 @@ def create_app(store: StoreProtocol | None = None) -> FastAPI:
     @api.get("/api/board", response_model=BoardSnapshot)
     def get_board(store: store_dep) -> BoardSnapshot:
         return BoardSnapshot.model_validate(store.board_snapshot())
+
+    @api.get("/api/runtime-settings", response_model=dict[str, Any])
+    def get_runtime_settings_payload() -> dict[str, Any]:
+        return api.state.runtime_settings.get_settings()
+
+    @api.put("/api/runtime-settings", response_model=dict[str, Any])
+    def update_runtime_settings(payload: dict[str, Any]) -> dict[str, Any]:
+        return api.state.runtime_settings.update_model_settings(payload.get("model", payload))
 
     @api.post("/api/goals", response_model=GoalRead, status_code=status.HTTP_201_CREATED)
     def create_goal(payload: GoalCreate, store: store_dep) -> GoalRead:
@@ -201,7 +214,7 @@ def create_app(store: StoreProtocol | None = None) -> FastAPI:
     def autopilot_goal(goal_id: str, store: store_dep) -> GoalAutopilotRead:
         try:
             plan_goal_in_store(store, goal_id)
-            result = autopilot_goal_in_store(store, goal_id, adapter=OpenAIAgentsSDKAdapter())
+            result = autopilot_goal_in_store(store, goal_id, adapter=OpenAIAgentsSDKAdapter(config=api.state.runtime_settings.openai_config()))
         except (PlanningError, OrchestrationError, ExecutionError, ReflectionError) as exc:
             raise _conflict_http_exception(exc, operation="autopilot_goal", metadata={"goal_id": goal_id}) from exc
         return GoalAutopilotRead.model_validate(result)
@@ -585,7 +598,7 @@ def create_app(store: StoreProtocol | None = None) -> FastAPI:
     @api.post("/api/runs/{run_id}/execute", response_model=RunExecutionRead)
     def execute_run(run_id: str, store: store_dep) -> RunExecutionRead:
         try:
-            result = execute_run_in_store(store, run_id, adapter=OpenAIAgentsSDKAdapter())
+            result = execute_run_in_store(store, run_id, adapter=OpenAIAgentsSDKAdapter(config=api.state.runtime_settings.openai_config()))
             if result.status == RunStatus.SUCCEEDED:
                 run = _fetch(store.runs, run_id, "Run", operation="execute_run_lookup", metadata={"run_id": run_id})
                 complete_task_in_store(store, run.task_id)

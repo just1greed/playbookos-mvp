@@ -16,6 +16,7 @@ from playbookos.api.store import InMemoryStore, StoreProtocol
 from playbookos.domain.models import Goal, KnowledgeBase, MCPServer, MCPServerStatus, Playbook, PlaybookStatus, ReflectionStatus, RunStatus, Skill, Task, TaskStatus, utc_now
 from playbookos.authoring import apply_skill_authoring_pack_in_store, build_skill_authoring_pack_in_store
 from playbookos.executor.service import DeterministicExecutorAdapter, OpenAIAgentsSDKAdapter, autopilot_goal_in_store, execute_run_in_store
+from playbookos.runtime_settings import RuntimeSettingsStore, create_runtime_settings_store_from_env
 from playbookos.ingestion import SOPIngestionError, ingest_sop_in_store, materialize_required_mcp_in_store, materialize_suggested_skill_in_store
 from playbookos.object_store import attach_source_object_to_playbook, create_object_store_from_env
 from playbookos.observability import get_error_log_path, list_recorded_errors, record_error
@@ -44,6 +45,9 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
                 return
             if path == "/api/board":
                 self._write_json(self.server.store.board_snapshot())
+                return
+            if path == "/api/runtime-settings":
+                self._write_json(self.server.runtime_settings.get_settings())
                 return
             if path == "/api/goals":
                 self._write_json(_serialize_items(self.server.store.goals.list()))
@@ -326,7 +330,7 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
             if path.startswith("/api/goals/") and path.endswith("/autopilot"):
                 goal_id = path.split("/")[-2]
                 plan_goal_in_store(self.server.store, goal_id)
-                result = autopilot_goal_in_store(self.server.store, goal_id, adapter=OpenAIAgentsSDKAdapter())
+                result = autopilot_goal_in_store(self.server.store, goal_id, adapter=OpenAIAgentsSDKAdapter(config=self.server.runtime_settings.openai_config()))
                 self._write_json(_to_jsonable(result))
                 return
             if path.startswith("/api/tasks/") and path.endswith("/accept"):
@@ -354,7 +358,7 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
                 return
             if path.startswith("/api/runs/") and path.endswith("/execute"):
                 run_id = path.split("/")[-2]
-                result = execute_run_in_store(self.server.store, run_id, adapter=OpenAIAgentsSDKAdapter())
+                result = execute_run_in_store(self.server.store, run_id, adapter=OpenAIAgentsSDKAdapter(config=self.server.runtime_settings.openai_config()))
                 if result.status == RunStatus.SUCCEEDED:
                     run = self.server.store.runs.get(run_id)
                     complete_task_in_store(self.server.store, run.task_id)
@@ -454,6 +458,10 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
 
         try:
             payload = self._read_json_body()
+            if path == "/api/runtime-settings":
+                result = self.server.runtime_settings.update_model_settings(payload.get("model", payload))
+                self._write_json(result)
+                return
             parts = [part for part in path.split("/") if part]
             if len(parts) != 3 or parts[0] != "api":
                 self._write_json({"detail": "Not found"}, status=HTTPStatus.NOT_FOUND)
@@ -587,9 +595,10 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
 
 
 class PreviewHTTPServer(ThreadingHTTPServer):
-    def __init__(self, server_address: tuple[str, int], store: StoreProtocol, *, error_log_path: str | Path | None = None) -> None:
+    def __init__(self, server_address: tuple[str, int], store: StoreProtocol, *, runtime_settings: RuntimeSettingsStore | None = None, error_log_path: str | Path | None = None) -> None:
         super().__init__(server_address, PreviewRequestHandler)
         self.store = store
+        self.runtime_settings = runtime_settings or create_runtime_settings_store_from_env()
         self.error_log_path = get_error_log_path(error_log_path)
 
 
@@ -744,7 +753,7 @@ def main() -> None:
 
     try:
         store = build_runtime_store(demo=args.demo, db_path=args.db_path)
-        server = PreviewHTTPServer((args.host, args.port), store, error_log_path=args.error_log_path)
+        server = PreviewHTTPServer((args.host, args.port), store, runtime_settings=create_runtime_settings_store_from_env(), error_log_path=args.error_log_path)
     except Exception as exc:
         record_error(exc, component="preview_server", operation="startup", metadata={"host": args.host, "port": args.port}, path=args.error_log_path)
         raise
