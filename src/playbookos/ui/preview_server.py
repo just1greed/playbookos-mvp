@@ -18,6 +18,7 @@ from playbookos.authoring import apply_skill_authoring_pack_in_store, build_skil
 from playbookos.executor.service import DeterministicExecutorAdapter, OpenAIAgentsSDKAdapter, autopilot_goal_in_store, execute_run_in_store
 from playbookos.runtime_settings import RuntimeSettingsStore, create_runtime_settings_store_from_env
 from playbookos.mcp_probe import MCPProbeError, probe_mcp_server_in_store
+from playbookos.agent_integration import analyze_agent_intake, build_agent_context, build_agent_manifest
 from playbookos.ingestion import SOPIngestionError, ingest_sop_in_store, materialize_required_mcp_in_store, materialize_suggested_skill_in_store
 from playbookos.object_store import attach_source_object_to_playbook, create_object_store_from_env
 from playbookos.observability import get_error_log_path, list_recorded_errors, record_error
@@ -46,6 +47,12 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
                 return
             if path == "/api/board":
                 self._write_json(self.server.store.board_snapshot())
+                return
+            if path == "/api/agent/manifest":
+                self._write_json(build_agent_manifest())
+                return
+            if path == "/api/agent/context":
+                self._write_json(build_agent_context(self.server.store))
                 return
             if path == "/api/runtime-settings":
                 self._write_json(self.server.runtime_settings.get_settings())
@@ -146,6 +153,17 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
                 return
             if path == "/api/runtime-settings/profiles/activate":
                 result = self.server.runtime_settings.activate_model_profile(str(payload.get("name") or ""))
+                self._write_json(result)
+                return
+            if path == "/api/agent/intake":
+                result = analyze_agent_intake(
+                    self.server.store,
+                    message=str(payload.get("message") or ""),
+                    markdown_sop=payload.get("markdown_sop"),
+                    resource_name=payload.get("resource_name"),
+                    goal_id=payload.get("goal_id"),
+                    allow_side_effects=bool(payload.get("allow_side_effects", False)),
+                )
                 self._write_json(result)
                 return
             if path == "/api/goals":
@@ -471,7 +489,7 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
         except KeyError as exc:
             record_error(exc, component="preview_server", operation="do_POST", metadata={"path": path}, path=self.server.error_log_path)
             self._write_json({"detail": f"Missing field: {exc.args[0]}"}, status=HTTPStatus.BAD_REQUEST)
-        except (SOPIngestionError, MCPProbeError) as exc:
+        except (SOPIngestionError, MCPProbeError, ValueError) as exc:
             record_error(exc, component="preview_server", operation="do_POST", metadata={"path": path}, path=self.server.error_log_path)
             self._write_json({"detail": str(exc)}, status=HTTPStatus.BAD_REQUEST)
         except Exception as exc:

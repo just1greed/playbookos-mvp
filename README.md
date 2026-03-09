@@ -14,6 +14,7 @@ PlaybookOS 是一个面向 AI 工作流的“工作操作系统（AI Work Operat
 - 前端控制台：全局看板 + 左侧导航工作台 + 设置页
 - Markdown SOP ingestion：从 SOP 中提取步骤、识别工具域、生成 Skill 建议、生成 MCP 缺口引导
 - 设置治理：模型运行时设置、provider preset、连接测试、命名环境、全局设置、会话管理
+- Agent 接入面：`/api/agent/manifest`、`/api/agent/context`、`/api/agent/intake` 与 `playbookos-operator` skill
 
 当前重点是 **Markdown-first**：
 
@@ -27,6 +28,7 @@ PlaybookOS 是一个面向 AI 工作流的“工作操作系统（AI Work Operat
 
 - 真正的 Temporal workflow 运行时接入
 - 完整的 MCP runtime / credential / tool execution（当前仅完成 health probe 第一版）
+- 完整的 delegation profile / agent identity / 托管运营闭环
 - 多格式 SOP 与多附件解析
 - 更细粒度的 SOP diff / patch review / publish gating
 - Skill / MCP 的导入导出、完整治理与审计流
@@ -39,6 +41,7 @@ PlaybookOS 是一个面向 AI 工作流的“工作操作系统（AI Work Operat
 - `docs/data-model.md`：核心对象与表结构草案
 - `docs/mvp-plan.md`：MVP 模块、接口与里程碑
 - `docs/ui-redesign.md`：前端重构方案与页面设计
+- `docs/agent-operator.md`：外部 agent / OpenClaw 接入方案与 skill 设计
 - `docs/records/progress.md`：持续进展记录
 - `docs/records/iteration-memory.md`：阶段性结论与缺口排序
 - `data/sql/postgres_schema.sql`：PostgreSQL schema 草案
@@ -55,6 +58,7 @@ PlaybookOS 是一个面向 AI 工作流的“工作操作系统（AI Work Operat
 - `src/playbookos/reflection/`：反思、知识回写与发布链
 - `src/playbookos/runtime_settings.py`：模型与全局运行时设置
 - `tests/`：单元测试
+- `skills/`：给外部 agent 使用的 skill 包（当前含 `playbookos-operator`）
 
 ## 已实现能力
 
@@ -137,6 +141,9 @@ MCP 工作台当前还支持：
 - `GET /api/board`
 - `GET /api/meta/enums`
 - `GET /api/errors`
+- `GET /api/agent/manifest`
+- `GET /api/agent/context`
+- `POST /api/agent/intake`
 
 ### 运行时设置
 

@@ -257,3 +257,7 @@
 - 当前实现仍然不是完整 MCP runtime，但已经把“有没有登记 MCP”推进到“这个 MCP 现在能不能连上”
 
 - 审查 Dashboard 真实渲染后又修掉了一处 MCP 工作台脚本问题：`join('\n')` 在 Python 模板里会落成非法 JS 换行，现已统一修正为安全转义，避免页面在浏览器里静默失效
+
+- 已把“PlaybookOS 不只给人类看，也要给外部 agent 作为控制面使用”的方向落进文档，并新增 `docs/agent-operator.md` 作为第一版方案记录
+- 已新增 agent-friendly 接口：`GET /api/agent/manifest`、`GET /api/agent/context`、`POST /api/agent/intake`，供 OpenClaw 这类 agent 用于能力发现、上下文同步与对话转操作计划
+- 已在仓库中新增 `skills/playbookos-operator/`，让外部 agent 安装代码和 skill 后即可理解 PlaybookOS 的对象、工作流与安全操作顺序

@@ -66,6 +66,18 @@ class SOPIngestionResult:
 
 
 @dataclass(slots=True)
+class SOPAnalysisResult:
+    name: str
+    source_kind: str
+    step_count: int
+    compiled_spec: dict[str, Any] = field(default_factory=dict)
+    detected_mcp_servers: list[str] = field(default_factory=list)
+    suggested_skills: list[SkillSuggestion] = field(default_factory=list)
+    parsing_notes: list[str] = field(default_factory=list)
+    tooling_guidance: ToolingGuidance | None = None
+
+
+@dataclass(slots=True)
 class SkillMaterializationResult:
     playbook: Playbook
     skill: Skill
@@ -124,6 +136,44 @@ class SOPCompiler:
             "approval_hint": "Add review gates before deployment, migration, or production writes.",
         },
     }
+
+    def analyze(
+        self,
+        store: StoreProtocol,
+        *,
+        name: str,
+        source_text: str,
+        source_kind: str = "markdown",
+    ) -> SOPAnalysisResult:
+        normalized_text = str(source_text or "").strip()
+        if not normalized_text:
+            raise SOPIngestionError("SOP source text is required")
+
+        compiled_spec, parsing_notes = self._compile_source(source_kind, normalized_text)
+        step_count = len(compiled_spec.get("steps", []))
+        detected_mcp_servers = list(compiled_spec.get("mcp_servers", []))
+        suggested_skills = self._suggest_skills(compiled_spec.get("steps", []), detected_mcp_servers)
+        tooling_guidance = self._build_tooling_guidance(
+            store,
+            playbook_name=name,
+            steps=compiled_spec.get("steps", []),
+            detected_mcp_servers=detected_mcp_servers,
+            suggested_skills=suggested_skills,
+        )
+        preview_spec = dict(compiled_spec)
+        preview_spec["source_format"] = source_kind
+        preview_spec["parser_version"] = "heuristic-v2-markdown-tooling"
+        preview_spec["skill_suggestions"] = [self._skill_to_dict(item) for item in suggested_skills]
+        return SOPAnalysisResult(
+            name=name,
+            source_kind=source_kind,
+            step_count=step_count,
+            compiled_spec=preview_spec,
+            detected_mcp_servers=detected_mcp_servers,
+            suggested_skills=suggested_skills,
+            parsing_notes=parsing_notes,
+            tooling_guidance=tooling_guidance,
+        )
 
     def ingest(
         self,
@@ -621,6 +671,21 @@ class SOPCompiler:
     def _build_manual_uri(self, name: str) -> str:
         slug = re.sub(r"[^a-z0-9]+", "-", str(name or "manual").strip().lower()).strip("-") or "manual"
         return f"playbookos://ingested/playbook/{slug}-{int(utc_now().timestamp())}"
+
+
+def analyze_sop_source(
+    store: StoreProtocol,
+    *,
+    name: str,
+    source_text: str,
+    source_kind: str = "markdown",
+) -> SOPAnalysisResult:
+    return SOPCompiler().analyze(
+        store,
+        name=name,
+        source_text=source_text,
+        source_kind=source_kind,
+    )
 
 
 def ingest_sop_in_store(

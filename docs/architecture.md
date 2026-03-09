@@ -27,6 +27,14 @@ PlaybookOS 推荐采用三层架构：
 - Board / Inbox / Review / Learned 展示
 - 人工审批与人工补充输入
 
+补充一条长期原则：Control Plane 不只服务人类 UI，也要服务外部 agent。
+
+因此除了 Dashboard 之外，系统还需要稳定的 agent-facing surface：
+
+- `manifest`：让外部 agent 自动发现对象、动作、状态与高风险边界
+- `context`：让外部 agent 读取当前系统阻塞点与建议动作
+- `intake`：让外部 agent 把人类对话先翻译成 dry-run 操作计划
+
 ### 2.2 Orchestration Plane
 
 由 Temporal 驱动：

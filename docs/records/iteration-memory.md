@@ -115,3 +115,6 @@
 - 现在系统已经能区分“仓库里有没有这个 MCP”与“这个 MCP endpoint 最近一次探测是否成功”，后续再叠加凭证治理和真实 tool runtime 会更顺。
 
 - 这次审查说明：Dashboard 这类 HTML+JS Python 模板很容易出现 `\n` / `\\n` 双重转义问题；后续每次改动关键脚本块后，都应至少补一轮 `node --check` 或等价语法校验。
+
+- 一个关键转向已经明确：PlaybookOS 不应该只被人类通过 Dashboard 使用，还应该被 OpenClaw 这类 agent 作为外部控制面接入；因此 manifest/context/intake 和 operator skill 会成为后续长期稳定接口。
+- 外部 agent 不应该直接猜测内部 API，而应先 bootstrap `agent manifest`，再拉 `agent context`，再通过 `agent intake` 把自然语言请求翻译成显式操作计划，这样最稳，也最利于审计与托管。

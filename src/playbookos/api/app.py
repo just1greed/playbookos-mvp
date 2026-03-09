@@ -13,6 +13,8 @@ from fastapi.responses import HTMLResponse, Response
 
 from playbookos.api.schemas import (
     AcceptanceRead,
+    AgentIntakeCreate,
+    AgentIntakeRead,
     ArtifactCreate,
     ArtifactRead,
     BoardSnapshot,
@@ -110,6 +112,7 @@ from playbookos.reflection import (
 from playbookos.supervisor import AcceptanceError, accept_task_in_store
 from playbookos.runtime_settings import create_runtime_settings_store_from_env
 from playbookos.mcp_probe import MCPProbeError, probe_mcp_server_in_store
+from playbookos.agent_integration import analyze_agent_intake, build_agent_context, build_agent_manifest
 from playbookos.ui import build_dashboard_html
 
 
@@ -162,6 +165,29 @@ def create_app(store: StoreProtocol | None = None) -> FastAPI:
     @api.get("/api/board", response_model=BoardSnapshot)
     def get_board(store: store_dep) -> BoardSnapshot:
         return BoardSnapshot.model_validate(store.board_snapshot())
+
+    @api.get("/api/agent/manifest", response_model=dict[str, Any])
+    def get_agent_manifest() -> dict[str, Any]:
+        return build_agent_manifest()
+
+    @api.get("/api/agent/context", response_model=dict[str, Any])
+    def get_agent_context(store: store_dep) -> dict[str, Any]:
+        return build_agent_context(store)
+
+    @api.post("/api/agent/intake", response_model=AgentIntakeRead)
+    def post_agent_intake(payload: AgentIntakeCreate, store: store_dep) -> AgentIntakeRead:
+        try:
+            result = analyze_agent_intake(
+                store,
+                message=payload.message,
+                markdown_sop=payload.markdown_sop,
+                resource_name=payload.resource_name,
+                goal_id=payload.goal_id,
+                allow_side_effects=payload.allow_side_effects,
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+        return AgentIntakeRead.model_validate(result)
 
     @api.get("/api/runtime-settings", response_model=dict[str, Any])
     def get_runtime_settings_payload() -> dict[str, Any]:

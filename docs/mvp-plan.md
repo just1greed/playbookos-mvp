@@ -252,6 +252,21 @@
 3. MCP runtime / tool execution
 4. 更强的 Skill / SOP / Knowledge 联动
 
+## 5.2 Agent-facing Control Plane（2026-03-09）
+
+为了让 OpenClaw 这类外部 agent 能真正使用和托管 PlaybookOS，MVP 需要新增一条 agent-facing surface：
+
+- `GET /api/agent/manifest`：能力发现
+- `GET /api/agent/context`：运行上下文同步
+- `POST /api/agent/intake`：自然语言 / Markdown SOP -> dry-run 操作计划
+- `skills/playbookos-operator/`：给外部 agent 的操作 skill
+
+这一层的原则是：
+
+1. `manifest/context/intake` 负责理解与规划
+2. 真实变更仍走显式控制面 API
+3. 高风险动作继续保留 HITL 和审批边界
+
 ## 6. 当前代码落地策略
 
 当前仓库已实现：

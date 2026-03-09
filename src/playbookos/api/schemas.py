@@ -518,6 +518,47 @@ class BoardSnapshot(APIModel):
     events: dict[str, int] = Field(default_factory=dict)
 
 
+class AgentOperationRead(APIModel):
+    id: str
+    title: str
+    summary: str
+    method: str
+    endpoint: str
+    payload: dict[str, Any] = Field(default_factory=dict)
+    risk_level: str = "low"
+    requires_confirmation: bool = False
+    depends_on: list[str] = Field(default_factory=list)
+
+
+class AgentSOPPreviewRead(APIModel):
+    name: str
+    source_kind: str
+    step_count: int
+    detected_mcp_servers: list[str] = Field(default_factory=list)
+    parsing_notes: list[str] = Field(default_factory=list)
+    suggested_skills: list[SkillSuggestionRead] = Field(default_factory=list)
+    tooling_guidance: ToolingGuidanceRead | None = None
+
+
+class AgentIntakeCreate(APIModel):
+    message: str = ""
+    markdown_sop: str | None = None
+    resource_name: str | None = None
+    goal_id: str | None = None
+    allow_side_effects: bool = False
+
+
+class AgentIntakeRead(APIModel):
+    summary: str
+    execution_mode: str
+    allow_side_effects_requested: bool = False
+    detected_intents: list[str] = Field(default_factory=list)
+    missing_information: list[str] = Field(default_factory=list)
+    follow_up_questions: list[str] = Field(default_factory=list)
+    recommended_operations: list[AgentOperationRead] = Field(default_factory=list)
+    sop_preview: AgentSOPPreviewRead | None = None
+
+
 class EnumCatalog(APIModel):
     goal_statuses: list[GoalStatus]
     playbook_statuses: list[PlaybookStatus]
