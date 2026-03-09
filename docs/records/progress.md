@@ -198,3 +198,7 @@
 - 已继续完成前端重构第二阶段：`SOP / Skill / 审批流 / 提示词` 路由新增页面级 focus 卡片，进入对应工作台后会先看到该节点自己的状态摘要与待处理线索
 - `Quick Resource Peek` 已改为按当前路由过滤资源样本，减少全局长列表噪音，让不同工作台只暴露最相关的对象
 - 已修复本轮 Dashboard 重构过程中丢失的资源区 / 编辑器 / 提交处理函数，重新通过 `python3 -m compileall src tests`、`PYTHONPATH=src python3 -m unittest discover -s tests -p 'test*_unittest.py'` 与 `node --check /tmp/playbookos_dashboard_check.js`
+
+- 已继续推进前端重构第三阶段：`MCP / 知识库 / 任务` 路由新增专属 `route detail` 内容区，分别展示 `MCP 注册表 / 接入缺口`、`知识条目 / 更新提案`、`任务队列 / 执行压力`
+- Dashboard 现在除 `route focus` 外，还具备面向工作台的双栏内容区；进入 `MCP / 知识库 / 任务` 后，用户会先看到该节点的关键实体与待处理线索，再进入表单或编辑器
+- 已补充 `tests/test_dashboard_unittest.py` 覆盖 `route-detail-section`、新路由映射与相关标题键，并再次通过 `python3 -m compileall src tests`、`PYTHONPATH=src python3 -m unittest discover -s tests -p 'test*_unittest.py'` 与 `node --check /tmp/playbookos_dashboard_check.js`

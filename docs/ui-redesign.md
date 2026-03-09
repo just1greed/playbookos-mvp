@@ -591,9 +591,9 @@
 - [ ] 目标工作台
 - [~] SOP 工作台（已补页面级 focus 卡片、SOP 导入引导与资源过滤）
 - [~] Skill 工作台（已补页面级 focus 卡片、authoring/版本入口与资源过滤）
-- [ ] MCP 工作台
-- [ ] 知识库工作台
-- [ ] 任务工作台
+- [~] MCP 工作台（已补注册表/接入缺口双栏内容区）
+- [~] 知识库工作台（已补知识条目/更新提案双栏内容区）
+- [~] 任务工作台（已补任务队列/执行压力双栏内容区）
 
 ## Phase 4：治理与观察页面
 
@@ -662,3 +662,5 @@
 - 2026-03-09：已完成第二轮页面级重构，`SOP / Skill / 审批流 / 提示词` 路由新增 focus 卡片，首页之外的工作台开始具备自己的状态摘要，不再只是共享一套长页面。
 - 2026-03-09：`Quick Resource Peek` 已改为按当前路由过滤，只展示当前工作台最相关的对象（例如 SOP 页看 `playbooks / skills / mcp / reflections`，审批页看 `runs / reflections / knowledge updates / tasks`）。
 - 2026-03-09：修复了本轮重构中丢失的 `renderResourceRows / renderWorkbenchOptions / editor helpers / submit handlers`，重新保证 Dashboard 在 8081 预览环境可正常启动与刷新。
+
+- 2026-03-09：已继续完成第三轮工作台迁移，`MCP / 知识库 / 任务` 路由新增专属双栏内容区，不再只剩创建表单；现在会先展示注册表、知识回写、任务压力等与当前节点最相关的实体。

@@ -221,6 +221,33 @@ TRANSLATIONS = {
         "focus_review": "待复核",
         "route_placeholder_title": "该页面正在迁移",
         "route_placeholder_body": "这一页的导航壳和信息架构已经就位，下一阶段会把现有模块逐步迁移到这里。",
+        "route_detail_empty": "当前没有可展示的专属对象。",
+        "route_mcp_registry_title": "MCP 注册表",
+        "route_mcp_registry_subtitle": "查看已登记 MCP、当前状态和被哪些 Skill 依赖。",
+        "route_mcp_ops_title": "接入缺口",
+        "route_mcp_ops_subtitle": "优先处理 SOP 检测出的缺口、失活节点和未覆盖依赖。",
+        "route_knowledge_entries_title": "知识条目",
+        "route_knowledge_entries_subtitle": "查看知识条目、所属 Goal 和被更新提案命中的频次。",
+        "route_knowledge_updates_title": "更新提案",
+        "route_knowledge_updates_subtitle": "先处理待应用 / 被拒绝 / 最近生成的知识回写提案。",
+        "route_task_queue_title": "任务队列",
+        "route_task_queue_subtitle": "查看当前最需要处理的任务、依赖关系和绑定的 SOP / Skill。",
+        "route_task_pressure_title": "执行压力",
+        "route_task_pressure_subtitle": "汇总等待人工、待验收、阻塞依赖和失败运行信号。",
+        "detail_transport": "传输",
+        "detail_endpoint": "端点",
+        "detail_scopes": "范围",
+        "detail_skills": "关联 Skill",
+        "detail_goal": "Goal",
+        "detail_tags": "标签",
+        "detail_updates": "更新提案",
+        "detail_playbook": "SOP",
+        "detail_skill": "Skill",
+        "detail_queue": "队列",
+        "detail_priority": "优先级",
+        "detail_dependencies": "依赖",
+        "detail_runs": "Run",
+        "detail_acceptances": "验收",
         "settings_model_card": "模型配置会集中展示 provider、model、base url、timeout 和输出参数。",
         "settings_global_card": "全局设置会管理语言、刷新频率、对象存储路径和实验性开关。",
         "settings_session_card": "会话管理会展示 supervisor / worker session 总量、异常状态与治理动作。",
@@ -525,6 +552,33 @@ TRANSLATIONS = {
         "focus_review": "In Review",
         "route_placeholder_title": "This page is being migrated",
         "route_placeholder_body": "The navigation shell and information architecture are ready; existing modules will move here step by step in the next phase.",
+        "route_detail_empty": "No route-specific items to show yet.",
+        "route_mcp_registry_title": "MCP Registry",
+        "route_mcp_registry_subtitle": "Inspect registered MCP servers, current status, and which skills depend on them.",
+        "route_mcp_ops_title": "Coverage Gaps",
+        "route_mcp_ops_subtitle": "Prioritize SOP-detected gaps, inactive endpoints, and uncovered dependencies.",
+        "route_knowledge_entries_title": "Knowledge Entries",
+        "route_knowledge_entries_subtitle": "Inspect entries, linked goals, and how often update proposals target them.",
+        "route_knowledge_updates_title": "Update Proposals",
+        "route_knowledge_updates_subtitle": "Handle proposed, rejected, and recently generated write-back proposals first.",
+        "route_task_queue_title": "Task Queue",
+        "route_task_queue_subtitle": "See the tasks that need attention first, with dependencies and linked SOP / Skill context.",
+        "route_task_pressure_title": "Execution Pressure",
+        "route_task_pressure_subtitle": "Summarize waiting-human, acceptance, blocker, and failed-run signals.",
+        "detail_transport": "Transport",
+        "detail_endpoint": "Endpoint",
+        "detail_scopes": "Scopes",
+        "detail_skills": "Linked Skills",
+        "detail_goal": "Goal",
+        "detail_tags": "Tags",
+        "detail_updates": "Updates",
+        "detail_playbook": "SOP",
+        "detail_skill": "Skill",
+        "detail_queue": "Queue",
+        "detail_priority": "Priority",
+        "detail_dependencies": "Dependencies",
+        "detail_runs": "Runs",
+        "detail_acceptances": "Acceptances",
         "settings_model_card": "Model settings will surface provider, model, base URL, timeout, and output parameters.",
         "settings_global_card": "Global settings will manage language, refresh cadence, object-store paths, and experimental toggles.",
         "settings_session_card": "Session admin will show supervisor / worker totals, abnormal states, and governance actions.",
@@ -900,6 +954,19 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
           <div class="focus-grid" id="route-focus-rows"></div>
         </section>
 
+        <section class="section" id="route-detail-section" data-route-section hidden>
+          <div class="dashboard-grid">
+            <article class="card list-card">
+              <div class="section-title"><h2 id="route-detail-title"></h2><span id="route-detail-subtitle"></span></div>
+              <div class="rows" id="route-detail-rows"></div>
+            </article>
+            <article class="card activity-card">
+              <div class="section-title"><h2 id="route-side-title"></h2><span id="route-side-subtitle"></span></div>
+              <div class="rows" id="route-side-rows"></div>
+            </article>
+          </div>
+        </section>
+
         <section class="hero" id="dashboard-hero" data-route-section>
 
         <div class="hero-top">
@@ -1228,9 +1295,9 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         goals: ['route-focus-section', 'workbench-section', 'editor-section', 'action-center-section'],
         playbooks: ['route-focus-section', 'workbench-section', 'patch-review-section', 'editor-section'],
         skills: ['route-focus-section', 'workbench-section', 'authoring-section', 'skill-version-section', 'editor-section'],
-        mcp: ['route-focus-section', 'workbench-section', 'editor-section'],
-        knowledge: ['route-focus-section', 'workbench-section', 'editor-section'],
-        tasks: ['route-focus-section', 'workbench-section', 'editor-section', 'action-center-section'],
+        mcp: ['route-focus-section', 'route-detail-section', 'workbench-section', 'editor-section'],
+        knowledge: ['route-focus-section', 'route-detail-section', 'workbench-section', 'editor-section'],
+        tasks: ['route-focus-section', 'route-detail-section', 'workbench-section', 'editor-section', 'action-center-section'],
         sessions: ['route-focus-section', 'session-tree-section', 'execution-inspector-section', 'supervisor-section'],
         learning: ['route-focus-section', 'patch-review-section', 'skill-version-section', 'supervisor-section'],
         approvals: ['route-focus-section', 'action-center-section'],
@@ -1440,6 +1507,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         updatePageHeader();
         renderSidebarNav();
         renderRouteFocus();
+        renderRouteDetails();
       }}
 
       function applyLanguage(language) {{
@@ -2167,6 +2235,16 @@ ${{t('skill_version_servers')}}: ${{(skill.required_mcp_servers || []).join(', '
         return `<article class="focus-card"><strong>${{escapeHtml(title)}}</strong><small>${{escapeHtml(lines.join('\\n'))}}</small><div class="focus-meta">${{pills.map((item) => `<span class="pill">${{escapeHtml(item)}}</span>`).join('')}}</div></article>`;
       }}
 
+      function routeDetailRow(title, lines, state = 'idle') {{
+        return `<div class="row"><div><strong>${{escapeHtml(title)}}</strong><small>${{escapeHtml((lines || []).filter(Boolean).join('\\n') || t('route_detail_empty'))}}</small></div><span class="state">${{escapeHtml(formatStateLabel(state || t('idle')))}}</span></div>`;
+      }}
+
+      function sortByRecent(items, limit = 6) {{
+        return [...(items || [])]
+          .sort((left, right) => String(right.updated_at || right.created_at || '').localeCompare(String(left.updated_at || left.created_at || '')))
+          .slice(0, limit);
+      }}
+
       function routeResourceSections(route) {{
         if (route === 'playbooks') return ['playbooks', 'skills', 'mcp_servers', 'reflections'];
         if (route === 'skills') return ['skills', 'mcp_servers', 'playbooks'];
@@ -2284,6 +2362,133 @@ ${{t('skill_version_servers')}}: ${{(skill.required_mcp_servers || []).join(', '
           ], Object.entries(currentSnapshot[section] || {{}}).slice(0, 2).map(([key, value]) => `${{key}} · ${{value}}`))));
         }}
         container.innerHTML = cards.join('');
+      }}
+
+
+      function renderRouteDetails() {{
+        const titleNode = document.getElementById('route-detail-title');
+        const subtitleNode = document.getElementById('route-detail-subtitle');
+        const rowsNode = document.getElementById('route-detail-rows');
+        const sideTitleNode = document.getElementById('route-side-title');
+        const sideSubtitleNode = document.getElementById('route-side-subtitle');
+        const sideRowsNode = document.getElementById('route-side-rows');
+        if (!titleNode || !subtitleNode || !rowsNode || !sideTitleNode || !sideSubtitleNode || !sideRowsNode) return;
+
+        const goals = latestResources.goals || [];
+        const playbooks = latestResources.playbooks || [];
+        const skills = latestResources.skills || [];
+        const mcpServers = latestResources.mcp_servers || [];
+        const knowledgeBases = latestResources.knowledge_bases || [];
+        const knowledgeUpdates = latestResources.knowledge_updates || [];
+        const tasks = latestResources.tasks || [];
+        const runs = latestResources.runs || [];
+        const acceptances = latestResources.acceptances || [];
+        const goalTitle = (goalId) => {{
+          const goal = goals.find((item) => item.id === goalId);
+          return goal ? (goal.title || goal.id) : 'n/a';
+        }};
+        const playbookTitle = (playbookId) => {{
+          const playbook = playbooks.find((item) => item.id === playbookId);
+          return playbook ? (playbook.name || playbook.id) : 'n/a';
+        }};
+        const skillTitle = (skillId) => {{
+          const skill = skills.find((item) => item.id === skillId);
+          return skill ? (skill.name || skill.id) : 'n/a';
+        }};
+
+        let primaryTitle = t('route_placeholder_title');
+        let primarySubtitle = t('route_placeholder_body');
+        let sideTitle = t('route_focus_title');
+        let sideSubtitle = t('route_focus_subtitle');
+        let primaryRows = [];
+        let sideRows = [];
+
+        if (currentRoute === 'mcp') {{
+          primaryTitle = t('route_mcp_registry_title');
+          primarySubtitle = t('route_mcp_registry_subtitle');
+          sideTitle = t('route_mcp_ops_title');
+          sideSubtitle = t('route_mcp_ops_subtitle');
+          primaryRows = sortByRecent(mcpServers).map((server) => {{
+            const dependentSkills = skills.filter((item) => (item.required_mcp_servers || []).includes(server.name));
+            return routeDetailRow(server.name || server.id, [
+              `${{t('detail_transport')}}: ${{server.transport || 'n/a'}}`,
+              `${{t('detail_endpoint')}}: ${{server.endpoint || 'n/a'}}`,
+              `${{t('detail_skills')}}: ${{dependentSkills.map((item) => item.name).join(', ') || 'n/a'}}`,
+            ], server.status || 'inactive');
+          }});
+          const registryNames = new Set(mcpServers.map((item) => String(item.name || '').trim().toLowerCase()).filter(Boolean));
+          const uncoveredDependencies = [...new Set(skills.flatMap((item) => item.required_mcp_servers || []).filter((name) => !registryNames.has(String(name || '').trim().toLowerCase())))];
+          const tooling = latestIngestionResult && latestIngestionResult.tooling_guidance ? latestIngestionResult.tooling_guidance : null;
+          if (tooling && (tooling.missing_mcp_servers || []).length) {{
+            sideRows.push(routeDetailRow(t('focus_missing_mcp'), [
+              (tooling.missing_mcp_servers || []).join(', '),
+              `${{t('focus_suggested_skills')}}: ${{(tooling.suggested_skill_names || []).join(', ') || 'n/a'}}`,
+            ], 'missing'));
+          }}
+          if (uncoveredDependencies.length) {{
+            sideRows.push(routeDetailRow(t('focus_dependencies'), [
+              uncoveredDependencies.join(', '),
+              `${{t('detail_skills')}}: ${{skills.filter((item) => (item.required_mcp_servers || []).some((name) => uncoveredDependencies.includes(name))).map((item) => item.name).join(', ') || 'n/a'}}`,
+            ], 'gap'));
+          }}
+          sideRows.push(...sortByRecent(mcpServers.filter((item) => item.status && item.status !== 'active'), 4).map((server) => routeDetailRow(server.name || server.id, [
+            `${{t('detail_transport')}}: ${{server.transport || 'n/a'}}`,
+            `${{t('detail_endpoint')}}: ${{server.endpoint || 'n/a'}}`,
+          ], server.status || 'inactive')));
+        }} else if (currentRoute === 'knowledge') {{
+          primaryTitle = t('route_knowledge_entries_title');
+          primarySubtitle = t('route_knowledge_entries_subtitle');
+          sideTitle = t('route_knowledge_updates_title');
+          sideSubtitle = t('route_knowledge_updates_subtitle');
+          primaryRows = sortByRecent(knowledgeBases).map((item) => {{
+            const updateCount = knowledgeUpdates.filter((update) => update.knowledge_base_id === item.id).length;
+            return routeDetailRow(item.name || item.id, [
+              `${{t('detail_goal')}}: ${{goalTitle(item.goal_id)}}`,
+              `${{t('detail_tags')}}: ${{(item.tags || []).join(', ') || 'n/a'}}`,
+              `${{t('detail_updates')}}: ${{updateCount}}`,
+            ], item.status || 'draft');
+          }});
+          sideRows = sortByRecent(knowledgeUpdates).map((item) => routeDetailRow(item.title || item.id, [
+            item.summary || 'n/a',
+            `${{t('detail_goal')}}: ${{goalTitle(item.goal_id)}}`,
+            `${{t('detail_runs')}}: ${{item.run_id || 'n/a'}}`,
+          ], item.status || 'proposed'));
+        }} else if (currentRoute === 'tasks') {{
+          primaryTitle = t('route_task_queue_title');
+          primarySubtitle = t('route_task_queue_subtitle');
+          sideTitle = t('route_task_pressure_title');
+          sideSubtitle = t('route_task_pressure_subtitle');
+          const statusRank = {{ waiting_human: 0, review: 1, blocked: 2, running: 3, ready: 4, queued: 5, completed: 6 }};
+          primaryRows = [...tasks]
+            .sort((left, right) => (statusRank[left.status] ?? 99) - (statusRank[right.status] ?? 99) || String(right.updated_at || right.created_at || '').localeCompare(String(left.updated_at || left.created_at || '')))
+            .slice(0, 6)
+            .map((item) => routeDetailRow(item.name || item.id, [
+              `${{t('detail_goal')}}: ${{goalTitle(item.goal_id)}}`,
+              `${{t('detail_playbook')}}: ${{playbookTitle(item.playbook_id)}}`,
+              `${{t('detail_skill')}}: ${{skillTitle(item.assigned_skill_id)}}`,
+              `${{t('detail_queue')}}: ${{item.queue_name || 'default'}} · ${{t('detail_priority')}}: ${{item.priority ?? 0}}`,
+            ], item.status || 'queued'));
+          const waitingHumanTasks = tasks.filter((item) => item.status === 'waiting_human').length;
+          const reviewTasks = tasks.filter((item) => item.status === 'review').length;
+          const blockedTasks = tasks.filter((item) => item.status === 'blocked').length;
+          const readyTasks = tasks.filter((item) => item.status === 'ready').length;
+          const waitingHumanRuns = runs.filter((item) => item.status === 'waiting_human').length;
+          const failedRuns = runs.filter((item) => item.status === 'failed').length;
+          const pendingAcceptances = acceptances.filter((item) => item.status !== 'accepted').length;
+          sideRows = [
+            routeDetailRow(t('focus_waiting'), [`${{t('nav_tasks')}}: ${{waitingHumanTasks}}`, `${{t('detail_runs')}}: ${{waitingHumanRuns}}`], 'waiting_human'),
+            routeDetailRow(t('focus_review'), [`${{t('nav_tasks')}}: ${{reviewTasks}}`, `${{t('detail_acceptances')}}: ${{pendingAcceptances}}`], 'review'),
+            routeDetailRow(t('focus_issues'), [`blocked: ${{blockedTasks}}`, `failed runs: ${{failedRuns}}`], 'blocked'),
+            routeDetailRow(t('focus_pending'), [`ready: ${{readyTasks}}`, `${{t('detail_dependencies')}}: ${{tasks.filter((item) => (item.depends_on || []).length).length}}`], 'ready'),
+          ];
+        }}
+
+        titleNode.textContent = primaryTitle;
+        subtitleNode.textContent = primarySubtitle;
+        sideTitleNode.textContent = sideTitle;
+        sideSubtitleNode.textContent = sideSubtitle;
+        rowsNode.innerHTML = primaryRows.length ? primaryRows.join('') : routeDetailRow(t('route_detail_empty'), [t('route_placeholder_body')], t('idle'));
+        sideRowsNode.innerHTML = sideRows.length ? sideRows.join('') : routeDetailRow(t('route_detail_empty'), [t('route_placeholder_body')], t('idle'));
       }}
 
 
@@ -2483,6 +2688,7 @@ ${{t('skill_version_servers')}}: ${{(skill.required_mcp_servers || []).join(', '
         }});
         renderSummary(board);
         renderResourceRows(payloads);
+        renderRouteDetails();
         renderWorkbenchOptions();
         refreshEditorResourceOptions();
         renderActionCenter();
