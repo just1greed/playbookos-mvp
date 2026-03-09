@@ -875,7 +875,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
           `created_at: ${{item.created_at || ''}}`,
           `updated_at: ${{item.updated_at || ''}}`,
           `status: ${{item.status || item.eval_status || item.kind || ''}}`,
-        ].join('\n');
+        ].join('\\n');
       }}
 
       function refreshEditorResourceOptions() {{
