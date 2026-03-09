@@ -72,6 +72,7 @@ PlaybookOS 用来把目标、SOP、技能、工具权限、执行记录和反思
 - `POST /api/goals/{goal_id}/start`
 - `POST /api/goals/{goal_id}/complete-review`
 - `POST /api/playbooks/import`
+- `POST /api/playbooks/ingest`
 - `GET /api/playbooks`
 - `GET /api/playbooks/{playbook_id}`
 - `POST /api/playbooks/{playbook_id}/compile`
@@ -146,7 +147,7 @@ PlaybookOS 用来把目标、SOP、技能、工具权限、执行记录和反思
 
 `executor` 负责把 `Run` 变成真正的执行动作：
 
-- `OpenAIAgentsSDKAdapter` 生成与 OpenAI Agents SDK 对齐的执行载荷
+- `OpenAIAgentsSDKAdapter` 会按当前环境配置生成并发送真实 OpenAI API 请求；未配置 API Key 时会进入“prepared_only”模式，仅保留可见请求载荷与配置摘要
 - `DeterministicExecutorAdapter` 用于本地测试和无依赖环境
 - `POST /api/runs/{run_id}/execute` 会执行单个 `Run`
 - 每次执行会自动生成一个 `run_report` Artifact，沉淀输出、trace、tool_calls 和指标摘要
@@ -175,7 +176,7 @@ PlaybookOS 用来把目标、SOP、技能、工具权限、执行记录和反思
 - 更细的 patch diff、版本回放与审批工作流（当前已支持页面内直接编辑既有实体）
 - 主控会话自动拆分更多层级子会话并并行汇总
 - AI 主动改写 Skill / Knowledge Base 的专门 authoring 流程
-- 基于真实 OpenAI Agents SDK + MCP 调用结果的在线评测
+- 基于真实 OpenAI Agents SDK + MCP 调用结果的在线评测（现已支持真实 API 适配层与可见请求载荷，但还缺少 MCP tool runtime 和在线评测治理）
 - publish 后自动把 proposal 合并回更细粒度的 Skill/Playbook 发布策略
 - Artifact blob 正式落到对象存储，而不只保存元数据
 
@@ -189,6 +190,8 @@ PlaybookOS 用来把目标、SOP、技能、工具权限、执行记录和反思
 ## 存储说明
 
 默认使用 SQLite 持久化到 `data/playbookos.db`，这样在当前环境里不依赖额外数据库驱动也能跑通 API。
+
+当前版本已开始补齐“原始 SOP 接入”能力：支持把粘贴的 Markdown / text / JSON SOP 导入为 Playbook 草案，并返回解析摘要与 Skill 建议，供页面进一步引导配置。
 
 当前已接入持久化的主表：
 
@@ -211,6 +214,13 @@ PlaybookOS 用来把目标、SOP、技能、工具权限、执行记录和反思
 - `DATABASE_URL=sqlite:///absolute/or/relative/path.db`：显式指定 SQLite URL
 - `DATABASE_URL=postgresql://...`：当前会给出明确提示；正式 PostgreSQL schema 已放在 `data/sql/postgres_schema.sql`
 - `PLAYBOOKOS_ERROR_LOG_PATH`：错误记录文件路径，默认是 `data/error_records.jsonl`
+- `PLAYBOOKOS_OPENAI_API_KEY` / `OPENAI_API_KEY`：真实执行时使用的 API Key
+- `PLAYBOOKOS_OPENAI_BASE_URL` / `OPENAI_BASE_URL`：API Base URL，默认 `https://api.openai.com/v1`
+- `PLAYBOOKOS_OPENAI_MODEL` / `OPENAI_MODEL`：默认模型，未配置时使用 `gpt-4.1`
+- `PLAYBOOKOS_OPENAI_API_FORMAT`：`responses` 或 `chat.completions`，默认 `responses`
+- `PLAYBOOKOS_OPENAI_TIMEOUT`：请求超时秒数
+- `PLAYBOOKOS_OPENAI_MAX_OUTPUT_TOKENS`：输出 token 上限
+- `PLAYBOOKOS_OPENAI_TEMPERATURE`：采样温度
 
 ## 本地运行
 

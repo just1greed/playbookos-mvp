@@ -119,6 +119,12 @@ TRANSLATIONS = {
         "workbench_status_ready": "工作台就绪，可直接提交。",
         "workbench_status_success": "创建成功，已刷新资源。",
         "workbench_status_error": "提交失败",
+        "execution_inspector_title": "执行检查器",
+        "execution_inspector_subtitle": "展示 Run 的真实 API 请求格式、工具调用记录、配置摘要与返回结果，方便你审计 AI 执行细节",
+        "execution_inspector_empty": "当前还没有可检查的执行记录。",
+        "execution_inspector_calls": "调用记录",
+        "execution_inspector_request": "请求载荷",
+        "execution_inspector_response": "执行结果",
         "quick_resource_peek": "资源速览",
         "quick_resource_peek_subtitle": "从 API 抓取最近的实体样本",
         "loading_resources_title": "等待加载资源",
@@ -146,6 +152,7 @@ TRANSLATIONS = {
         "resource_empty_body": "接口当前返回空列表。",
         "resource_id_fallback": "无 ID",
         "create_goal": "新建 Goal",
+        "ingest_playbook": "导入原始 SOP",
         "create_playbook": "新建 SOP",
         "create_skill": "新建 Skill",
         "create_knowledge": "新建 Knowledge",
@@ -159,6 +166,15 @@ TRANSLATIONS = {
         "playbook_source_uri": "来源 URI（可选）",
         "playbook_steps": "步骤（每行一步）",
         "playbook_mcp_servers": "MCP 服务器（每行一条）",
+        "ingest_source_text": "SOP 原文",
+        "ingest_source_file": "文本文件（可选）",
+        "ingest_source_kind": "原始格式",
+        "ingest_guidance_title": "Skill 配置引导",
+        "ingest_guidance_empty": "导入 SOP 后，这里会显示推荐 Skill 与解析摘要。",
+        "action_ingest_playbook": "解析并导入",
+        "action_create_skill_draft": "创建 Draft Skill",
+        "action_create_bound_skill_draft": "创建并绑定步骤",
+        "action_kind_playbook": "SOP",
         "skill_name": "Skill 名称",
         "skill_description": "Skill 说明",
         "skill_required_mcp_servers": "依赖 MCP（每行一条）",
@@ -306,6 +322,12 @@ TRANSLATIONS = {
         "workbench_status_ready": "Workbench is ready for input.",
         "workbench_status_success": "Created successfully and refreshed.",
         "workbench_status_error": "Submit failed",
+        "execution_inspector_title": "Execution Inspector",
+        "execution_inspector_subtitle": "Show real API request formats, tool call records, config summaries, and response payloads for each run.",
+        "execution_inspector_empty": "No execution records to inspect yet.",
+        "execution_inspector_calls": "Call Records",
+        "execution_inspector_request": "Request Payload",
+        "execution_inspector_response": "Execution Result",
         "quick_resource_peek": "Quick Resource Peek",
         "quick_resource_peek_subtitle": "Recent entity samples fetched from the API",
         "loading_resources_title": "Waiting for resources",
@@ -333,6 +355,7 @@ TRANSLATIONS = {
         "resource_empty_body": "The endpoint currently returns an empty list.",
         "resource_id_fallback": "No ID",
         "create_goal": "Create Goal",
+        "ingest_playbook": "Ingest Raw SOP",
         "create_playbook": "Create SOP",
         "create_skill": "Create Skill",
         "create_knowledge": "Create Knowledge",
@@ -346,6 +369,15 @@ TRANSLATIONS = {
         "playbook_source_uri": "Source URI (optional)",
         "playbook_steps": "Steps (one per line)",
         "playbook_mcp_servers": "MCP servers (one per line)",
+        "ingest_source_text": "Raw SOP text",
+        "ingest_source_file": "Text file (optional)",
+        "ingest_source_kind": "Source format",
+        "ingest_guidance_title": "Skill setup guidance",
+        "ingest_guidance_empty": "After ingesting an SOP, recommended skills and parsing notes appear here.",
+        "action_ingest_playbook": "Parse and ingest",
+        "action_create_skill_draft": "Create Draft Skill",
+        "action_create_bound_skill_draft": "Create + Bind Steps",
+        "action_kind_playbook": "SOP",
         "skill_name": "Skill name",
         "skill_description": "Skill description",
         "skill_required_mcp_servers": "Required MCP servers (one per line)",
@@ -653,6 +685,19 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
               <div class="form-actions"><button class="button" type="submit" data-i18n="submit_create"></button></div>
             </form>
 
+            <form class="form-card" id="sop-ingest-form">
+              <h3 data-i18n="ingest_playbook"></h3>
+              <div class="field-grid">
+                <div class="field"><label data-i18n="playbook_name"></label><input id="ingest-playbook-name-input" required /></div>
+                <div class="field"><label data-i18n="playbook_goal"></label><select id="ingest-playbook-goal-input"></select></div>
+                <div class="field"><label data-i18n="playbook_source_uri"></label><input id="ingest-playbook-source-uri-input" data-i18n-placeholder="input_placeholder_uri" /></div>
+                <div class="field"><label data-i18n="ingest_source_kind"></label><input id="ingest-playbook-kind-input" value="markdown" /></div>
+                <div class="field"><label data-i18n="ingest_source_file"></label><input id="ingest-playbook-file-input" type="file" accept=".md,.txt,.json,.csv" /></div>
+                <div class="field"><label data-i18n="ingest_source_text"></label><textarea id="ingest-playbook-source-input" required></textarea></div>
+              </div>
+              <div class="form-actions"><button class="button" type="submit" data-i18n="action_ingest_playbook"></button></div>
+            </form>
+
             <form class="form-card" id="playbook-form">
               <h3 data-i18n="create_playbook"></h3>
               <div class="field-grid">
@@ -703,6 +748,11 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
               </div>
               <div class="form-actions"><button class="button" type="submit" data-i18n="submit_create"></button></div>
             </form>
+
+            <article class="form-card">
+              <h3 data-i18n="ingest_guidance_title"></h3>
+              <div class="workbench-status" id="ingest-guidance"></div>
+            </article>
           </div>
         </article>
       </section>
@@ -785,6 +835,13 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
       </section>
 
       <section class="section">
+        <article class="card workbench-card">
+          <div class="section-title"><h2 data-i18n="execution_inspector_title"></h2><span data-i18n="execution_inspector_subtitle"></span></div>
+          <div class="patch-review-grid" id="execution-inspector-rows"></div>
+        </article>
+      </section>
+
+      <section class="section">
         <div class="grid">
           <article class="card list-card">
             <div class="section-title"><h2 id="resource-peek-title"></h2><span id="resource-peek-subtitle"></span></div>
@@ -817,6 +874,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
       const translations = {translations_json};
       let currentSnapshot = {snapshot_json};
       let latestResources = {{}};
+      let latestIngestionResult = null;
       const editableSections = ['goals', 'playbooks', 'skills', 'knowledge_bases', 'tasks'];
       let currentLanguage = localStorage.getItem('playbookos-language') || 'zh';
 
@@ -888,6 +946,12 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         node.style.color = state === 'error' ? '#fca5a5' : state === 'success' ? '#86efac' : 'var(--muted)';
       }}
 
+      function setIngestionGuidance(html) {{
+        const node = document.getElementById('ingest-guidance');
+        if (!node) return;
+        node.innerHTML = html;
+      }}
+
       function setActionStatus(message, state = 'idle') {{
         const node = document.getElementById('action-status');
         if (!node) return;
@@ -935,6 +999,11 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         document.querySelectorAll('[data-i18n-placeholder]').forEach((node) => {{ node.placeholder = t(node.dataset.i18nPlaceholder); }});
         if (!document.getElementById('workbench-status').dataset.state) {{
           setWorkbenchStatus(t('workbench_status_ready'));
+        }}
+        if (!latestIngestionResult) {{
+          setIngestionGuidance(`<small>${{escapeHtml(t('ingest_guidance_empty'))}}</small>`);
+        }} else {{
+          renderIngestionGuidance();
         }}
         if (!document.getElementById('action-status').dataset.state) {{
           setActionStatus(t('action_status_ready'));
@@ -1000,6 +1069,59 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
             <a class="endpoint-link" href="${{escapeHtml(endpoint)}}" target="_blank" rel="noreferrer">${{escapeHtml(endpoint)}} →</a>
           </article>
         `;
+      }}
+
+      function inferSourceKindFromFile(fileName) {{
+        const lower = String(fileName || '').toLowerCase();
+        if (lower.endsWith('.json')) return 'json';
+        if (lower.endsWith('.txt')) return 'text';
+        if (lower.endsWith('.csv')) return 'csv';
+        return 'markdown';
+      }}
+
+      function applySkillSuggestion(suggestion) {{
+        if (!suggestion) return;
+        document.getElementById('skill-name-input').value = suggestion.name || '';
+        document.getElementById('skill-description-input').value = suggestion.description || '';
+        document.getElementById('skill-mcp-input').value = (suggestion.required_mcp_servers || []).join('\n');
+      }}
+
+      function markMaterializedSkill(result) {{
+        if (!latestIngestionResult || !result) return;
+        const suggestions = latestIngestionResult.suggested_skills || [];
+        const suggestion = suggestions[result.suggestion_index];
+        if (!suggestion) return;
+        suggestion.created_skill_id = result.skill && result.skill.id ? result.skill.id : null;
+        suggestion.created_skill_name = result.skill && result.skill.name ? result.skill.name : suggestion.name;
+        suggestion.bound_step_count = result.bound_step_count || 0;
+      }}
+
+      function renderIngestionGuidance() {{
+        const result = latestIngestionResult;
+        if (!result) {{
+          setIngestionGuidance(`<small>${{escapeHtml(t('ingest_guidance_empty'))}}</small>`);
+          return;
+        }}
+        const notes = (result.parsing_notes || []).map((item) => `<li>${{escapeHtml(item)}}</li>`).join('');
+        const skills = (result.suggested_skills || []).map((item, index) => `
+          <div class="patch-review-card">
+            <div class="patch-review-head"><div><strong>${{escapeHtml(item.name || `Skill ${{index + 1}}`)}}</strong><small>${{escapeHtml(item.rationale || '')}}</small></div></div>
+            <div class="patch-changes"><strong>MCP</strong><div class="patch-change"><span>${{escapeHtml((item.required_mcp_servers || []).join(', ') || 'n/a')}}</span></div></div>
+            <div class="patch-changes"><strong>Hint</strong><div class="patch-change"><span>${{escapeHtml(item.approval_hint || 'n/a')}}</span></div></div>
+            <div class="action-buttons" style="margin-top:12px;">
+              ${{item.created_skill_id
+                ? `<span class="pill">${{escapeHtml(item.created_skill_name || item.name)}} · ${{escapeHtml(item.created_skill_id.slice(0, 8))}}</span>`
+                : `${{actionButton('action_create_skill_draft', 'playbook', result.playbook.id, 'materialize-skill', {{ suggestion_index: index, bind_to_unassigned_steps: false }})}}${{actionButton('action_create_bound_skill_draft', 'playbook', result.playbook.id, 'materialize-skill', {{ suggestion_index: index, bind_to_unassigned_steps: true }}, true)}}`
+              }}
+            </div>
+          </div>
+        `).join('');
+        setIngestionGuidance(`
+          <strong>${{escapeHtml(result.playbook && result.playbook.name ? result.playbook.name : 'Playbook')}}</strong>
+          <small>${{escapeHtml(`steps: ${{result.step_count || 0}}, mcp: ${{(result.detected_mcp_servers || []).join(', ') || 'n/a'}}`)}}</small>
+          <ul style="margin:8px 0 12px 18px;">${{notes || `<li>${{escapeHtml(t('ingest_guidance_empty'))}}</li>`}}</ul>
+          ${{skills || `<small>${{escapeHtml(t('ingest_guidance_empty'))}}</small>`}}
+        `);
       }}
 
       async function fetchJson(path) {{
@@ -1375,30 +1497,28 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
 
       async function runAction(actionKind, actionTarget, actionName, payload = null) {{
         const body = payload && Object.keys(payload).length ? payload : {{}};
+        if (actionKind === 'playbook' && actionName === 'materialize-skill') {{
+          return await postJson(`playbooks/${{actionTarget}}/skill-drafts`, body);
+        }}
         if (actionKind === 'goal') {{
-          await postJson(`goals/${{actionTarget}}/${{actionName}}`, body);
-          return;
+          return await postJson(`goals/${{actionTarget}}/${{actionName}}`, body);
         }}
         if (actionKind === 'run') {{
-          await postJson(`runs/${{actionTarget}}/${{actionName}}`, body);
-          return;
+          return await postJson(`runs/${{actionTarget}}/${{actionName}}`, body);
         }}
         if (actionKind === 'reflection') {{
-          await postJson(`reflections/${{actionTarget}}/${{actionName}}`, body);
-          return;
+          return await postJson(`reflections/${{actionTarget}}/${{actionName}}`, body);
         }}
         if (actionKind === 'skill') {{
-          await postJson(`skills/${{actionTarget}}/${{actionName}}`, body);
-          return;
+          return await postJson(`skills/${{actionTarget}}/${{actionName}}`, body);
         }}
         if (actionKind === 'knowledge') {{
-          await postJson(`knowledge-updates/${{actionTarget}}/${{actionName}}`, body);
-          return;
+          return await postJson(`knowledge-updates/${{actionTarget}}/${{actionName}}`, body);
         }}
         if (actionKind === 'task' && actionName === 'accept') {{
           const accepted = Boolean(payload && payload.accepted);
           const task = (latestResources.tasks || []).find((item) => item.id === actionTarget);
-          await postJson(`tasks/${{actionTarget}}/accept`, {{
+          return await postJson(`tasks/${{actionTarget}}/accept`, {{
             criteria: task ? [task.description || task.name] : [],
             reviewer_id: 'dashboard-reviewer',
             accepted,
@@ -1408,6 +1528,59 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
           return;
         }}
         throw new Error(`Unsupported action: ${{actionKind}}/${{actionName}}`);
+      }}
+
+      function summarizeRunToolCalls(run) {{
+        const calls = (((run || {{}}).metrics || {{}}).tool_calls) || [];
+        return calls.map((item, index) => [
+          `#${{index + 1}} · ${{item.tool || 'tool'}}`,
+          item.action || item.request_format || 'call',
+        ]);
+      }}
+
+      function stringifyCompact(value, fallback = 'n/a') {{
+        if (value === undefined || value === null) return fallback;
+        try {{
+          return JSON.stringify(value, null, 2);
+        }} catch (error) {{
+          return String(value);
+        }}
+      }}
+
+      function renderExecutionInspector() {{
+        const container = document.getElementById('execution-inspector-rows');
+        const runs = [...(latestResources.runs || [])]
+          .sort((left, right) => String(right.created_at || '').localeCompare(String(left.created_at || '')))
+          .filter((run) => run.metrics || run.trace_id)
+          .slice(0, 4);
+        if (!runs.length) {{
+          container.innerHTML = `<div class="patch-review-card"><strong>${{escapeHtml(t('execution_inspector_title'))}}</strong><small>${{escapeHtml(t('execution_inspector_empty'))}}</small></div>`;
+          return;
+        }}
+        const cards = runs.map((run) => {{
+          const task = (latestResources.tasks || []).find((item) => item.id === run.task_id);
+          const metrics = run.metrics || {{}};
+          const config = metrics.openai_config || {{}};
+          const toolCalls = summarizeRunToolCalls(run);
+          const requestCall = ((metrics.tool_calls || []).find((item) => item.action === 'request_prepared')) || null;
+          const responseCall = ((metrics.tool_calls || []).find((item) => item.action === 'response_received')) || null;
+          const headLines = [
+            `${{t('action_kind_run')}} · ${{run.id}}`,
+            `${{t('session_task_label')}}: ${{task ? (task.name || task.id) : run.task_id}}`,
+            `mode: ${{metrics.openai_mode || metrics.adapter || 'n/a'}}`,
+            `model: ${{config.model || 'n/a'}}`,
+          ];
+          const requestSummary = requestCall ? stringifyCompact(requestCall.payload, 'n/a').slice(0, 900) : 'n/a';
+          const responseSummary = stringifyCompact({{
+            output_text: metrics.output_text || '',
+            response_id: metrics.openai_response_id || (responseCall && responseCall.response_id) || null,
+            usage: metrics.openai_usage || (responseCall && responseCall.usage) || {{}},
+            request_format: metrics.openai_request_format || null,
+            request_url: metrics.openai_request_url || null,
+          }}, 'n/a').slice(0, 900);
+          return `<div class="patch-review-card"><div class="patch-review-head"><div><strong>${{escapeHtml(task ? (task.name || run.id) : run.id)}}</strong><small>${{escapeHtml(headLines.join('\\n'))}}</small></div><span class="state">${{escapeHtml(formatStateLabel(run.status || 'queued'))}}</span></div>${{renderAggregateLines(t('execution_inspector_calls'), toolCalls.length ? toolCalls : [['none', 'n/a']])}}<div class="patch-changes"><strong>${{escapeHtml(t('execution_inspector_request'))}}</strong><div class="patch-change"><span><pre style="white-space:pre-wrap;margin:0;">${{escapeHtml(requestSummary)}}</pre></span></div></div><div class="patch-changes"><strong>${{escapeHtml(t('execution_inspector_response'))}}</strong><div class="patch-change"><span><pre style="white-space:pre-wrap;margin:0;">${{escapeHtml(responseSummary)}}</pre></span></div></div></div>`;
+        }});
+        container.innerHTML = cards.join('');
       }}
 
       function renderResourceRows(payloads) {{
@@ -1451,6 +1624,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
 
       function renderWorkbenchOptions() {{
         populateSelect('playbook-goal-input', latestResources.goals || [], (item) => `${{item.title}} · ${{item.id.slice(0, 8)}}`);
+        populateSelect('ingest-playbook-goal-input', latestResources.goals || [], (item) => `${{item.title}} · ${{item.id.slice(0, 8)}}`);
         populateSelect('knowledge-goal-input', latestResources.goals || [], (item) => `${{item.title}} · ${{item.id.slice(0, 8)}}`);
         populateSelect('task-goal-input', latestResources.goals || [], (item) => `${{item.title}} · ${{item.id.slice(0, 8)}}`, {{ includeBlank: false }});
         populateSelect('task-playbook-input', latestResources.playbooks || [], (item) => `${{item.name}} · ${{item.id.slice(0, 8)}}`, {{ includeBlank: false }});
@@ -1584,6 +1758,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         renderSkillVersions();
         renderPatchReviews();
         renderSessionTree();
+        renderExecutionInspector();
         clearBootError();
       }}
 
@@ -1612,6 +1787,31 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
           }},
         }});
         event.target.reset();
+      }}
+
+      async function handlePlaybookIngestSubmit(event) {{
+        event.preventDefault();
+        const name = document.getElementById('ingest-playbook-name-input').value.trim();
+        const result = await postJson('playbooks/ingest', {{
+          name,
+          goal_id: document.getElementById('ingest-playbook-goal-input').value || null,
+          source_uri: document.getElementById('ingest-playbook-source-uri-input').value.trim() || buildManualUri('ingested-playbook', name),
+          source_kind: document.getElementById('ingest-playbook-kind-input').value.trim() || 'markdown',
+          source_text: document.getElementById('ingest-playbook-source-input').value.trim(),
+        }});
+        latestIngestionResult = result;
+        renderIngestionGuidance();
+        if ((result.suggested_skills || []).length) {{
+          applySkillSuggestion(result.suggested_skills[0]);
+        }}
+        event.target.reset();
+        document.getElementById('ingest-playbook-kind-input').value = 'markdown';
+        if ((result.suggested_skills || []).length) {{
+          const firstSkill = result.suggested_skills[0];
+          setWorkbenchStatus(currentLanguage === 'zh'
+            ? `已解析 SOP，并为你预填 Skill：${{firstSkill.name}}`
+            : `SOP parsed and Skill form prefilled with: ${{firstSkill.name}}`, 'success');
+        }}
       }}
 
       async function handleSkillSubmit(event) {{
@@ -1676,6 +1876,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
       document.getElementById('lang-zh').addEventListener('click', () => applyLanguage('zh'));
       document.getElementById('lang-en').addEventListener('click', () => applyLanguage('en'));
       document.getElementById('goal-form').addEventListener('submit', (event) => handleWorkbenchSubmit(handleGoalSubmit, event));
+      document.getElementById('sop-ingest-form').addEventListener('submit', (event) => handleWorkbenchSubmit(handlePlaybookIngestSubmit, event));
       document.getElementById('editor-resource-type').addEventListener('change', () => refreshEditorResourceOptions());
       document.getElementById('editor-resource-id').addEventListener('change', () => loadEditorSelection());
       document.getElementById('editor-load-button').addEventListener('click', () => loadEditorSelection());
@@ -1694,6 +1895,16 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
       document.getElementById('skill-form').addEventListener('submit', (event) => handleWorkbenchSubmit(handleSkillSubmit, event));
       document.getElementById('knowledge-form').addEventListener('submit', (event) => handleWorkbenchSubmit(handleKnowledgeSubmit, event));
       document.getElementById('task-form').addEventListener('submit', (event) => handleWorkbenchSubmit(handleTaskSubmit, event));
+      document.getElementById('ingest-playbook-file-input').addEventListener('change', async (event) => {{
+        const file = event.target.files && event.target.files[0];
+        if (!file) return;
+        const text = await file.text();
+        document.getElementById('ingest-playbook-source-input').value = text;
+        document.getElementById('ingest-playbook-kind-input').value = inferSourceKindFromFile(file.name);
+        if (!document.getElementById('ingest-playbook-name-input').value.trim()) {{
+          document.getElementById('ingest-playbook-name-input').value = file.name.replace(/\\.[^.]+$/, '');
+        }}
+      }});
       document.addEventListener('click', async (event) => {{
         const button = event.target.closest('[data-action-kind]');
         if (!button) return;
@@ -1701,7 +1912,16 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
           const payload = button.dataset.payload ? JSON.parse(button.dataset.payload) : null;
           setActionStatus(t('action_status_running'));
           button.disabled = true;
-          await runAction(button.dataset.actionKind, button.dataset.actionTarget, button.dataset.actionName, payload);
+          const result = await runAction(button.dataset.actionKind, button.dataset.actionTarget, button.dataset.actionName, payload);
+          if (button.dataset.actionKind === 'playbook' && button.dataset.actionName === 'materialize-skill') {{
+            markMaterializedSkill(result);
+            if (result && result.skill) {{
+              applySkillSuggestion(result.skill);
+              setWorkbenchStatus(currentLanguage === 'zh'
+                ? `已创建 Skill draft：${{result.skill.name}}`
+                : `Created draft skill: ${{result.skill.name}}`, 'success');
+            }}
+          }}
           await refresh();
           setActionStatus(t('action_status_success'), 'success');
         }} catch (error) {{

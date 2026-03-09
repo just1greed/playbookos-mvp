@@ -149,3 +149,17 @@
 - dispatch 现在会生成可见 `Dispatch wave` 会话，把同批 ready task 放进同一个并行波次父会话下
 - supervisor 现在会维护 `Supervisor arbitration` 子会话，并输出下一步推荐动作、待人工审批、待验收、待评测/发布学习项等仲裁结果
 - Dashboard 的主控聚合中心已扩展出仲裁区块，展示并行波次、推荐动作与待处理事项
+
+- 已把 `OpenAIAgentsSDKAdapter` 升级为真实可配置 API 适配层，支持 `responses` / `chat.completions` 两种请求格式，并读取当前环境变量配置
+- preview server 的 `/api/runs/{id}/execute` 与 `/api/goals/{id}/autopilot` 已切到真实 OpenAI 适配层；未配置 API Key 时会保留 prepared payload 供页面可见审计
+- Dashboard 已新增“执行检查器”，集中展示 request payload、tool call 记录、配置摘要与执行结果
+- 已把设计回顾结论同步进文档，明确当前最大缺口在前置建模链：`SOP ingestion -> compiler/parser -> skill recommendation -> authoring wizard`
+- 已开始实现该链路的第一步：支持把原始 SOP 文本导入为 Playbook，并返回解析摘要与 Skill 建议
+- 已新增 `src/playbookos/ingestion/service.py`，提供原始 SOP `markdown/text/json` 解析、MCP 线索提取和 Skill 建议生成
+- 已新增 `POST /api/playbooks/ingest`，可把原始 SOP 文本导入为已编译 Playbook，并返回步骤数、MCP 提示、解析说明与 Skill 建议
+- Dashboard 工作台已新增原始 SOP 导入表单，支持读取本地文本文件、展示解析摘要，并自动把首个 Skill 建议预填进 Skill 表单
+- 已新增 `tests/test_ingestion_unittest.py`，并通过全量 `36` 个单测
+- 已新增 `POST /api/playbooks/{playbook_id}/skill-drafts`，支持把某条 Skill 建议一键物化为 `draft Skill`
+- Dashboard 的 Skill 建议卡已支持“一键创建 Draft Skill”与“创建并绑定步骤”，并会在页面内回显已创建结果
+- 若选择“创建并绑定步骤”，会把未绑定的 `compiled_spec.steps[].assigned_skill_id` 自动回填，供后续 planner 直接产出带 Skill 的任务
+- 当前全量单测已更新为 `38` 个并全部通过

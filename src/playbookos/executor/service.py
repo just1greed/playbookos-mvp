@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import json
+import os
 from dataclasses import dataclass, field
 from typing import Any, Protocol
+from urllib import error, request
 from uuid import uuid4
 
 from playbookos.api.store import StoreProtocol
@@ -63,8 +66,102 @@ class GoalAutopilotResult:
     iteration_count: int = 0
 
 
+@dataclass(slots=True)
+class OpenAIExecutionConfig:
+    api_key: str | None
+    base_url: str
+    model: str
+    api_format: str = "responses"
+    timeout_seconds: float = 90.0
+    temperature: float | None = 0.2
+    max_output_tokens: int | None = 1600
+    organization: str | None = None
+    project: str | None = None
+
+    @classmethod
+    def from_env(cls) -> OpenAIExecutionConfig:
+        base_url = (
+            os.getenv("PLAYBOOKOS_OPENAI_BASE_URL")
+            or os.getenv("OPENAI_BASE_URL")
+            or "https://api.openai.com/v1"
+        ).rstrip("/")
+        model = (
+            os.getenv("PLAYBOOKOS_OPENAI_MODEL")
+            or os.getenv("OPENAI_MODEL")
+            or "gpt-4.1"
+        )
+        api_format = (os.getenv("PLAYBOOKOS_OPENAI_API_FORMAT") or "responses").strip().lower()
+        if api_format not in {"responses", "chat.completions"}:
+            api_format = "responses"
+        timeout_value = os.getenv("PLAYBOOKOS_OPENAI_TIMEOUT") or "90"
+        max_output_tokens_raw = os.getenv("PLAYBOOKOS_OPENAI_MAX_OUTPUT_TOKENS")
+        temperature_raw = os.getenv("PLAYBOOKOS_OPENAI_TEMPERATURE")
+        return cls(
+            api_key=os.getenv("PLAYBOOKOS_OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY"),
+            base_url=base_url,
+            model=model,
+            api_format=api_format,
+            timeout_seconds=float(timeout_value),
+            temperature=float(temperature_raw) if temperature_raw not in {None, ""} else 0.2,
+            max_output_tokens=int(max_output_tokens_raw) if max_output_tokens_raw not in {None, ""} else 1600,
+            organization=os.getenv("OPENAI_ORG_ID") or os.getenv("PLAYBOOKOS_OPENAI_ORG_ID"),
+            project=os.getenv("OPENAI_PROJECT") or os.getenv("PLAYBOOKOS_OPENAI_PROJECT"),
+        )
+
+    def request_url(self) -> str:
+        suffix = "/responses" if self.api_format == "responses" else "/chat/completions"
+        return f"{self.base_url}{suffix}"
+
+    def headers(self) -> dict[str, str]:
+        headers = {
+            "Content-Type": "application/json",
+        }
+        if self.api_key:
+            headers["Authorization"] = f"Bearer {self.api_key}"
+        if self.organization:
+            headers["OpenAI-Organization"] = self.organization
+        if self.project:
+            headers["OpenAI-Project"] = self.project
+        return headers
+
+    def summary(self) -> dict[str, Any]:
+        return {
+            "base_url": self.base_url,
+            "model": self.model,
+            "api_format": self.api_format,
+            "timeout_seconds": self.timeout_seconds,
+            "temperature": self.temperature,
+            "max_output_tokens": self.max_output_tokens,
+            "has_api_key": bool(self.api_key),
+            "organization": self.organization,
+            "project": self.project,
+        }
+
+
 class ExecutorAdapter(Protocol):
     def execute(self, context: ExecutionContext) -> ExecutionResult: ...
+
+
+class OpenAITransport(Protocol):
+    def post_json(self, url: str, headers: dict[str, str], payload: dict[str, Any], timeout_seconds: float) -> dict[str, Any]: ...
+
+
+class UrllibOpenAITransport:
+    def post_json(self, url: str, headers: dict[str, str], payload: dict[str, Any], timeout_seconds: float) -> dict[str, Any]:
+        req = request.Request(
+            url,
+            data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+            headers=headers,
+            method="POST",
+        )
+        try:
+            with request.urlopen(req, timeout=timeout_seconds) as response:
+                return json.loads(response.read().decode("utf-8"))
+        except error.HTTPError as exc:
+            body = exc.read().decode("utf-8", errors="replace")
+            raise ExecutionError(f"OpenAI HTTP {exc.code}: {body}") from exc
+        except error.URLError as exc:
+            raise ExecutionError(f"OpenAI request failed: {exc.reason}") from exc
 
 
 class DeterministicExecutorAdapter:
@@ -105,8 +202,113 @@ class DeterministicExecutorAdapter:
 
 
 class OpenAIAgentsSDKAdapter:
+    def __init__(
+        self,
+        *,
+        config: OpenAIExecutionConfig | None = None,
+        transport: OpenAITransport | None = None,
+    ) -> None:
+        self.config = config or OpenAIExecutionConfig.from_env()
+        self.transport = transport or UrllibOpenAITransport()
+
     def execute(self, context: ExecutionContext) -> ExecutionResult:
-        instructions = {
+        trace_id = f"agents-trace-{uuid4()}"
+        payload = self._build_request_payload(context)
+        config_summary = self.config.summary()
+        request_url = self.config.request_url()
+        prepared_call = {
+            "tool": "openai_api",
+            "action": "request_prepared",
+            "request_format": self.config.api_format,
+            "request_url": request_url,
+            "config": config_summary,
+            "payload": payload,
+        }
+
+        if context.approval_required:
+            return ExecutionResult(
+                status=RunStatus.WAITING_HUMAN,
+                output_text=f"Task '{context.task_name}' requires human approval before execution.",
+                trace_id=trace_id,
+                metrics={
+                    "adapter": "openai-agents-sdk",
+                    "openai_mode": "approval_required",
+                    "openai_config": config_summary,
+                    "openai_request_format": self.config.api_format,
+                    "openai_request_url": request_url,
+                },
+                tool_calls=[prepared_call],
+            )
+
+        if not self.config.api_key:
+            return ExecutionResult(
+                status=RunStatus.SUCCEEDED,
+                output_text="Prepared OpenAI execution payload using current configuration, but no API key is configured in the environment.",
+                trace_id=trace_id,
+                metrics={
+                    "adapter": "openai-agents-sdk",
+                    "openai_mode": "prepared_only",
+                    "openai_config": config_summary,
+                    "openai_request_format": self.config.api_format,
+                    "openai_request_url": request_url,
+                    "instruction_bytes": len(json.dumps(payload, ensure_ascii=False)),
+                },
+                tool_calls=[prepared_call],
+            )
+
+        try:
+            response_payload = self.transport.post_json(
+                request_url,
+                self.config.headers(),
+                payload,
+                self.config.timeout_seconds,
+            )
+        except ExecutionError as exc:
+            return ExecutionResult(
+                status=RunStatus.FAILED,
+                output_text="OpenAI execution request failed.",
+                trace_id=trace_id,
+                metrics={
+                    "adapter": "openai-agents-sdk",
+                    "openai_mode": "online_error",
+                    "openai_config": config_summary,
+                    "openai_request_format": self.config.api_format,
+                    "openai_request_url": request_url,
+                },
+                error_class=exc.__class__.__name__,
+                error_message=str(exc),
+                tool_calls=[prepared_call],
+            )
+
+        output_text = self._extract_output_text(response_payload)
+        response_call = {
+            "tool": "openai_api",
+            "action": "response_received",
+            "request_format": self.config.api_format,
+            "response_id": response_payload.get("id"),
+            "response_model": response_payload.get("model", self.config.model),
+            "usage": response_payload.get("usage", {}),
+            "output_preview": output_text[:400],
+        }
+        return ExecutionResult(
+            status=RunStatus.SUCCEEDED,
+            output_text=output_text or "OpenAI API call completed without text output.",
+            trace_id=response_payload.get("id") or trace_id,
+            metrics={
+                "adapter": "openai-agents-sdk",
+                "openai_mode": "online",
+                "openai_config": config_summary,
+                "openai_request_format": self.config.api_format,
+                "openai_request_url": request_url,
+                "openai_response_id": response_payload.get("id"),
+                "openai_usage": response_payload.get("usage", {}),
+                "instruction_bytes": len(json.dumps(payload, ensure_ascii=False)),
+            },
+            tool_calls=[prepared_call, response_call],
+        )
+
+    def _build_request_payload(self, context: ExecutionContext) -> dict[str, Any]:
+        task_packet = {
             "goal": {
                 "id": context.goal_id,
                 "title": context.goal_title,
@@ -124,17 +326,103 @@ class OpenAIAgentsSDKAdapter:
                 "version": context.playbook_version,
                 "steps": context.compiled_steps,
             },
+            "skill_id": context.skill_id,
             "mcp_servers": context.mcp_servers,
             "knowledge_items": context.knowledge_items,
-            "skill_id": context.skill_id,
         }
-        return ExecutionResult(
-            status=RunStatus.SUCCEEDED if not context.approval_required else RunStatus.WAITING_HUMAN,
-            output_text="Prepared OpenAI Agents SDK execution payload.",
-            trace_id=f"agents-trace-{uuid4()}",
-            metrics={"adapter": "openai-agents-sdk", "instruction_bytes": len(str(instructions))},
-            tool_calls=[{"tool": "openai_agents_sdk", "action": "prepared_payload", "payload": instructions}],
+        metadata = {
+            "goal_id": context.goal_id,
+            "task_id": context.task_id,
+            "playbook_id": context.playbook_id,
+            "skill_id": context.skill_id,
+            "mcp_server_count": len(context.mcp_servers),
+            "knowledge_item_count": len(context.knowledge_items),
+        }
+        system_prompt = self._system_prompt(context)
+        user_prompt = json.dumps(task_packet, ensure_ascii=False, indent=2)
+        if self.config.api_format == "chat.completions":
+            payload: dict[str, Any] = {
+                "model": self.config.model,
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                "metadata": metadata,
+            }
+            if self.config.temperature is not None:
+                payload["temperature"] = self.config.temperature
+            if self.config.max_output_tokens is not None:
+                payload["max_tokens"] = self.config.max_output_tokens
+            return payload
+
+        payload = {
+            "model": self.config.model,
+            "instructions": system_prompt,
+            "input": [
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "input_text",
+                            "text": user_prompt,
+                        }
+                    ],
+                }
+            ],
+            "metadata": metadata,
+        }
+        if self.config.temperature is not None:
+            payload["temperature"] = self.config.temperature
+        if self.config.max_output_tokens is not None:
+            payload["max_output_tokens"] = self.config.max_output_tokens
+        return payload
+
+    def _system_prompt(self, context: ExecutionContext) -> str:
+        step_count = len(context.compiled_steps)
+        return (
+            "You are the PlaybookOS execution worker. "
+            "Follow the supplied SOP strictly, use the declared skill and MCP scope only, "
+            "produce a concise execution summary, and call out blockers explicitly. "
+            f"The task includes {step_count} SOP step(s), {len(context.mcp_servers)} MCP server reference(s), "
+            f"and {len(context.knowledge_items)} knowledge item(s)."
         )
+
+    def _extract_output_text(self, response_payload: dict[str, Any]) -> str:
+        if isinstance(response_payload.get("output_text"), str):
+            return response_payload["output_text"]
+        choices = response_payload.get("choices")
+        if isinstance(choices, list) and choices:
+            message = choices[0].get("message", {})
+            content = message.get("content")
+            if isinstance(content, str):
+                return content
+            if isinstance(content, list):
+                parts: list[str] = []
+                for item in content:
+                    if isinstance(item, dict):
+                        text = item.get("text") or item.get("content")
+                        if isinstance(text, str):
+                            parts.append(text)
+                if parts:
+                    return "\n".join(parts)
+        output = response_payload.get("output")
+        if isinstance(output, list):
+            parts: list[str] = []
+            for item in output:
+                if not isinstance(item, dict):
+                    continue
+                content = item.get("content")
+                if isinstance(content, list):
+                    for content_item in content:
+                        if isinstance(content_item, dict):
+                            text = content_item.get("text")
+                            if isinstance(text, str):
+                                parts.append(text)
+                elif isinstance(content, str):
+                    parts.append(content)
+            if parts:
+                return "\n".join(parts)
+        return ""
 
 
 def _session_status_for_result(status: RunStatus) -> SessionStatus:

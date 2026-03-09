@@ -27,12 +27,17 @@ from playbookos.api.schemas import (
     KnowledgeBaseCreate,
     KnowledgeBaseRead,
     KnowledgeUpdateRead,
-    SkillCreate,
-    SkillRead,
+    PlaybookIngest,
+    PlaybookIngestRead,
     PlaybookImport,
+    PlaybookSkillDraftCreate,
+    PlaybookSkillDraftRead,
     PlaybookRead,
     ReflectionCreate,
     SessionRead,
+    SkillCreate,
+    SkillRead,
+    SkillSuggestionRead,
     TaskAcceptanceCreate,
     TaskAcceptanceRead,
     ReflectionEvaluationRead,
@@ -70,6 +75,7 @@ from playbookos.domain.models import (
     TaskStatus,
 )
 from playbookos.executor import ExecutionError, OpenAIAgentsSDKAdapter, autopilot_goal_in_store, execute_run_in_store
+from playbookos.ingestion import SOPIngestionError, ingest_sop_in_store, materialize_suggested_skill_in_store
 from playbookos.observability import record_error
 from playbookos.knowledge import KnowledgeUpdateError, apply_knowledge_update_in_store, reject_knowledge_update_in_store
 from playbookos.skills_service import SkillLifecycleError, activate_skill_in_store, create_next_skill_version_in_store, deprecate_skill_in_store, rollback_skill_in_store
@@ -221,6 +227,45 @@ def create_app(store: StoreProtocol | None = None) -> FastAPI:
             playbook.status = PlaybookStatus.COMPILED
         store.playbooks.save(playbook)
         return PlaybookRead.model_validate(playbook)
+
+    @api.post("/api/playbooks/ingest", response_model=PlaybookIngestRead, status_code=status.HTTP_201_CREATED)
+    def ingest_playbook(payload: PlaybookIngest, store: store_dep) -> PlaybookIngestRead:
+        try:
+            result = ingest_sop_in_store(
+                store,
+                name=payload.name,
+                source_text=payload.source_text,
+                source_kind=payload.source_kind,
+                source_uri=payload.source_uri,
+                goal_id=payload.goal_id,
+            )
+        except SOPIngestionError as exc:
+            raise _conflict_http_exception(exc, operation="ingest_playbook", metadata={"goal_id": payload.goal_id}) from exc
+        return PlaybookIngestRead(
+            playbook=PlaybookRead.model_validate(result.playbook),
+            step_count=result.step_count,
+            detected_mcp_servers=result.detected_mcp_servers,
+            suggested_skills=[SkillSuggestionRead.model_validate(item) for item in result.suggested_skills],
+            parsing_notes=result.parsing_notes,
+        )
+
+    @api.post("/api/playbooks/{playbook_id}/skill-drafts", response_model=PlaybookSkillDraftRead, status_code=status.HTTP_201_CREATED)
+    def create_playbook_skill_draft(playbook_id: str, payload: PlaybookSkillDraftCreate, store: store_dep) -> PlaybookSkillDraftRead:
+        try:
+            result = materialize_suggested_skill_in_store(
+                store,
+                playbook_id,
+                suggestion_index=payload.suggestion_index,
+                bind_to_unassigned_steps=payload.bind_to_unassigned_steps,
+            )
+        except SOPIngestionError as exc:
+            raise _conflict_http_exception(exc, operation="create_playbook_skill_draft", metadata={"playbook_id": playbook_id}) from exc
+        return PlaybookSkillDraftRead(
+            playbook_id=result.playbook.id,
+            suggestion_index=result.suggestion_index,
+            bound_step_count=result.bound_step_count,
+            skill=SkillRead.model_validate(result.skill),
+        )
 
     @api.get("/api/playbooks", response_model=list[PlaybookRead])
     def list_playbooks(store: store_dep) -> list[PlaybookRead]:

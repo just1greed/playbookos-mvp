@@ -14,7 +14,8 @@ from urllib.parse import urlparse
 
 from playbookos.api.store import InMemoryStore, StoreProtocol
 from playbookos.domain.models import Goal, KnowledgeBase, Playbook, PlaybookStatus, ReflectionStatus, RunStatus, Skill, Task, TaskStatus, utc_now
-from playbookos.executor.service import DeterministicExecutorAdapter, autopilot_goal_in_store, execute_run_in_store
+from playbookos.executor.service import DeterministicExecutorAdapter, OpenAIAgentsSDKAdapter, autopilot_goal_in_store, execute_run_in_store
+from playbookos.ingestion import SOPIngestionError, ingest_sop_in_store, materialize_suggested_skill_in_store
 from playbookos.observability import get_error_log_path, list_recorded_errors, record_error
 from playbookos.persistence import create_store_from_env
 from playbookos.orchestrator.service import complete_task_in_store, dispatch_goal_in_store
@@ -121,6 +122,44 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
                 self.server.store.playbooks.save(playbook)
                 self._write_json(_to_jsonable(playbook), status=HTTPStatus.CREATED)
                 return
+            if path == "/api/playbooks/ingest":
+                result = ingest_sop_in_store(
+                    self.server.store,
+                    name=payload["name"],
+                    source_text=payload["source_text"],
+                    source_kind=payload.get("source_kind", "markdown"),
+                    source_uri=payload.get("source_uri") or None,
+                    goal_id=payload.get("goal_id") or None,
+                )
+                self._write_json(
+                    {
+                        "playbook": _to_jsonable(result.playbook),
+                        "step_count": result.step_count,
+                        "detected_mcp_servers": result.detected_mcp_servers,
+                        "suggested_skills": _to_jsonable(result.suggested_skills),
+                        "parsing_notes": result.parsing_notes,
+                    },
+                    status=HTTPStatus.CREATED,
+                )
+                return
+            if path.startswith("/api/playbooks/") and path.endswith("/skill-drafts"):
+                playbook_id = path.split("/")[-2]
+                result = materialize_suggested_skill_in_store(
+                    self.server.store,
+                    playbook_id,
+                    suggestion_index=int(payload.get("suggestion_index", 0)),
+                    bind_to_unassigned_steps=bool(payload.get("bind_to_unassigned_steps", False)),
+                )
+                self._write_json(
+                    {
+                        "playbook_id": result.playbook.id,
+                        "suggestion_index": result.suggestion_index,
+                        "bound_step_count": result.bound_step_count,
+                        "skill": _to_jsonable(result.skill),
+                    },
+                    status=HTTPStatus.CREATED,
+                )
+                return
             if path == "/api/skills":
                 skill = Skill(
                     name=payload["name"],
@@ -212,7 +251,7 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
             if path.startswith("/api/goals/") and path.endswith("/autopilot"):
                 goal_id = path.split("/")[-2]
                 plan_goal_in_store(self.server.store, goal_id)
-                result = autopilot_goal_in_store(self.server.store, goal_id, adapter=DeterministicExecutorAdapter())
+                result = autopilot_goal_in_store(self.server.store, goal_id, adapter=OpenAIAgentsSDKAdapter())
                 self._write_json(_to_jsonable(result))
                 return
             if path.startswith("/api/tasks/") and path.endswith("/accept"):
@@ -240,7 +279,7 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
                 return
             if path.startswith("/api/runs/") and path.endswith("/execute"):
                 run_id = path.split("/")[-2]
-                result = execute_run_in_store(self.server.store, run_id, adapter=DeterministicExecutorAdapter())
+                result = execute_run_in_store(self.server.store, run_id, adapter=OpenAIAgentsSDKAdapter())
                 if result.status == RunStatus.SUCCEEDED:
                     run = self.server.store.runs.get(run_id)
                     complete_task_in_store(self.server.store, run.task_id)
@@ -327,6 +366,9 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
         except KeyError as exc:
             record_error(exc, component="preview_server", operation="do_POST", metadata={"path": path}, path=self.server.error_log_path)
             self._write_json({"detail": f"Missing field: {exc.args[0]}"}, status=HTTPStatus.BAD_REQUEST)
+        except SOPIngestionError as exc:
+            record_error(exc, component="preview_server", operation="do_POST", metadata={"path": path}, path=self.server.error_log_path)
+            self._write_json({"detail": str(exc)}, status=HTTPStatus.CONFLICT)
         except Exception as exc:
             record_error(exc, component="preview_server", operation="do_POST", metadata={"path": path}, path=self.server.error_log_path)
             self._write_json({"detail": str(exc)}, status=HTTPStatus.BAD_REQUEST)

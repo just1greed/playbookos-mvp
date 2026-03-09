@@ -215,6 +215,23 @@ class ReflectionPublishRead(APIModel):
     published_target_version: str | None = None
 
 
+class SkillSuggestionRead(APIModel):
+    name: str
+    description: str
+    required_mcp_servers: list[str] = Field(default_factory=list)
+    rationale: str = ""
+    sample_task_names: list[str] = Field(default_factory=list)
+    approval_hint: str = ""
+
+
+class PlaybookIngest(APIModel):
+    name: str
+    source_text: str
+    source_kind: str = "markdown"
+    source_uri: str | None = None
+    goal_id: str | None = None
+
+
 class PlaybookImport(APIModel):
     name: str
     source_kind: str
@@ -230,6 +247,26 @@ class PlaybookRead(PlaybookImport):
     status: PlaybookStatus
     created_at: datetime
     updated_at: datetime
+
+
+class PlaybookIngestRead(APIModel):
+    playbook: PlaybookRead
+    step_count: int
+    detected_mcp_servers: list[str] = Field(default_factory=list)
+    suggested_skills: list[SkillSuggestionRead] = Field(default_factory=list)
+    parsing_notes: list[str] = Field(default_factory=list)
+
+
+class PlaybookSkillDraftCreate(APIModel):
+    suggestion_index: int = 0
+    bind_to_unassigned_steps: bool = False
+
+
+class PlaybookSkillDraftRead(APIModel):
+    playbook_id: str
+    suggestion_index: int
+    bound_step_count: int = 0
+    skill: "SkillRead"
 
 
 

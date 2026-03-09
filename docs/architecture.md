@@ -149,3 +149,17 @@ PlaybookOS 推荐采用三层架构：
 4. Artifact 持久化
 5. Reflection proposal + 人工批准
 6. Skill 版本发布与回放评测
+
+## 8. 当前缺口与补齐顺序（2026-03-09）
+
+结合当前代码状态，最大缺口不在后半段执行链，而在前半段建模链：
+
+1. `SOP ingestion`：上传或粘贴原始 SOP、附件与来源元数据
+2. `compiler/parser`：把原始 SOP 解析为 `Playbook + compiled_spec.steps + MCP hints`
+3. `skill recommendation`：根据步骤语义、工具需求和风险提示生成 Skill 草案
+4. `authoring wizard`：引导用户确认 Skill 描述、MCP 范围、审批策略、评测策略
+5. `artifact/object storage`：保留 SOP 原件、附件与解析产物，支撑审计与回放
+
+当前仓库已经能跑通 `Goal -> Playbook -> Task -> Run -> Reflection` 主链，但尚未完整支持“上传任意格式 SOP 后自动解析成对象，并主动引导用户配置 Skill”的前置建模流程。
+
+本轮实现从第 1、2、3 项开始：先落一个最小可用闭环，让用户把原始 SOP 文本或文本文件导入为 Playbook，并获得可见的 Skill 建议。

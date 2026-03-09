@@ -4,6 +4,7 @@ from .service import (
     ExecutionResult,
     GoalAutopilotResult,
     OpenAIAgentsSDKAdapter,
+    OpenAIExecutionConfig,
     autopilot_goal_in_store,
     execute_run_in_store,
 )
@@ -14,6 +15,7 @@ __all__ = [
     "ExecutionResult",
     "GoalAutopilotResult",
     "OpenAIAgentsSDKAdapter",
+    "OpenAIExecutionConfig",
     "autopilot_goal_in_store",
     "execute_run_in_store",
 ]

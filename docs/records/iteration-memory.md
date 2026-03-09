@@ -47,7 +47,7 @@
 - 专门的 SOP 编辑 / diff / patch 审核界面
 - 知识库检索排序与版本化能力
 - 真正的多层子会话执行、并行汇总与主进程仲裁：已具备 dispatch wave 并行批次会话、worker 多层子会话和 supervisor arbitration 可视化摘要，但仍缺少更强的真实并发执行、跨波次资源竞争仲裁与真实在线 agent 执行器
-- 真实 OpenAI Agents SDK + MCP 在线执行
+- 真实 OpenAI Agents SDK 在线执行：已具备按当前环境配置发起 `responses` / `chat.completions` 请求的适配层与可见 request/response 检查器，但还缺少真实 MCP tool runtime 与更完整的在线评测
 - Temporal 真正接入
 
 ## 推荐下一优先级
@@ -57,3 +57,10 @@
 3. Skill versioning / rollback
 4. 知识库检索排序 / 版本化
 5. 真实 executor + MCP 集成
+
+## 2026-03-09 设计回顾结论
+
+- 当前系统已经具备“手工建模后的执行与反思闭环”，即手工创建 Goal / Playbook / Skill / Task 后，可以完成规划、调度、执行、验收与 reflection。
+- 当前系统还不具备完整的“任意格式 SOP 上传 -> 自动解析成对象 -> 主动引导配置 Skill”前置建模链路。
+- 缺的核心不是后半段执行，而是前半段的 `ingestion + compiler + skill recommendation + authoring wizard`。
+- 因此后续实现顺序调整为：先补原始 SOP 接入与解析，再补 Skill 引导，再补原件/附件治理和更完整的 authoring workflow。
