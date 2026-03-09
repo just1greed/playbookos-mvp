@@ -20,6 +20,7 @@ from playbookos.persistence import create_store_from_env
 from playbookos.orchestrator.service import complete_task_in_store, dispatch_goal_in_store
 from playbookos.planner.service import plan_goal_in_store
 from playbookos.reflection.service import approve_reflection_in_store, evaluate_reflection_in_store, publish_reflection_in_store, reflect_run_in_store, reject_reflection_in_store
+from playbookos.skills_service import activate_skill_in_store, create_next_skill_version_in_store, deprecate_skill_in_store, rollback_skill_in_store
 from playbookos.supervisor import accept_task_in_store
 from playbookos.ui import build_dashboard_html
 
@@ -300,6 +301,26 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
                 result = publish_reflection_in_store(self.server.store, reflection_id)
                 self._write_json(_to_jsonable(result))
                 return
+            if path.startswith("/api/skills/") and path.endswith("/create-version"):
+                skill_id = path.split("/")[-2]
+                result = create_next_skill_version_in_store(self.server.store, skill_id)
+                self._write_json(_to_jsonable(result.skill))
+                return
+            if path.startswith("/api/skills/") and path.endswith("/activate"):
+                skill_id = path.split("/")[-2]
+                result = activate_skill_in_store(self.server.store, skill_id)
+                self._write_json(_to_jsonable(result.skill))
+                return
+            if path.startswith("/api/skills/") and path.endswith("/deprecate"):
+                skill_id = path.split("/")[-2]
+                result = deprecate_skill_in_store(self.server.store, skill_id)
+                self._write_json(_to_jsonable(result.skill))
+                return
+            if path.startswith("/api/skills/") and path.endswith("/rollback"):
+                skill_id = path.split("/")[-2]
+                result = rollback_skill_in_store(self.server.store, skill_id)
+                self._write_json(_to_jsonable(result.active_skill))
+                return
 
             record_error("Route not found", component="preview_server", operation="do_POST", metadata={"path": path, "status_code": 404}, path=self.server.error_log_path)
             self._write_json({"detail": "Not found"}, status=HTTPStatus.NOT_FOUND)
@@ -451,6 +472,15 @@ def build_demo_store() -> StoreProtocol:
     launch_skill = store.skills.save(
         Skill(name="Launch operator", description="Coordinate rollout tasks", input_schema={}, output_schema={}, required_mcp_servers=["plane", "github", "slack"])
     )
+    activate_skill_in_store(store, launch_skill.id)
+    launch_skill_v2 = create_next_skill_version_in_store(store, launch_skill.id).skill
+    launch_skill_v2.description = "Coordinate rollout tasks with clearer guardrails and approval-aware branches"
+    launch_skill_v2.required_mcp_servers = ["plane", "github", "slack"]
+    store.skills.save(launch_skill_v2)
+    activate_skill_in_store(store, launch_skill_v2.id)
+    launch_skill_v3 = create_next_skill_version_in_store(store, launch_skill_v2.id).skill
+    launch_skill_v3.description = "Draft next version with stronger rollback metadata and release checklist support"
+    store.skills.save(launch_skill_v3)
     store.knowledge_bases.save(
         KnowledgeBase(
             name="Launch context pack",
@@ -487,6 +517,7 @@ def build_demo_store() -> StoreProtocol:
     reflection_skill = store.skills.save(
         Skill(name="Reflection analyst", description="Review traces and improve SOPs", input_schema={}, output_schema={}, required_mcp_servers=["plane"])
     )
+    activate_skill_in_store(store, reflection_skill.id)
     store.knowledge_bases.save(
         KnowledgeBase(
             name="Reflection evidence base",

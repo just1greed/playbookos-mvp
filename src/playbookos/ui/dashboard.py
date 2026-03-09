@@ -68,6 +68,17 @@ TRANSLATIONS = {
         "patch_review_replay_count": "回放样本数",
         "patch_review_changes": "变更清单",
         "patch_review_no_changes": "当前提案没有结构化变更项。",
+        "skill_version_title": "技能版本中心",
+        "skill_version_subtitle": "集中展示 Skill 版本链、激活版本、回滚目标与发布动作，补齐技能迭代闭环",
+        "skill_version_empty": "当前还没有 Skill 版本链。",
+        "skill_version_family": "技能家族",
+        "skill_version_current": "当前版本",
+        "skill_version_rollback": "回滚目标",
+        "skill_version_servers": "依赖 MCP",
+        "action_create_skill_version": "创建新版本",
+        "action_activate_skill": "激活版本",
+        "action_deprecate_skill": "废弃版本",
+        "action_rollback_skill": "回滚版本",
         "action_plan": "规划",
         "action_dispatch": "派发",
         "action_autopilot": "自动执行",
@@ -231,6 +242,17 @@ TRANSLATIONS = {
         "patch_review_replay_count": "Replay samples",
         "patch_review_changes": "Change list",
         "patch_review_no_changes": "No structured changes in this proposal yet.",
+        "skill_version_title": "Skill Version Center",
+        "skill_version_subtitle": "Show Skill version chains, active releases, rollback targets, and lifecycle actions in one visible surface",
+        "skill_version_empty": "No skill version chains yet.",
+        "skill_version_family": "Skill family",
+        "skill_version_current": "Current version",
+        "skill_version_rollback": "Rollback target",
+        "skill_version_servers": "Required MCP",
+        "action_create_skill_version": "Create Version",
+        "action_activate_skill": "Activate",
+        "action_deprecate_skill": "Deprecate",
+        "action_rollback_skill": "Rollback",
         "action_plan": "Plan",
         "action_dispatch": "Dispatch",
         "action_autopilot": "Autopilot",
@@ -512,6 +534,12 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
       .patch-change {{ padding: 12px 14px; border-radius: 14px; background: rgba(2, 6, 23, 0.7); border: 1px solid rgba(148, 163, 184, 0.08); }}
       .patch-change code {{ color: #c4b5fd; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }}
       .patch-change span {{ display: block; color: var(--muted); margin-top: 6px; line-height: 1.6; }}
+      .skill-version-grid {{ display: grid; gap: 16px; }}
+      .skill-family-card {{ padding: 18px; border-radius: 20px; background: rgba(15, 23, 42, 0.62); border: 1px solid rgba(148, 163, 184, 0.12); }}
+      .skill-version-list {{ display: grid; gap: 10px; margin-top: 12px; }}
+      .skill-version-item {{ padding: 12px 14px; border-radius: 14px; background: rgba(2, 6, 23, 0.7); border: 1px solid rgba(148, 163, 184, 0.08); }}
+      .skill-version-item strong {{ display: block; font-size: 14px; }}
+      .skill-version-item small {{ display: block; color: var(--muted); margin-top: 6px; line-height: 1.6; white-space: pre-wrap; }}
       .list-card {{ grid-column: span 8; }}
       .activity-card {{ grid-column: span 4; }}
       .rows {{ display: grid; gap: 10px; margin-top: 14px; }}
@@ -704,6 +732,13 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
 
       <section class="section">
         <article class="card workbench-card">
+          <div class="section-title"><h2 data-i18n="skill_version_title"></h2><span data-i18n="skill_version_subtitle"></span></div>
+          <div class="skill-version-grid" id="skill-version-rows"></div>
+        </article>
+      </section>
+
+      <section class="section">
+        <article class="card workbench-card">
           <div class="section-title"><h2 data-i18n="patch_review_title"></h2><span data-i18n="patch_review_subtitle"></span></div>
           <div class="patch-review-grid" id="patch-review-rows"></div>
         </article>
@@ -875,6 +910,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         renderEndpointCards();
         renderWorkbenchOptions();
         renderActionCenter();
+        renderSkillVersions();
         renderPatchReviews();
         renderSessionTree();
         if (!document.getElementById('editor-status').dataset.state) {{
@@ -1099,6 +1135,40 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         container.innerHTML = cards.join('');
       }}
 
+      function renderSkillVersions() {{
+        const skills = latestResources.skills || [];
+        const container = document.getElementById('skill-version-rows');
+        if (!skills.length) {{
+          container.innerHTML = `<div class="skill-family-card"><strong>${{escapeHtml(t('skill_version_family'))}}</strong><small>${{escapeHtml(t('skill_version_empty'))}}</small></div>`;
+          return;
+        }}
+        const families = {{}};
+        for (const skill of skills) {{
+          if (!families[skill.name]) families[skill.name] = [];
+          families[skill.name].push(skill);
+        }}
+        const sortVersion = (left, right) => String(left.version || '').localeCompare(String(right.version || ''), undefined, {{ numeric: true, sensitivity: 'base' }});
+        const familyCards = Object.entries(families).sort((left, right) => left[0].localeCompare(right[0])).map(([name, items]) => {{
+          items.sort(sortVersion).reverse();
+          const active = items.find((item) => item.status === 'active');
+          const versionsHtml = items.map((item) => {{
+            const detailLines = [
+              `${{t('skill_version_current')}}: ${{item.version || 'n/a'}}`,
+              `${{t('session_status_label')}}: ${{item.status || ''}}`,
+              `${{t('skill_version_rollback')}}: ${{item.rollback_version || 'n/a'}}`,
+              `${{t('skill_version_servers')}}: ${{(item.required_mcp_servers || []).join(', ') || 'n/a'}}`,
+            ];
+            const buttons = [actionButton('action_create_skill_version', 'skill', item.id, 'create-version', null, true)];
+            if (item.status !== 'active') buttons.push(actionButton('action_activate_skill', 'skill', item.id, 'activate'));
+            if (item.status !== 'deprecated') buttons.push(actionButton('action_deprecate_skill', 'skill', item.id, 'deprecate', null, true));
+            if (item.rollback_version || items.some((candidate) => candidate.version < item.version)) buttons.push(actionButton('action_rollback_skill', 'skill', item.id, 'rollback'));
+            return `<div class="skill-version-item"><strong>${{escapeHtml(name)}} · v${{escapeHtml(item.version || 'n/a')}}</strong><small>${{escapeHtml(detailLines.join('\\n'))}}</small><div class="action-buttons">${{buttons.join('')}}</div></div>`;
+          }}).join('');
+          return `<div class="skill-family-card"><div class="patch-review-head"><div><strong>${{escapeHtml(name)}}</strong><small>${{escapeHtml(t('skill_version_family'))}} · ${{items.length}} versions</small></div><span class="pill">${{escapeHtml(t('skill_version_current'))}} · ${{escapeHtml(active ? active.version : 'n/a')}}</span></div><div class="skill-version-list">${{versionsHtml}}</div></div>`;
+        }});
+        container.innerHTML = familyCards.join('');
+      }}
+
       function renderGoalActions() {{
         const rows = (latestResources.goals || []).slice(0, 6).map((goal) => actionRow(
           goal.title || goal.id,
@@ -1197,6 +1267,10 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         }}
         if (actionKind === 'reflection') {{
           await postJson(`reflections/${{actionTarget}}/${{actionName}}`, body);
+          return;
+        }}
+        if (actionKind === 'skill') {{
+          await postJson(`skills/${{actionTarget}}/${{actionName}}`, body);
           return;
         }}
         if (actionKind === 'knowledge') {{
@@ -1388,6 +1462,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         renderWorkbenchOptions();
         refreshEditorResourceOptions();
         renderActionCenter();
+        renderSkillVersions();
         renderPatchReviews();
         renderSessionTree();
         clearBootError();

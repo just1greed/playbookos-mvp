@@ -72,6 +72,7 @@ from playbookos.domain.models import (
 from playbookos.executor import ExecutionError, OpenAIAgentsSDKAdapter, autopilot_goal_in_store, execute_run_in_store
 from playbookos.observability import record_error
 from playbookos.knowledge import KnowledgeUpdateError, apply_knowledge_update_in_store, reject_knowledge_update_in_store
+from playbookos.skills_service import SkillLifecycleError, activate_skill_in_store, create_next_skill_version_in_store, deprecate_skill_in_store, rollback_skill_in_store
 from playbookos.orchestrator import OrchestrationError, complete_task_in_store, dispatch_goal_in_store
 from playbookos.persistence import create_store_from_env
 from playbookos.planner import PlanningError, plan_goal_in_store
@@ -281,6 +282,39 @@ def create_app(store: StoreProtocol | None = None) -> FastAPI:
         skill.updated_at = utc_now()
         store.skills.save(skill)
         return SkillRead.model_validate(skill)
+
+
+    @api.post("/api/skills/{skill_id}/create-version", response_model=SkillRead)
+    def create_skill_version(skill_id: str, store: store_dep) -> SkillRead:
+        try:
+            result = create_next_skill_version_in_store(store, skill_id)
+        except SkillLifecycleError as exc:
+            raise _conflict_http_exception(exc, operation="create_skill_version", metadata={"skill_id": skill_id}) from exc
+        return SkillRead.model_validate(result.skill)
+
+    @api.post("/api/skills/{skill_id}/activate", response_model=SkillRead)
+    def activate_skill(skill_id: str, store: store_dep) -> SkillRead:
+        try:
+            result = activate_skill_in_store(store, skill_id)
+        except SkillLifecycleError as exc:
+            raise _conflict_http_exception(exc, operation="activate_skill", metadata={"skill_id": skill_id}) from exc
+        return SkillRead.model_validate(result.skill)
+
+    @api.post("/api/skills/{skill_id}/deprecate", response_model=SkillRead)
+    def deprecate_skill(skill_id: str, store: store_dep) -> SkillRead:
+        try:
+            result = deprecate_skill_in_store(store, skill_id)
+        except SkillLifecycleError as exc:
+            raise _conflict_http_exception(exc, operation="deprecate_skill", metadata={"skill_id": skill_id}) from exc
+        return SkillRead.model_validate(result.skill)
+
+    @api.post("/api/skills/{skill_id}/rollback", response_model=SkillRead)
+    def rollback_skill(skill_id: str, store: store_dep) -> SkillRead:
+        try:
+            result = rollback_skill_in_store(store, skill_id)
+        except SkillLifecycleError as exc:
+            raise _conflict_http_exception(exc, operation="rollback_skill", metadata={"skill_id": skill_id}) from exc
+        return SkillRead.model_validate(result.active_skill)
 
     @api.post("/api/knowledge-bases", response_model=KnowledgeBaseRead, status_code=status.HTTP_201_CREATED)
     def create_knowledge_base(payload: KnowledgeBaseCreate, store: store_dep) -> KnowledgeBaseRead:
