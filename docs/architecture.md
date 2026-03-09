@@ -152,6 +152,18 @@ PlaybookOS 推荐采用三层架构：
 
 ## 8. 当前缺口与补齐顺序（2026-03-09）
 
+### 8.1 当前已补上的 MCP health 第一版
+
+围绕 `MCP runtime / credential / health` 的缺口，当前先补了最小可用的 `health probe`：
+
+- 新增 `POST /api/mcp-servers/{mcp_server_id}/probe`
+- 支持对已登记 MCP endpoint 做轻量 HTTP 探测
+- 探测结果会回写到 `mcp_server.auth_config.health`
+- 探测成功会把 MCP 状态切到 `active`，失败切到 `error`
+- Dashboard 的 `MCP` 工作台已可直接点击 `Probe MCP` 并查看最近一次探测结果
+
+这还不是完整 runtime，但已经让系统能回答“这个 MCP 现在能不能连上”。
+
 结合当前代码状态，最大缺口不在后半段执行链，而在前半段建模链：
 
 1. `SOP ingestion`：上传或粘贴原始 SOP、附件与来源元数据
@@ -173,6 +185,6 @@ PlaybookOS 推荐采用三层架构：
 3. `对象归一化` 仍未完成：已能生成 Playbook 与 Skill 草案，但 Knowledge、Task template、approval checklist 等派生对象还没有在 ingestion 阶段自动物化。
 4. `主动引导` 仍是第一版：authoring wizard 已能补齐 schema / approval / evaluation 默认值，但缺少逐步问答式确认、风险解释和发布门禁。
 5. `外部对象存储` 仍未完成：当前实现是本地文件目录，后续还需要升级到真正的云对象存储与评测数据集治理。
-6. `MCP runtime` 仍未完成：MCP 控制面注册表、CRUD 与从 SOP 缺口一键生成 draft MCP 已经落地，但还没有连接校验、凭证治理、健康探测和真实 tool runtime。
+6. `MCP runtime` 仍未完成：MCP 控制面注册表、CRUD、从 SOP 缺口一键生成 draft MCP 与基础 health probe 已经落地，但凭证治理、真实 MCP 握手/工具调用、租户级权限边界与审计还没有完成。
 
-这意味着：当前系统已经能回答“这份 Markdown SOP 需要哪些工具、应该补哪些 Skill、哪些 MCP 还缺、先创建哪些 draft MCP”，但还不能直接回答“这些 MCP 现在是否真的可连通、可安全执行、可投入生产”。下一阶段的重点因此转向 MCP runtime / credential / health 三件事。
+这意味着：当前系统已经能回答“这份 Markdown SOP 需要哪些工具、应该补哪些 Skill、哪些 MCP 还缺、先创建哪些 draft MCP，以及这个 MCP 最近一次是否能连上”，但还不能直接回答“这些 MCP 是否已完成凭证配置、可安全执行、可投入生产”。下一阶段的重点因此转向 MCP credential / auth 与真实 runtime。

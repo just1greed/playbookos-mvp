@@ -110,3 +110,8 @@
 - 这轮回顾后确认：之前 `README` 和部分 ingest 交互对外表达得比当前产品策略更宽，容易让用户误判“多格式 SOP 已正式支持”。现在已统一收敛到 Markdown-first。
 - 当前更合理的演进方式不是继续扩展格式种类，而是先把 Markdown SOP 的“工具识别 -> MCP 缺口 -> Skill 上传/复用 -> 步骤绑定”这条引导链做得更稳定、更可操作。
 - 因此本轮优化重点放在提示词与动作顺序：先复用已有 MCP/Skill，再补缺口，再做绑定和 authoring，而不是一上来默认新建所有对象。
+
+- 在 `MCP runtime / credential / health` 这个缺口上，这轮先补的是最小闭环的 `health probe`，而不是直接跳到完整 tool runtime；这样可以先把“可见、可测、可治理”的基础打稳。
+- 现在系统已经能区分“仓库里有没有这个 MCP”与“这个 MCP endpoint 最近一次探测是否成功”，后续再叠加凭证治理和真实 tool runtime 会更顺。
+
+- 这次审查说明：Dashboard 这类 HTML+JS Python 模板很容易出现 `\n` / `\\n` 双重转义问题；后续每次改动关键脚本块后，都应至少补一轮 `node --check` 或等价语法校验。

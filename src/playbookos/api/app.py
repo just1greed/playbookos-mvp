@@ -28,6 +28,9 @@ from playbookos.api.schemas import (
     KnowledgeBaseRead,
     KnowledgeUpdateRead,
     MCPServerCreate,
+    MCPServerProbeCreate,
+    MCPServerProbeRead,
+    MCPServerProbeResultRead,
     MCPServerRead,
     PlaybookIngest,
     PlaybookIngestRead,
@@ -106,6 +109,7 @@ from playbookos.reflection import (
 )
 from playbookos.supervisor import AcceptanceError, accept_task_in_store
 from playbookos.runtime_settings import create_runtime_settings_store_from_env
+from playbookos.mcp_probe import MCPProbeError, probe_mcp_server_in_store
 from playbookos.ui import build_dashboard_html
 
 
@@ -475,6 +479,17 @@ def create_app(store: StoreProtocol | None = None) -> FastAPI:
         item.updated_at = utc_now()
         store.mcp_servers.save(item)
         return MCPServerRead.model_validate(item)
+
+    @api.post("/api/mcp-servers/{mcp_server_id}/probe", response_model=MCPServerProbeResultRead)
+    def probe_mcp_server(mcp_server_id: str, payload: MCPServerProbeCreate, store: store_dep) -> MCPServerProbeResultRead:
+        try:
+            item, probe = probe_mcp_server_in_store(store, mcp_server_id, timeout_seconds=payload.timeout_seconds)
+        except MCPProbeError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+        return MCPServerProbeResultRead(
+            mcp_server=MCPServerRead.model_validate(item),
+            probe=MCPServerProbeRead.model_validate(probe),
+        )
 
     @api.post("/api/knowledge-bases", response_model=KnowledgeBaseRead, status_code=status.HTTP_201_CREATED)
     def create_knowledge_base(payload: KnowledgeBaseCreate, store: store_dep) -> KnowledgeBaseRead:

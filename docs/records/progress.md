@@ -251,3 +251,9 @@
 - 已按当前产品计划把 `SOP ingestion` 逻辑收敛到 `Markdown-first`：非 Markdown `source_kind` 现在会直接返回明确错误，避免文档与产品策略不一致
 - 已优化 `tooling_guidance` 的当前逻辑：action items 现在会按“先复用已登记 MCP / Skill，再补缺口，再绑定步骤”的顺序输出，prompt blocks 也会显式带上已有候选与缺口上下文
 - Dashboard 的 SOP 导入表单已同步收敛为 `Markdown only`，避免用户在 UI 中误以为当前版本已经支持 `json/txt/csv` ingestion
+
+- 已开始补 `MCP runtime / credential / health` 的第一步：新增 `MCP health probe`，可对已登记 MCP endpoint 做轻量探测并回写最近一次健康状态
+- FastAPI 与 Preview Server 均已新增 `POST /api/mcp-servers/{mcp_server_id}/probe`；Dashboard 的 `MCP` 工作台现在可直接点击 `Probe MCP` 并查看最近一次探测结果
+- 当前实现仍然不是完整 MCP runtime，但已经把“有没有登记 MCP”推进到“这个 MCP 现在能不能连上”
+
+- 审查 Dashboard 真实渲染后又修掉了一处 MCP 工作台脚本问题：`join('\n')` 在 Python 模板里会落成非法 JS 换行，现已统一修正为安全转义，避免页面在浏览器里静默失效

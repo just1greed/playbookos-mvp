@@ -335,6 +335,26 @@ class MCPServerRead(MCPServerCreate):
     updated_at: datetime
 
 
+class MCPServerProbeCreate(APIModel):
+    timeout_seconds: float = 5.0
+
+
+class MCPServerProbeRead(APIModel):
+    ok: bool
+    status: str
+    message: str
+    endpoint: str
+    transport: str
+    tested_at: str
+    timeout_seconds: float
+    http_status: int | None = None
+
+
+class MCPServerProbeResultRead(APIModel):
+    mcp_server: "MCPServerRead"
+    probe: MCPServerProbeRead
+
+
 class PlaybookMCPDraftCreate(APIModel):
     server_name: str
 

@@ -774,6 +774,7 @@ TRANSLATIONS = {
         "ingest_tooling_existing_skills": "Reusable Skills",
         "ingest_tooling_existing_mcp": "Registered MCP",
         "action_create_mcp_draft": "Create MCP Draft",
+        "action_probe_mcp": "Probe MCP",
         "ingest_tooling_actions": "Next actions",
         "ingest_tooling_prompts": "Recommended prompts",
         "action_ingest_playbook": "Parse and ingest",
@@ -3029,6 +3030,9 @@ ${{t('skill_version_servers')}}: ${{(skill.required_mcp_servers || []).join(', '
         if (actionKind === 'goal') {{
           return await postJson(`goals/${{actionTarget}}/${{actionName}}`, body);
         }}
+        if (actionKind === 'mcp') {{
+          return await postJson(`mcp-servers/${{actionTarget}}/${{actionName}}`, body);
+        }}
         if (actionKind === 'run') {{
           return await postJson(`runs/${{actionTarget}}/${{actionName}}`, body);
         }}
@@ -3115,6 +3119,10 @@ ${{t('skill_version_servers')}}: ${{(skill.required_mcp_servers || []).join(', '
 
       function routeDetailRow(title, lines, state = 'idle') {{
         return `<div class="row"><div><strong>${{escapeHtml(title)}}</strong><small>${{escapeHtml((lines || []).filter(Boolean).join('\\n') || t('route_detail_empty'))}}</small></div><span class="state">${{escapeHtml(formatStateLabel(state || t('idle')))}}</span></div>`;
+      }}
+
+      function mcpHealth(server) {{
+        return (server && server.auth_config && server.auth_config.health) || null;
       }}
 
       function sortByRecent(items, limit = 6) {{
@@ -3288,11 +3296,17 @@ ${{t('skill_version_servers')}}: ${{(skill.required_mcp_servers || []).join(', '
           sideSubtitle = t('route_mcp_ops_subtitle');
           primaryRows = sortByRecent(mcpServers).map((server) => {{
             const dependentSkills = skills.filter((item) => (item.required_mcp_servers || []).includes(server.name));
-            return routeDetailRow(server.name || server.id, [
+            const health = mcpHealth(server);
+            const probeButton = actionButton('action_probe_mcp', 'mcp', server.id, 'probe', {{ timeout_seconds: 5 }}, true);
+            const lines = [
               `${{t('detail_transport')}}: ${{server.transport || 'n/a'}}`,
               `${{t('detail_endpoint')}}: ${{server.endpoint || 'n/a'}}`,
               `${{t('detail_skills')}}: ${{dependentSkills.map((item) => item.name).join(', ') || 'n/a'}}`,
-            ], server.status || 'inactive');
+              `health: ${{health ? (health.status || (health.ok ? 'ok' : 'error')) : 'not_probed'}}`,
+              `last probe: ${{health ? (health.tested_at || 'n/a') : 'n/a'}}`,
+              `message: ${{health ? (health.message || 'n/a') : 'n/a'}}`,
+            ];
+            return `<div class="row"><div><strong>${{escapeHtml(server.name || server.id)}}</strong><small>${{escapeHtml(lines.filter(Boolean).join('\\n'))}}</small><div class="action-buttons" style="margin-top:8px;">${{probeButton}}</div></div><span class="state">${{escapeHtml(formatStateLabel((health && health.ok ? 'active' : server.status) || 'inactive'))}}</span></div>`;
           }});
           const registryNames = new Set(mcpServers.map((item) => String(item.name || '').trim().toLowerCase()).filter(Boolean));
           const uncoveredDependencies = [...new Set(skills.flatMap((item) => item.required_mcp_servers || []).filter((name) => !registryNames.has(String(name || '').trim().toLowerCase())))];
@@ -3309,10 +3323,14 @@ ${{t('skill_version_servers')}}: ${{(skill.required_mcp_servers || []).join(', '
               `${{t('detail_skills')}}: ${{skills.filter((item) => (item.required_mcp_servers || []).some((name) => uncoveredDependencies.includes(name))).map((item) => item.name).join(', ') || 'n/a'}}`,
             ], 'gap'));
           }}
-          sideRows.push(...sortByRecent(mcpServers.filter((item) => item.status && item.status !== 'active'), 4).map((server) => routeDetailRow(server.name || server.id, [
-            `${{t('detail_transport')}}: ${{server.transport || 'n/a'}}`,
-            `${{t('detail_endpoint')}}: ${{server.endpoint || 'n/a'}}`,
-          ], server.status || 'inactive')));
+          sideRows.push(...sortByRecent(mcpServers.filter((item) => item.status && item.status !== 'active'), 4).map((server) => {{
+            const health = mcpHealth(server);
+            return routeDetailRow(server.name || server.id, [
+              `${{t('detail_transport')}}: ${{server.transport || 'n/a'}}`,
+              `${{t('detail_endpoint')}}: ${{server.endpoint || 'n/a'}}`,
+              `probe: ${{health ? (health.message || health.status || 'n/a') : 'not_probed'}}`,
+            ], server.status || 'inactive');
+          }}));
         }} else if (currentRoute === 'knowledge') {{
           primaryTitle = t('route_knowledge_entries_title');
           primarySubtitle = t('route_knowledge_entries_subtitle');
@@ -3834,6 +3852,12 @@ ${{t('skill_version_servers')}}: ${{(skill.required_mcp_servers || []).join(', '
             setWorkbenchStatus(currentLanguage === 'zh'
               ? `已应用 Skill 配置建议：${{result.skill.name}}`
               : `Applied authoring pack for: ${{result.skill.name}}`, 'success');
+          }}
+          if (button.dataset.actionKind === 'mcp' && button.dataset.actionName === 'probe' && result && result.mcp_server) {{
+            const probe = result.probe || {{}};
+            setWorkbenchStatus(currentLanguage === 'zh'
+              ? `MCP 探测完成：${{result.mcp_server.name}} · ${{probe.status || (probe.ok ? 'ok' : 'error')}}`
+              : `MCP probe finished: ${{result.mcp_server.name}} · ${{probe.status || (probe.ok ? 'ok' : 'error')}}`, probe.ok ? 'success' : 'error');
           }}
           await refresh();
           setActionStatus(t('action_status_success'), 'success');

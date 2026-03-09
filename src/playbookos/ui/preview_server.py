@@ -17,6 +17,7 @@ from playbookos.domain.models import Goal, KnowledgeBase, MCPServer, MCPServerSt
 from playbookos.authoring import apply_skill_authoring_pack_in_store, build_skill_authoring_pack_in_store
 from playbookos.executor.service import DeterministicExecutorAdapter, OpenAIAgentsSDKAdapter, autopilot_goal_in_store, execute_run_in_store
 from playbookos.runtime_settings import RuntimeSettingsStore, create_runtime_settings_store_from_env
+from playbookos.mcp_probe import MCPProbeError, probe_mcp_server_in_store
 from playbookos.ingestion import SOPIngestionError, ingest_sop_in_store, materialize_required_mcp_in_store, materialize_suggested_skill_in_store
 from playbookos.object_store import attach_source_object_to_playbook, create_object_store_from_env
 from playbookos.observability import get_error_log_path, list_recorded_errors, record_error
@@ -263,6 +264,15 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
                 self.server.store.mcp_servers.save(item)
                 self._write_json(_to_jsonable(item), status=HTTPStatus.CREATED)
                 return
+            if path.startswith("/api/mcp-servers/") and path.endswith("/probe"):
+                mcp_server_id = path.split("/")[-2]
+                item, probe = probe_mcp_server_in_store(
+                    self.server.store,
+                    mcp_server_id,
+                    timeout_seconds=float(payload.get("timeout_seconds", 5.0) or 5.0),
+                )
+                self._write_json({"mcp_server": _to_jsonable(item), "probe": probe})
+                return
             if path.startswith("/api/skills/") and path.endswith("/apply-authoring-pack"):
                 skill_id = path.split("/")[-2]
                 result = apply_skill_authoring_pack_in_store(self.server.store, skill_id)
@@ -461,7 +471,7 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
         except KeyError as exc:
             record_error(exc, component="preview_server", operation="do_POST", metadata={"path": path}, path=self.server.error_log_path)
             self._write_json({"detail": f"Missing field: {exc.args[0]}"}, status=HTTPStatus.BAD_REQUEST)
-        except SOPIngestionError as exc:
+        except (SOPIngestionError, MCPProbeError) as exc:
             record_error(exc, component="preview_server", operation="do_POST", metadata={"path": path}, path=self.server.error_log_path)
             self._write_json({"detail": str(exc)}, status=HTTPStatus.BAD_REQUEST)
         except Exception as exc:

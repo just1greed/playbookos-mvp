@@ -26,7 +26,7 @@ PlaybookOS 是一个面向 AI 工作流的“工作操作系统（AI Work Operat
 以下仍然是后续计划，而不是当前已完成能力：
 
 - 真正的 Temporal workflow 运行时接入
-- 真正的 MCP runtime / credential / health / tool execution
+- 完整的 MCP runtime / credential / tool execution（当前仅完成 health probe 第一版）
 - 多格式 SOP 与多附件解析
 - 更细粒度的 SOP diff / patch review / publish gating
 - Skill / MCP 的导入导出、完整治理与审计流
@@ -110,6 +110,12 @@ PlaybookOS 是一个面向 AI 工作流的“工作操作系统（AI Work Operat
 - 左侧导航：目标、SOP、Skill、MCP、知识库、任务、会话、自动迭代、审批流、提示词
 - 设置页：模型设置、全局设置、会话管理
 
+MCP 工作台当前还支持：
+
+- 对已登记 MCP 发起 `health probe`
+- 展示最近一次探测状态、时间与消息
+- 在 UI 中把“已登记但未探测”和“探测失败”的状态区分开
+
 设置页当前支持：
 
 - 运行时模型设置修改
@@ -183,6 +189,7 @@ PlaybookOS 是一个面向 AI 工作流的“工作操作系统（AI Work Operat
 - `GET /api/mcp-servers`
 - `GET /api/mcp-servers/{mcp_server_id}`
 - `PUT /api/mcp-servers/{mcp_server_id}`
+- `POST /api/mcp-servers/{mcp_server_id}/probe`
 - `POST /api/knowledge-bases`
 - `GET /api/knowledge-bases`
 - `GET /api/knowledge-bases/{knowledge_id}`

@@ -280,5 +280,41 @@ class RuntimeSettingsApiTestCase(unittest.TestCase):
         self.assertEqual(activated.json()["active_model_profile"], "staging")
 
 
+    def test_mcp_probe_api_updates_health_state(self) -> None:
+        from playbookos.domain.models import MCPServer, MCPServerStatus
+
+        with tempfile.TemporaryDirectory() as tmpdir, patch.dict(
+            os.environ,
+            {
+                "PLAYBOOKOS_RUNTIME_SETTINGS_PATH": f"{tmpdir}/runtime_settings.json",
+            },
+            clear=False,
+        ), patch("playbookos.api.app.probe_mcp_server_in_store") as probe_mock:
+            store = InMemoryStore()
+            mcp = store.mcp_servers.save(MCPServer(name="github", transport="streamable_http", endpoint="https://example.com/mcp/github", status=MCPServerStatus.INACTIVE))
+            probe_mock.return_value = (
+                mcp,
+                {
+                    "ok": True,
+                    "status": "ok",
+                    "message": "Probe succeeded.",
+                    "endpoint": mcp.endpoint,
+                    "transport": mcp.transport,
+                    "tested_at": "2026-03-09T00:00:00+00:00",
+                    "timeout_seconds": 5.0,
+                    "http_status": 200,
+                },
+            )
+            app = create_app(store=store)
+            client = TestClient(app)
+
+            response = client.post(f"/api/mcp-servers/{mcp.id}/probe", json={"timeout_seconds": 5})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["mcp_server"]["name"], "github")
+        self.assertTrue(response.json()["probe"]["ok"])
+        probe_mock.assert_called_once()
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -238,6 +238,20 @@
 - Skill version publish
 - 回放评测与回归集
 
+## 5.1 进行中的缺口收敛（2026-03-09）
+
+在 `MCP runtime / credential / health` 方向，当前先补 `health probe`，暂不直接实现完整 tool runtime：
+
+- 已实现：MCP 注册、CRUD、SOP 缺口 draft MCP、MCP endpoint health probe
+- 未实现：凭证治理、真正的 MCP 握手与 tool 调用、租户级权限与审计
+
+因此下一阶段的落地顺序调整为：
+
+1. MCP health / connectivity
+2. MCP credential / auth 治理
+3. MCP runtime / tool execution
+4. 更强的 Skill / SOP / Knowledge 联动
+
 ## 6. 当前代码落地策略
 
 当前仓库已实现：
