@@ -1083,7 +1083,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         if (!suggestion) return;
         document.getElementById('skill-name-input').value = suggestion.name || '';
         document.getElementById('skill-description-input').value = suggestion.description || '';
-        document.getElementById('skill-mcp-input').value = (suggestion.required_mcp_servers || []).join('\n');
+        document.getElementById('skill-mcp-input').value = (suggestion.required_mcp_servers || []).join('\\n');
       }}
 
       function markMaterializedSkill(result) {{
