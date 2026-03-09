@@ -401,6 +401,29 @@ class Acceptance:
 
 
 @dataclass(slots=True)
+class DelegationProfile:
+    name: str
+    description: str = ""
+    operator_agent_id: str = ""
+    agent_type: str = "external-agent"
+    allowed_endpoints: list[str] = field(default_factory=list)
+    approval_required_endpoints: list[str] = field(default_factory=list)
+    scope_goal_ids: list[str] = field(default_factory=list)
+    max_operations_per_apply: int = 10
+    status: str = "active"
+    metadata: dict[str, Any] = field(default_factory=dict)
+    id: str = field(default_factory=lambda: str(uuid4()))
+    created_at: datetime = field(default_factory=utc_now)
+    updated_at: datetime = field(default_factory=utc_now)
+
+    def __post_init__(self) -> None:
+        if not self.name.strip():
+            raise ValueError("DelegationProfile.name is required")
+        if self.max_operations_per_apply < 1:
+            raise ValueError("DelegationProfile.max_operations_per_apply must be >= 1")
+
+
+@dataclass(slots=True)
 class Event:
     entity_type: str
     entity_id: str

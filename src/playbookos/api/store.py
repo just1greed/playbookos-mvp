@@ -4,7 +4,7 @@ from collections import Counter
 from threading import RLock
 from typing import Generic, Protocol, TypeVar
 
-from playbookos.domain.models import Acceptance, Artifact, Event, Goal, KnowledgeBase, KnowledgeUpdate, MCPServer, Playbook, Reflection, Run, Session, Skill, Task
+from playbookos.domain.models import Acceptance, Artifact, DelegationProfile, Event, Goal, KnowledgeBase, KnowledgeUpdate, MCPServer, Playbook, Reflection, Run, Session, Skill, Task
 
 EntityT = TypeVar("EntityT")
 
@@ -35,6 +35,7 @@ class StoreProtocol(Protocol):
     acceptances: RepositoryProtocol[Acceptance]
     reflections: RepositoryProtocol[Reflection]
     events: RepositoryProtocol[Event]
+    delegation_profiles: RepositoryProtocol[DelegationProfile]
 
     def board_snapshot(self) -> dict[str, dict[str, int]]: ...
 
@@ -77,6 +78,7 @@ class InMemoryStore:
         self.acceptances = InMemoryRepository[Acceptance]()
         self.reflections = InMemoryRepository[Reflection]()
         self.events = InMemoryRepository[Event]()
+        self.delegation_profiles = InMemoryRepository[DelegationProfile]()
 
     def board_snapshot(self) -> dict[str, dict[str, int]]:
         goal_counts = Counter(goal.status.value for goal in self.goals.list())

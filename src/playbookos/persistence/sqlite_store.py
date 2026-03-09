@@ -18,6 +18,7 @@ from playbookos.domain.models import (
     Acceptance,
     AcceptanceStatus,
     Artifact,
+    DelegationProfile,
     Event,
     Goal,
     GoalStatus,
@@ -268,6 +269,24 @@ CREATE INDEX IF NOT EXISTS idx_events_entity_type ON events(entity_type);
 CREATE INDEX IF NOT EXISTS idx_events_entity_id ON events(entity_id);
 CREATE INDEX IF NOT EXISTS idx_events_event_type ON events(event_type);
 
+CREATE TABLE IF NOT EXISTS delegation_profiles (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL,
+    operator_agent_id TEXT NOT NULL,
+    agent_type TEXT NOT NULL,
+    allowed_endpoints_json TEXT NOT NULL,
+    approval_required_endpoints_json TEXT NOT NULL,
+    scope_goal_ids_json TEXT NOT NULL,
+    max_operations_per_apply INTEGER NOT NULL,
+    status TEXT NOT NULL,
+    metadata_json TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_delegation_profiles_status ON delegation_profiles(status);
+CREATE INDEX IF NOT EXISTS idx_delegation_profiles_operator_agent_id ON delegation_profiles(operator_agent_id);
+
 CREATE TABLE IF NOT EXISTS artifacts (
     id TEXT PRIMARY KEY,
     run_id TEXT NOT NULL,
@@ -452,6 +471,12 @@ class SQLiteStore:
             to_record=_event_to_record,
             from_row=_event_from_row,
         )
+        self.delegation_profiles = SQLiteRepository[DelegationProfile](
+            db_path=self.db_path,
+            table_name="delegation_profiles",
+            to_record=_delegation_profile_to_record,
+            from_row=_delegation_profile_from_row,
+        )
 
     def board_snapshot(self) -> dict[str, dict[str, int]]:
         return {
@@ -476,6 +501,7 @@ class SQLiteStore:
             self._ensure_reflection_columns(connection)
             self._ensure_task_columns(connection)
             self._ensure_mcp_server_table(connection)
+            self._ensure_delegation_profile_table(connection)
             connection.commit()
 
     def _ensure_reflection_columns(self, connection: sqlite3.Connection) -> None:
@@ -503,6 +529,29 @@ class SQLiteStore:
                 updated_at TEXT NOT NULL
             );
             CREATE INDEX IF NOT EXISTS idx_mcp_servers_status ON mcp_servers(status);
+            """
+        )
+
+    def _ensure_delegation_profile_table(self, connection: sqlite3.Connection) -> None:
+        connection.executescript(
+            """
+            CREATE TABLE IF NOT EXISTS delegation_profiles (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                description TEXT NOT NULL,
+                operator_agent_id TEXT NOT NULL,
+                agent_type TEXT NOT NULL,
+                allowed_endpoints_json TEXT NOT NULL,
+                approval_required_endpoints_json TEXT NOT NULL,
+                scope_goal_ids_json TEXT NOT NULL,
+                max_operations_per_apply INTEGER NOT NULL,
+                status TEXT NOT NULL,
+                metadata_json TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_delegation_profiles_status ON delegation_profiles(status);
+            CREATE INDEX IF NOT EXISTS idx_delegation_profiles_operator_agent_id ON delegation_profiles(operator_agent_id);
             """
         )
 
@@ -957,6 +1006,42 @@ def _event_from_row(row: sqlite3.Row) -> Event:
         source=row["source"],
         created_at=datetime.fromisoformat(row["created_at"]),
     )
+
+def _delegation_profile_to_record(item: DelegationProfile) -> dict[str, Any]:
+    return {
+        "id": item.id,
+        "name": item.name,
+        "description": item.description,
+        "operator_agent_id": item.operator_agent_id,
+        "agent_type": item.agent_type,
+        "allowed_endpoints_json": _dump_json(item.allowed_endpoints),
+        "approval_required_endpoints_json": _dump_json(item.approval_required_endpoints),
+        "scope_goal_ids_json": _dump_json(item.scope_goal_ids),
+        "max_operations_per_apply": item.max_operations_per_apply,
+        "status": item.status,
+        "metadata_json": _dump_json(item.metadata),
+        "created_at": item.created_at.isoformat(),
+        "updated_at": item.updated_at.isoformat(),
+    }
+
+
+def _delegation_profile_from_row(row: sqlite3.Row) -> DelegationProfile:
+    return DelegationProfile(
+        id=row["id"],
+        name=row["name"],
+        description=row["description"],
+        operator_agent_id=row["operator_agent_id"],
+        agent_type=row["agent_type"],
+        allowed_endpoints=_load_json(row["allowed_endpoints_json"], []),
+        approval_required_endpoints=_load_json(row["approval_required_endpoints_json"], []),
+        scope_goal_ids=_load_json(row["scope_goal_ids_json"], []),
+        max_operations_per_apply=row["max_operations_per_apply"],
+        status=row["status"],
+        metadata=_load_json(row["metadata_json"], {}),
+        created_at=datetime.fromisoformat(row["created_at"]),
+        updated_at=datetime.fromisoformat(row["updated_at"]),
+    )
+
 
 def _artifact_to_record(artifact: Artifact) -> dict[str, Any]:
     return {

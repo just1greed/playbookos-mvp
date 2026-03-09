@@ -14,7 +14,7 @@ PlaybookOS 是一个面向 AI 工作流的“工作操作系统（AI Work Operat
 - 前端控制台：全局看板 + 左侧导航工作台 + 设置页
 - Markdown SOP ingestion：从 SOP 中提取步骤、识别工具域、生成 Skill 建议、生成 MCP 缺口引导
 - 设置治理：模型运行时设置、provider preset、连接测试、命名环境、全局设置、会话管理
-- Agent 接入面：`/api/agent/manifest`、`/api/agent/context`、`/api/agent/intake` 与 `playbookos-operator` skill
+- Agent 接入面：`/api/agent/manifest`、`/api/agent/context`、`/api/agent/intake`、`/api/agent/apply`、`/api/delegation-profiles` 与 `playbookos-operator` skill
 
 当前重点是 **Markdown-first**：
 
@@ -28,7 +28,7 @@ PlaybookOS 是一个面向 AI 工作流的“工作操作系统（AI Work Operat
 
 - 真正的 Temporal workflow 运行时接入
 - 完整的 MCP runtime / credential / tool execution（当前仅完成 health probe 第一版）
-- 完整的 delegation profile / agent identity / 托管运营闭环
+- 完整的 agent identity / 更细粒度 delegation policy / 托管运营闭环（当前已完成 delegation profile + 最小 apply 第一版）
 - 多格式 SOP 与多附件解析
 - 更细粒度的 SOP diff / patch review / publish gating
 - Skill / MCP 的导入导出、完整治理与审计流
@@ -144,6 +144,11 @@ MCP 工作台当前还支持：
 - `GET /api/agent/manifest`
 - `GET /api/agent/context`
 - `POST /api/agent/intake`
+- `POST /api/agent/apply`
+- `GET /api/delegation-profiles`
+- `POST /api/delegation-profiles`
+- `GET /api/delegation-profiles/{delegation_profile_id}`
+- `PUT /api/delegation-profiles/{delegation_profile_id}`
 
 ### 运行时设置
 

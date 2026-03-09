@@ -118,3 +118,6 @@
 
 - 一个关键转向已经明确：PlaybookOS 不应该只被人类通过 Dashboard 使用，还应该被 OpenClaw 这类 agent 作为外部控制面接入；因此 manifest/context/intake 和 operator skill 会成为后续长期稳定接口。
 - 外部 agent 不应该直接猜测内部 API，而应先 bootstrap `agent manifest`，再拉 `agent context`，再通过 `agent intake` 把自然语言请求翻译成显式操作计划，这样最稳，也最利于审计与托管。
+
+- 这轮之后，agent 接入面已经不只是 `manifest/context/intake`，而是扩展成 `manifest/context/intake/apply + delegation profile`；也就是说外部 agent 已能在受限边界内真正开始托管创建对象，而不只是做建议。
+- 但 apply 现在仍是最小 builder 第一版，还不是完整事务执行器；后续真正的重点会变成：更细粒度授权、明确 agent identity、以及可回滚的计划执行。

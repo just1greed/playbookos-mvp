@@ -3,8 +3,10 @@ from __future__ import annotations
 from typing import Any
 
 from playbookos.api.store import NotFoundError, StoreProtocol
-from playbookos.domain.models import GoalStatus, MCPServerStatus, ReflectionStatus, RunStatus, SkillStatus
-from playbookos.ingestion import SOPIngestionError, analyze_sop_source
+from playbookos.domain.models import DelegationProfile, Goal, GoalStatus, MCPServer, MCPServerStatus, ReflectionStatus, RunStatus, Skill, SkillStatus, Task, utc_now
+from playbookos.ingestion import SOPIngestionError, analyze_sop_source, ingest_sop_in_store, materialize_required_mcp_in_store, materialize_suggested_skill_in_store
+from playbookos.object_store import attach_source_object_to_playbook
+from playbookos.supervisor import append_event
 
 
 SYSTEM_SUMMARY = (
@@ -15,6 +17,15 @@ SYSTEM_SUMMARY = (
 
 
 OBJECT_TYPES: list[dict[str, Any]] = [
+    {
+        "kind": "delegation_profile",
+        "label": "Delegation Profile",
+        "purpose": "Managed-operation policy for an external agent, including allowed endpoints and approval boundaries.",
+        "list_endpoint": "/api/delegation-profiles",
+        "create_endpoint": "/api/delegation-profiles",
+        "update_endpoint": "/api/delegation-profiles/{delegation_profile_id}",
+        "follow_up_actions": ["agent-apply"],
+    },
     {
         "kind": "goal",
         "label": "Goal",
@@ -118,6 +129,7 @@ WORKFLOWS: list[dict[str, Any]] = [
         "steps": [
             "Bootstrap from manifest and board snapshot.",
             "Operate in dry-run planning mode first via intake.",
+            "Use delegation profiles and POST /api/agent/apply for managed execution.",
             "Escalate high-risk actions to human approval.",
             "Use context polling to process approvals, reflections, and MCP health issues.",
         ],
@@ -139,6 +151,7 @@ def build_agent_manifest() -> dict[str, Any]:
             "GET /api/agent/manifest",
             "GET /api/agent/context",
             "POST /api/agent/intake",
+            "Optionally create/select a delegation profile, then call POST /api/agent/apply for explicit execution.",
             "Then call concrete control-plane endpoints for mutations.",
         ],
         "write_policy": {
@@ -165,6 +178,7 @@ def build_agent_manifest() -> dict[str, Any]:
             "/api/meta/enums",
             "/api/errors",
             "/api/runtime-settings",
+            "/api/delegation-profiles",
         ],
     }
 
@@ -594,3 +608,226 @@ def _build_summary(intents: list[str], sop_preview: dict[str, Any] | None, missi
     if missing_information:
         return f"Detected intents: {', '.join(intents)}. Additional information is still required before safe execution."
     return f"Detected intents: {', '.join(intents)}. Recommended operations are ready for explicit API execution."
+
+
+def delegation_source(agent_id: str | None, delegation_profile: DelegationProfile | None = None) -> str:
+    raw = str(agent_id or (delegation_profile.operator_agent_id if delegation_profile else '') or '').strip()
+    return f"agent:{raw}" if raw else "agent:unknown"
+
+
+def create_delegation_profile_in_store(store: StoreProtocol, **payload: Any) -> DelegationProfile:
+    item = DelegationProfile(**payload)
+    store.delegation_profiles.save(item)
+    append_event(
+        store,
+        entity_type="delegation_profile",
+        entity_id=item.id,
+        event_type="delegation_profile.created",
+        payload={"operator_agent_id": item.operator_agent_id, "agent_type": item.agent_type},
+        source=delegation_source(item.operator_agent_id, item),
+    )
+    return item
+
+
+def update_delegation_profile_in_store(store: StoreProtocol, delegation_profile_id: str, **payload: Any) -> DelegationProfile:
+    item = store.delegation_profiles.get(delegation_profile_id)
+    for key in [
+        "name",
+        "description",
+        "operator_agent_id",
+        "agent_type",
+        "allowed_endpoints",
+        "approval_required_endpoints",
+        "scope_goal_ids",
+        "max_operations_per_apply",
+        "status",
+        "metadata",
+    ]:
+        if key in payload and payload[key] is not None:
+            setattr(item, key, payload[key])
+    item.updated_at = utc_now()
+    store.delegation_profiles.save(item)
+    append_event(
+        store,
+        entity_type="delegation_profile",
+        entity_id=item.id,
+        event_type="delegation_profile.updated",
+        payload={"operator_agent_id": item.operator_agent_id, "status": item.status},
+        source=delegation_source(item.operator_agent_id, item),
+    )
+    return item
+
+
+def apply_agent_plan(
+    store: StoreProtocol,
+    *,
+    message: str,
+    markdown_sop: str | None = None,
+    resource_name: str | None = None,
+    goal_id: str | None = None,
+    allow_side_effects: bool = False,
+    operation_ids: list[str] | None = None,
+    delegation_profile_id: str | None = None,
+    agent_id: str | None = None,
+    confirm_high_risk: bool = False,
+    object_store: Any | None = None,
+) -> dict[str, Any]:
+    intake = analyze_agent_intake(
+        store,
+        message=message,
+        markdown_sop=markdown_sop,
+        resource_name=resource_name,
+        goal_id=goal_id,
+        allow_side_effects=allow_side_effects,
+    )
+    requested_ids = list(operation_ids or [])
+    operations = intake["recommended_operations"]
+    if requested_ids:
+        selected = [item for item in operations if item["id"] in requested_ids]
+    else:
+        selected = operations
+    if not selected:
+        raise ValueError("No matching operations selected for apply")
+
+    delegation_profile = None
+    if delegation_profile_id:
+        delegation_profile = store.delegation_profiles.get(delegation_profile_id)
+        _validate_delegation_profile(delegation_profile, selected, agent_id=agent_id, confirm_high_risk=confirm_high_risk)
+
+    context: dict[str, Any] = {"goal_id": goal_id}
+    executed: list[dict[str, Any]] = []
+    created_resources: list[dict[str, Any]] = []
+    source = delegation_source(agent_id, delegation_profile)
+
+    for operation in selected[: delegation_profile.max_operations_per_apply if delegation_profile else len(selected)]:
+        op_id = operation["id"]
+        payload = _render_payload(operation.get("payload", {}), context)
+        endpoint = _render_string(operation["endpoint"], context)
+        result_summary: dict[str, Any] = {"id": op_id, "endpoint": endpoint, "method": operation["method"]}
+
+        if op_id == "create_goal":
+            item = Goal(**payload)
+            store.goals.save(item)
+            context["goal_id"] = item.id
+            created_resources.append({"kind": "goal", "id": item.id, "name": item.title})
+            append_event(store, entity_type="goal", entity_id=item.id, event_type="agent.goal_created", payload={"agent_id": agent_id, "delegation_profile_id": delegation_profile_id}, source=source)
+            result_summary["resource"] = {"kind": "goal", "id": item.id}
+        elif op_id == "ingest_playbook":
+            item_result = ingest_sop_in_store(
+                store,
+                name=payload["name"],
+                source_text=payload["source_text"],
+                source_kind=payload.get("source_kind", "markdown"),
+                source_uri=payload.get("source_uri"),
+                goal_id=payload.get("goal_id") or context.get("goal_id"),
+            )
+            source_object = None
+            if object_store is not None:
+                source_object = attach_source_object_to_playbook(
+                    item_result.playbook,
+                    source_text=payload["source_text"],
+                    source_kind=payload.get("source_kind", "markdown"),
+                    source_uri=payload.get("source_uri"),
+                    object_store=object_store,
+                )
+                store.playbooks.save(item_result.playbook)
+            context["playbook_id"] = item_result.playbook.id
+            context["goal_id"] = item_result.playbook.goal_id or context.get("goal_id")
+            created_resources.append({"kind": "playbook", "id": item_result.playbook.id, "name": item_result.playbook.name})
+            append_event(store, entity_type="playbook", entity_id=item_result.playbook.id, event_type="agent.playbook_ingested", payload={"agent_id": agent_id, "delegation_profile_id": delegation_profile_id, "source_object_id": getattr(source_object, 'id', None)}, source=source)
+            result_summary["resource"] = {"kind": "playbook", "id": item_result.playbook.id}
+        elif op_id.startswith("create_skill_draft_"):
+            item_result = materialize_suggested_skill_in_store(
+                store,
+                context.get("playbook_id") or payload.get("playbook_id") or '',
+                suggestion_index=int(payload.get("suggestion_index", 0)),
+                bind_to_unassigned_steps=bool(payload.get("bind_to_unassigned_steps", False)),
+            )
+            created_resources.append({"kind": "skill", "id": item_result.skill.id, "name": item_result.skill.name})
+            append_event(store, entity_type="skill", entity_id=item_result.skill.id, event_type="agent.skill_draft_materialized", payload={"agent_id": agent_id, "delegation_profile_id": delegation_profile_id, "playbook_id": item_result.playbook.id}, source=source)
+            result_summary["resource"] = {"kind": "skill", "id": item_result.skill.id}
+        elif op_id.startswith("create_mcp_draft_"):
+            item_result = materialize_required_mcp_in_store(
+                store,
+                context.get("playbook_id") or payload.get("playbook_id") or '',
+                server_name=str(payload.get("server_name") or ''),
+            )
+            created_resources.append({"kind": "mcp_server", "id": item_result.mcp_server.id, "name": item_result.mcp_server.name})
+            append_event(store, entity_type="mcp_server", entity_id=item_result.mcp_server.id, event_type="agent.mcp_draft_materialized", payload={"agent_id": agent_id, "delegation_profile_id": delegation_profile_id, "playbook_id": item_result.playbook.id}, source=source)
+            result_summary["resource"] = {"kind": "mcp_server", "id": item_result.mcp_server.id}
+        elif op_id == "create_skill":
+            item = Skill(**payload)
+            store.skills.save(item)
+            created_resources.append({"kind": "skill", "id": item.id, "name": item.name})
+            append_event(store, entity_type="skill", entity_id=item.id, event_type="agent.skill_created", payload={"agent_id": agent_id, "delegation_profile_id": delegation_profile_id}, source=source)
+            result_summary["resource"] = {"kind": "skill", "id": item.id}
+        elif op_id == "create_mcp":
+            item = MCPServer(**payload)
+            store.mcp_servers.save(item)
+            created_resources.append({"kind": "mcp_server", "id": item.id, "name": item.name})
+            append_event(store, entity_type="mcp_server", entity_id=item.id, event_type="agent.mcp_created", payload={"agent_id": agent_id, "delegation_profile_id": delegation_profile_id}, source=source)
+            result_summary["resource"] = {"kind": "mcp_server", "id": item.id}
+        elif op_id == "create_task":
+            item = Task(**payload)
+            store.tasks.save(item)
+            created_resources.append({"kind": "task", "id": item.id, "name": item.name})
+            append_event(store, entity_type="task", entity_id=item.id, event_type="agent.task_created", payload={"agent_id": agent_id, "delegation_profile_id": delegation_profile_id}, source=source)
+            result_summary["resource"] = {"kind": "task", "id": item.id}
+        elif operation["method"] == "GET":
+            result_summary["resource"] = {"kind": "noop", "id": op_id}
+        else:
+            raise ValueError(f"Unsupported apply operation: {op_id}")
+        executed.append(result_summary)
+
+    return {
+        "agent_id": agent_id,
+        "delegation_profile_id": delegation_profile_id,
+        "execution_mode": "applied",
+        "applied_operation_ids": [item["id"] for item in executed],
+        "executed_operations": executed,
+        "created_resources": created_resources,
+        "intake_summary": intake["summary"],
+    }
+
+
+def _validate_delegation_profile(
+    delegation_profile: DelegationProfile,
+    operations: list[dict[str, Any]],
+    *,
+    agent_id: str | None,
+    confirm_high_risk: bool,
+) -> None:
+    if delegation_profile.status != "active":
+        raise ValueError("Delegation profile is not active")
+    if agent_id and delegation_profile.operator_agent_id and agent_id != delegation_profile.operator_agent_id:
+        raise ValueError("Agent identity does not match delegation profile")
+    if len(operations) > delegation_profile.max_operations_per_apply:
+        raise ValueError("Requested operations exceed delegation profile max_operations_per_apply")
+    for operation in operations:
+        endpoint = operation.get("endpoint", "")
+        if delegation_profile.allowed_endpoints and not any(endpoint.startswith(item) for item in delegation_profile.allowed_endpoints):
+            raise ValueError(f"Operation not allowed by delegation profile: {endpoint}")
+        if any(endpoint.startswith(item) for item in delegation_profile.approval_required_endpoints) and not confirm_high_risk:
+            raise ValueError(f"Operation requires high-risk confirmation: {endpoint}")
+
+
+def _render_payload(payload: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
+    return {key: _render_value(value, context) for key, value in payload.items()}
+
+
+def _render_value(value: Any, context: dict[str, Any]) -> Any:
+    if isinstance(value, str):
+        return _render_string(value, context)
+    if isinstance(value, list):
+        return [_render_value(item, context) for item in value]
+    if isinstance(value, dict):
+        return {key: _render_value(item, context) for key, item in value.items()}
+    return value
+
+
+def _render_string(value: str, context: dict[str, Any]) -> str:
+    rendered = str(value)
+    for key, replacement in context.items():
+        rendered = rendered.replace(f"{{{key}}}", str(replacement or ""))
+        rendered = rendered.replace(f"<{key}>", str(replacement or ""))
+    return rendered

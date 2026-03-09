@@ -502,6 +502,35 @@ class ReflectionPublish(APIModel):
     skill_version: str = ""
 
 
+class AgentApplyCreate(APIModel):
+    message: str = ""
+    markdown_sop: str | None = None
+    resource_name: str | None = None
+    goal_id: str | None = None
+    allow_side_effects: bool = False
+    operation_ids: list[str] = Field(default_factory=list)
+    delegation_profile_id: str | None = None
+    agent_id: str | None = None
+    confirm_high_risk: bool = False
+
+
+class AgentExecutedOperationRead(APIModel):
+    id: str
+    endpoint: str
+    method: str
+    resource: dict[str, Any] = Field(default_factory=dict)
+
+
+class AgentApplyRead(APIModel):
+    agent_id: str | None = None
+    delegation_profile_id: str | None = None
+    execution_mode: str
+    applied_operation_ids: list[str] = Field(default_factory=list)
+    executed_operations: list[AgentExecutedOperationRead] = Field(default_factory=list)
+    created_resources: list[dict[str, Any]] = Field(default_factory=list)
+    intake_summary: str = ""
+
+
 class BoardSnapshot(APIModel):
     goals: dict[str, int] = Field(default_factory=dict)
     playbooks: dict[str, int] = Field(default_factory=dict)
@@ -516,6 +545,25 @@ class BoardSnapshot(APIModel):
     acceptances: dict[str, int] = Field(default_factory=dict)
     reflections: dict[str, int] = Field(default_factory=dict)
     events: dict[str, int] = Field(default_factory=dict)
+
+
+class DelegationProfileCreate(APIModel):
+    name: str
+    description: str = ""
+    operator_agent_id: str = ""
+    agent_type: str = "external-agent"
+    allowed_endpoints: list[str] = Field(default_factory=list)
+    approval_required_endpoints: list[str] = Field(default_factory=list)
+    scope_goal_ids: list[str] = Field(default_factory=list)
+    max_operations_per_apply: int = 10
+    status: str = "active"
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class DelegationProfileRead(DelegationProfileCreate):
+    id: str
+    created_at: datetime
+    updated_at: datetime
 
 
 class AgentOperationRead(APIModel):

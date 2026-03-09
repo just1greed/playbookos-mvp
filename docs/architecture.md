@@ -34,6 +34,7 @@ PlaybookOS 推荐采用三层架构：
 - `manifest`：让外部 agent 自动发现对象、动作、状态与高风险边界
 - `context`：让外部 agent 读取当前系统阻塞点与建议动作
 - `intake`：让外部 agent 把人类对话先翻译成 dry-run 操作计划
+- `delegation profile + apply`：让外部 agent 在受限边界内执行显式计划步骤
 
 ### 2.2 Orchestration Plane
 

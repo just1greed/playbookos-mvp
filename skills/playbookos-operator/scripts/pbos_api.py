@@ -21,6 +21,7 @@ def main() -> None:
 
     sub.add_parser("manifest")
     sub.add_parser("context")
+    sub.add_parser("delegations")
 
     intake = sub.add_parser("intake")
     intake.add_argument("--message", default="")
@@ -29,6 +30,16 @@ def main() -> None:
     intake.add_argument("--goal-id")
     intake.add_argument("--allow-side-effects", action="store_true")
 
+    apply_cmd = sub.add_parser("apply")
+    apply_cmd.add_argument("--message", default="")
+    apply_cmd.add_argument("--markdown-file")
+    apply_cmd.add_argument("--resource-name")
+    apply_cmd.add_argument("--goal-id")
+    apply_cmd.add_argument("--agent-id")
+    apply_cmd.add_argument("--delegation-profile-id")
+    apply_cmd.add_argument("--operation-id", action="append", default=[])
+    apply_cmd.add_argument("--confirm-high-risk", action="store_true")
+
     args = parser.parse_args()
     base = args.base_url.rstrip("/")
 
@@ -36,6 +47,26 @@ def main() -> None:
         result = http_json(f"{base}/api/agent/manifest")
     elif args.command == "context":
         result = http_json(f"{base}/api/agent/context")
+    elif args.command == "delegations":
+        result = http_json(f"{base}/api/delegation-profiles")
+    elif args.command == "apply":
+        markdown_sop = None
+        if args.markdown_file:
+            markdown_sop = Path(args.markdown_file).read_text()
+        result = http_json(
+            f"{base}/api/agent/apply",
+            method="POST",
+            payload={
+                "message": args.message,
+                "markdown_sop": markdown_sop,
+                "resource_name": args.resource_name,
+                "goal_id": args.goal_id,
+                "agent_id": args.agent_id,
+                "delegation_profile_id": args.delegation_profile_id,
+                "operation_ids": args.operation_id,
+                "confirm_high_risk": args.confirm_high_risk,
+            },
+        )
     else:
         markdown_sop = None
         if args.markdown_file:

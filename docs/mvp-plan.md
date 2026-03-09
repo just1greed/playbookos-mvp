@@ -259,6 +259,8 @@
 - `GET /api/agent/manifest`：能力发现
 - `GET /api/agent/context`：运行上下文同步
 - `POST /api/agent/intake`：自然语言 / Markdown SOP -> dry-run 操作计划
+- `POST /api/agent/apply`：按 delegation 约束执行显式计划步骤
+- `GET/POST/PUT /api/delegation-profiles*`：外部 agent 的托管边界与审批门槛
 - `skills/playbookos-operator/`：给外部 agent 的操作 skill
 
 这一层的原则是：

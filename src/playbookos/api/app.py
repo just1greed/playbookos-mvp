@@ -13,9 +13,13 @@ from fastapi.responses import HTMLResponse, Response
 
 from playbookos.api.schemas import (
     AcceptanceRead,
+    AgentApplyCreate,
+    AgentApplyRead,
     AgentIntakeCreate,
     AgentIntakeRead,
     ArtifactCreate,
+    DelegationProfileCreate,
+    DelegationProfileRead,
     ArtifactRead,
     BoardSnapshot,
     EnumCatalog,
@@ -112,7 +116,14 @@ from playbookos.reflection import (
 from playbookos.supervisor import AcceptanceError, accept_task_in_store
 from playbookos.runtime_settings import create_runtime_settings_store_from_env
 from playbookos.mcp_probe import MCPProbeError, probe_mcp_server_in_store
-from playbookos.agent_integration import analyze_agent_intake, build_agent_context, build_agent_manifest
+from playbookos.agent_integration import (
+    analyze_agent_intake,
+    apply_agent_plan,
+    build_agent_context,
+    build_agent_manifest,
+    create_delegation_profile_in_store,
+    update_delegation_profile_in_store,
+)
 from playbookos.ui import build_dashboard_html
 
 
@@ -188,6 +199,44 @@ def create_app(store: StoreProtocol | None = None) -> FastAPI:
         except ValueError as exc:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
         return AgentIntakeRead.model_validate(result)
+
+    @api.get("/api/delegation-profiles", response_model=list[DelegationProfileRead])
+    def list_delegation_profiles(store: store_dep) -> list[DelegationProfileRead]:
+        return [DelegationProfileRead.model_validate(item) for item in store.delegation_profiles.list()]
+
+    @api.get("/api/delegation-profiles/{delegation_profile_id}", response_model=DelegationProfileRead)
+    def get_delegation_profile(delegation_profile_id: str, store: store_dep) -> DelegationProfileRead:
+        return DelegationProfileRead.model_validate(store.delegation_profiles.get(delegation_profile_id))
+
+    @api.post("/api/delegation-profiles", response_model=DelegationProfileRead, status_code=status.HTTP_201_CREATED)
+    def create_delegation_profile(payload: DelegationProfileCreate, store: store_dep) -> DelegationProfileRead:
+        item = create_delegation_profile_in_store(store, **payload.model_dump())
+        return DelegationProfileRead.model_validate(item)
+
+    @api.put("/api/delegation-profiles/{delegation_profile_id}", response_model=DelegationProfileRead)
+    def update_delegation_profile(delegation_profile_id: str, payload: DelegationProfileCreate, store: store_dep) -> DelegationProfileRead:
+        item = update_delegation_profile_in_store(store, delegation_profile_id, **payload.model_dump())
+        return DelegationProfileRead.model_validate(item)
+
+    @api.post("/api/agent/apply", response_model=AgentApplyRead)
+    def post_agent_apply(payload: AgentApplyCreate, store: store_dep) -> AgentApplyRead:
+        try:
+            result = apply_agent_plan(
+                store,
+                message=payload.message,
+                markdown_sop=payload.markdown_sop,
+                resource_name=payload.resource_name,
+                goal_id=payload.goal_id,
+                allow_side_effects=payload.allow_side_effects,
+                operation_ids=payload.operation_ids,
+                delegation_profile_id=payload.delegation_profile_id,
+                agent_id=payload.agent_id,
+                confirm_high_risk=payload.confirm_high_risk,
+                object_store=create_object_store_from_env(),
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+        return AgentApplyRead.model_validate(result)
 
     @api.get("/api/runtime-settings", response_model=dict[str, Any])
     def get_runtime_settings_payload() -> dict[str, Any]:

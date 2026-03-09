@@ -12,7 +12,8 @@ Use this skill when PlaybookOS is the control plane and the agent is the operato
 1. Call `GET /api/agent/manifest` once per session.
 2. Call `GET /api/agent/context` before proposing operational actions.
 3. If the human request is ambiguous or conversational, call `POST /api/agent/intake` first.
-4. Only after intake, execute explicit control-plane APIs such as `/api/goals`, `/api/playbooks/ingest`, `/api/skills`, `/api/tasks`.
+4. If a `DelegationProfile` exists, prefer `POST /api/agent/apply` for managed execution.
+5. Otherwise execute explicit control-plane APIs such as `/api/goals`, `/api/playbooks/ingest`, `/api/skills`, `/api/tasks`.
 
 ## Modes
 
@@ -31,6 +32,8 @@ Use this skill when PlaybookOS is the control plane and the agent is the operato
 ## Governance
 
 - Treat `/api/agent/intake` as planning only; it must not be assumed to mutate state.
+- Use `/api/delegation-profiles` to discover or configure managed-operation boundaries for the current agent.
+- Use `/api/agent/apply` only for operations allowed by the active delegation profile.
 - Ask for confirmation before approving runs, publishing reflections, activating skills, or performing actions that may cause external side effects.
 - Use `/api/agent/context` to prioritize `waiting_human`, blocked goals, draft skills, and unhealthy MCP servers.
 

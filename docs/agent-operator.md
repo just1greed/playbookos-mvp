@@ -18,11 +18,12 @@ PlaybookOS 不应该只是给人类看的控制台，也应该是给外部 agent
 
 ## 2. 第一版落地范围
 
-本轮先落三块：
+本轮先落四块：
 
 1. `PlaybookOS Operator Skill`
 2. `agent-friendly API`：manifest / context / intake
-3. 文档与记忆记录，明确后续 delegation 演进方向
+3. `delegation profile + apply`：托管执行边界与最小 apply 面
+4. 文档与记忆记录，明确后续 delegation 演进方向
 
 ## 3. Agent 接入面
 
@@ -62,6 +63,19 @@ PlaybookOS 不应该只是给人类看的控制台，也应该是给外部 agent
 
 注意：`intake` 第一版是 **dry-run planning surface**，不会直接修改系统状态。
 
+### 3.4 Apply
+
+`POST /api/agent/apply`
+
+用于在显式 delegation 约束下执行一组 intake 计划操作。
+
+当前第一版支持：
+
+- 重新基于 `message + markdown_sop` 计算 intake
+- 按 `operation_ids` 选择要执行的计划步骤
+- 检查 `delegation profile` 的允许路由、最大操作数和高风险确认要求
+- 执行最小一批 builder 操作：`create_goal`、`ingest_playbook`、`create_skill`、`create_mcp`、`create_task`、`create skill draft`、`create mcp draft`
+
 ## 4. Skill 设计
 
 仓库内新增：`skills/playbookos-operator/`
@@ -87,14 +101,15 @@ Skill 当前支持四种模式：
 - 读取系统当前阻塞点和建议动作
 - 把对话和 Markdown SOP 先转成 dry-run 操作计划
 - 为 Markdown SOP 输出 Skill 草案建议、MCP 缺口、后续操作序列
+- 通过 delegation profile 在受限边界内执行最小一批对象创建/物化动作
 
 ## 6. 还未完成的部分
 
 这仍然只是第一版，还缺：
 
-1. `delegation profile`：授权边界、审批门槛、预算与巡检策略
-2. `agent identity`：区分 human / operator-agent / delegate-agent
-3. `dry-run -> apply` 的事务性执行编排
+1. 更细粒度的 `delegation profile`：按 Goal / 风险 / 环境 / 动作类型授权
+2. `agent identity`：区分 human / operator-agent / delegate-agent，并贯穿更多审计链路
+3. `dry-run -> apply` 的事务性执行编排与回滚
 4. 更强的 `conversation -> object extraction`，尤其是 Goal/Task/Skill 细粒度字段提取
 5. 真实托管循环：定时巡检、自动处理、人工升级
 

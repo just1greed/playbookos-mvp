@@ -18,7 +18,14 @@ from playbookos.authoring import apply_skill_authoring_pack_in_store, build_skil
 from playbookos.executor.service import DeterministicExecutorAdapter, OpenAIAgentsSDKAdapter, autopilot_goal_in_store, execute_run_in_store
 from playbookos.runtime_settings import RuntimeSettingsStore, create_runtime_settings_store_from_env
 from playbookos.mcp_probe import MCPProbeError, probe_mcp_server_in_store
-from playbookos.agent_integration import analyze_agent_intake, build_agent_context, build_agent_manifest
+from playbookos.agent_integration import (
+    analyze_agent_intake,
+    apply_agent_plan,
+    build_agent_context,
+    build_agent_manifest,
+    create_delegation_profile_in_store,
+    update_delegation_profile_in_store,
+)
 from playbookos.ingestion import SOPIngestionError, ingest_sop_in_store, materialize_required_mcp_in_store, materialize_suggested_skill_in_store
 from playbookos.object_store import attach_source_object_to_playbook, create_object_store_from_env
 from playbookos.observability import get_error_log_path, list_recorded_errors, record_error
@@ -56,6 +63,13 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
                 return
             if path == "/api/runtime-settings":
                 self._write_json(self.server.runtime_settings.get_settings())
+                return
+            if path == "/api/delegation-profiles":
+                self._write_json(_serialize_items(self.server.store.delegation_profiles.list()))
+                return
+            if path.startswith("/api/delegation-profiles/"):
+                delegation_profile_id = path.split("/")[-1]
+                self._write_json(_to_jsonable(self.server.store.delegation_profiles.get(delegation_profile_id)))
                 return
             if path == "/api/goals":
                 self._write_json(_serialize_items(self.server.store.goals.list()))
@@ -153,6 +167,26 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
                 return
             if path == "/api/runtime-settings/profiles/activate":
                 result = self.server.runtime_settings.activate_model_profile(str(payload.get("name") or ""))
+                self._write_json(result)
+                return
+            if path == "/api/delegation-profiles":
+                item = create_delegation_profile_in_store(self.server.store, **payload)
+                self._write_json(_to_jsonable(item), status=HTTPStatus.CREATED)
+                return
+            if path == "/api/agent/apply":
+                result = apply_agent_plan(
+                    self.server.store,
+                    message=str(payload.get("message") or ""),
+                    markdown_sop=payload.get("markdown_sop"),
+                    resource_name=payload.get("resource_name"),
+                    goal_id=payload.get("goal_id"),
+                    allow_side_effects=bool(payload.get("allow_side_effects", False)),
+                    operation_ids=list(payload.get("operation_ids", [])),
+                    delegation_profile_id=payload.get("delegation_profile_id"),
+                    agent_id=payload.get("agent_id"),
+                    confirm_high_risk=bool(payload.get("confirm_high_risk", False)),
+                    object_store=create_object_store_from_env(),
+                )
                 self._write_json(result)
                 return
             if path == "/api/agent/intake":
@@ -512,6 +546,10 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
                 return
 
             resource_name, item_id = parts[1], parts[2]
+            if resource_name == "delegation-profiles":
+                item = update_delegation_profile_in_store(self.server.store, item_id, **payload)
+                self._write_json(_to_jsonable(item))
+                return
             if resource_name == "goals":
                 item = self.server.store.goals.get(item_id)
                 item.title = payload["title"]
