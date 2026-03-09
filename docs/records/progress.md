@@ -246,3 +246,8 @@
 - 已将 `data/runtime_settings.json` 纳入 `.gitignore`，避免 demo 运行时生成的本地配置污染仓库状态
 - 已再次通过 `python3 -m compileall src tests`、`PYTHONPATH=src python3 -m unittest discover -s tests -p 'test*_unittest.py'` 与 Dashboard JS `node --check`
 - 已重启公网预览 `http://20.200.217.83:8081/` 并确认 `GET /api/runtime-settings`、`POST /api/runtime-settings/profiles/activate` 以及首页设置页脚本均返回最新实现
+
+- 已重新审计 `README.md`，把文档内容收敛到当前真实实现：补齐实际存在的 API、设置页能力、Dashboard 结构，并移除对多格式 SOP / 未落地能力的过度表述
+- 已按当前产品计划把 `SOP ingestion` 逻辑收敛到 `Markdown-first`：非 Markdown `source_kind` 现在会直接返回明确错误，避免文档与产品策略不一致
+- 已优化 `tooling_guidance` 的当前逻辑：action items 现在会按“先复用已登记 MCP / Skill，再补缺口，再绑定步骤”的顺序输出，prompt blocks 也会显式带上已有候选与缺口上下文
+- Dashboard 的 SOP 导入表单已同步收敛为 `Markdown only`，避免用户在 UI 中误以为当前版本已经支持 `json/txt/csv` ingestion

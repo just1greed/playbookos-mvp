@@ -358,7 +358,7 @@ TRANSLATIONS = {
         "playbook_mcp_servers": "MCP 服务器（每行一条）",
         "ingest_source_text": "SOP 原文",
         "ingest_source_file": "文本文件（可选）",
-        "ingest_source_kind": "原始格式",
+        "ingest_source_kind": "原始格式（当前仅 Markdown）",
         "ingest_guidance_title": "Skill 配置引导",
         "ingest_guidance_empty": "导入 SOP 后，这里会显示推荐 Skill 与解析摘要。",
         "ingest_source_saved": "原始 SOP 已保存",
@@ -764,7 +764,7 @@ TRANSLATIONS = {
         "playbook_mcp_servers": "MCP servers (one per line)",
         "ingest_source_text": "Raw SOP text",
         "ingest_source_file": "Text file (optional)",
-        "ingest_source_kind": "Source format",
+        "ingest_source_kind": "Source format (Markdown only)",
         "ingest_guidance_title": "Skill setup guidance",
         "ingest_guidance_empty": "After ingesting an SOP, recommended skills and parsing notes appear here.",
         "ingest_source_saved": "Raw SOP saved",
@@ -1190,8 +1190,8 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
                 <div class="field"><label data-i18n="playbook_name"></label><input id="ingest-playbook-name-input" required /></div>
                 <div class="field"><label data-i18n="playbook_goal"></label><select id="ingest-playbook-goal-input"></select></div>
                 <div class="field"><label data-i18n="playbook_source_uri"></label><input id="ingest-playbook-source-uri-input" data-i18n-placeholder="input_placeholder_uri" /></div>
-                <div class="field"><label data-i18n="ingest_source_kind"></label><input id="ingest-playbook-kind-input" value="markdown" /></div>
-                <div class="field"><label data-i18n="ingest_source_file"></label><input id="ingest-playbook-file-input" type="file" accept=".md,.txt,.json,.csv" /></div>
+                <div class="field"><label data-i18n="ingest_source_kind"></label><input id="ingest-playbook-kind-input" value="markdown" readonly /></div>
+                <div class="field"><label data-i18n="ingest_source_file"></label><input id="ingest-playbook-file-input" type="file" accept=".md,.markdown,text/markdown" /></div>
                 <div class="field"><label data-i18n="ingest_source_text"></label><textarea id="ingest-playbook-source-input" required></textarea></div>
               </div>
               <div class="form-actions"><button class="button" type="submit" data-i18n="action_ingest_playbook"></button></div>
@@ -2511,10 +2511,6 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
       }}
 
       function inferSourceKindFromFile(fileName) {{
-        const lower = String(fileName || '').toLowerCase();
-        if (lower.endsWith('.json')) return 'json';
-        if (lower.endsWith('.txt')) return 'text';
-        if (lower.endsWith('.csv')) return 'csv';
         return 'markdown';
       }}
 

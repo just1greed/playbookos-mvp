@@ -1,91 +1,184 @@
 # PlaybookOS MVP
 
-PlaybookOS 不是单纯的 Agent 框架，而是一个面向 AI 工作流的“工作操作系统（AI Work Operating System）”。
+PlaybookOS 是一个面向 AI 工作流的“工作操作系统（AI Work Operating System）”。
 
-当前仓库先落第一版产品与技术基线，围绕以下三层组合构建：
+它不是单纯的聊天式 Agent 框架，而是把 `Goal -> SOP -> Skill / MCP -> Task -> Run -> Acceptance / Reflection / Knowledge` 做成可追踪、可审批、可恢复、可迭代的控制面系统。
 
-- 工作台 / 知识层：`Plane`
-- 持久化编排层：`Temporal`
-- Agent 执行层：`OpenAI Agents SDK`
+## 当前真实状态
 
-## 核心定位
+当前仓库已经实现一条可运行的本地主链：
 
-PlaybookOS 用来把目标、SOP、技能、工具权限、执行记录和反思沉淀成一套可追踪、可审批、可恢复、可迭代的运行系统。
+- 控制面 API：Goal / Playbook / Skill / MCP / Knowledge / Task / Run / Session / Acceptance / Reflection / Event / Object
+- 本地持久化：SQLite + 本地对象存储
+- 执行闭环：Planner、Orchestrator、Supervisor、Executor、Reflection
+- 前端控制台：全局看板 + 左侧导航工作台 + 设置页
+- Markdown SOP ingestion：从 SOP 中提取步骤、识别工具域、生成 Skill 建议、生成 MCP 缺口引导
+- 设置治理：模型运行时设置、provider preset、连接测试、命名环境、全局设置、会话管理
 
-它面向的不是“多 Agent 聊天”，而是“目标 -> 任务 -> 执行 -> 产物 -> 复盘 -> 晋级”的闭环交付。
+当前重点是 **Markdown-first**：
 
-## MVP 原则
+- `playbooks/ingest` 现在只支持 `Markdown SOP`
+- 系统会优先帮你回答：这份 SOP 需要哪些工具、哪些 MCP 已存在、还缺哪些 MCP、建议上传哪些 Skill
+- PDF / Docx / 图片 / 多附件解析还没有做成正式能力
 
-- 状态外置，不依赖内存会话
-- 工具最小权限，不做全局写入放权
-- 自我改进只产生提案，不直接改线上能力
-- SOP 先编译为 Playbook，再参与执行
-- 长任务必须支持恢复、重试、审批与追踪
+## 当前还没完成
+
+以下仍然是后续计划，而不是当前已完成能力：
+
+- 真正的 Temporal workflow 运行时接入
+- 真正的 MCP runtime / credential / health / tool execution
+- 多格式 SOP 与多附件解析
+- 更细粒度的 SOP diff / patch review / publish gating
+- Skill / MCP 的导入导出、完整治理与审计流
+- Artifact blob 的外部对象存储治理
 
 ## 仓库结构
 
 - `docs/prd.md`：产品定义与范围
 - `docs/architecture.md`：系统架构与模块边界
 - `docs/data-model.md`：核心对象与表结构草案
-- `docs/mvp-plan.md`：MVP 接口、模块与里程碑
-- `docs/ui-redesign.md`：前端重构方案、信息架构与实施 TODO
+- `docs/mvp-plan.md`：MVP 模块、接口与里程碑
+- `docs/ui-redesign.md`：前端重构方案与页面设计
 - `docs/records/progress.md`：持续进展记录
-- `data/sql/postgres_schema.sql`：PostgreSQL 表结构草案
-- `data/sql/sqlite_schema.sql`：本地持久化开发 schema
-- `src/playbookos/domain/`：核心领域模型
-- `src/playbookos/api/`：FastAPI 控制面骨架
-- `src/playbookos/persistence/`：持久化 store 与环境装配
-- `src/playbookos/planner/`：Playbook -> Task DAG 规划器
-- `src/playbookos/orchestrator/`：任务调度与 Temporal-ready 编排核心
-- `src/playbookos/executor/`：OpenAI Agents SDK 适配层与 autopilot
-- `src/playbookos/reflection/`：SOP/Playbook 改进提案与学习汇总
-- `tests/`：基础测试
+- `docs/records/iteration-memory.md`：阶段性结论与缺口排序
+- `data/sql/postgres_schema.sql`：PostgreSQL schema 草案
+- `data/sql/sqlite_schema.sql`：SQLite schema
+- `src/playbookos/api/`：FastAPI 控制面
+- `src/playbookos/ui/`：Dashboard HTML 与 Preview Server
+- `src/playbookos/persistence/`：SQLite store 与装配
+- `src/playbookos/object_store/`：本地对象存储
+- `src/playbookos/ingestion/`：Markdown SOP 解析、Skill/MCP 引导
+- `src/playbookos/planner/`：Playbook -> Task DAG
+- `src/playbookos/orchestrator/`：任务推进与 Temporal-ready 规格输出
+- `src/playbookos/supervisor/`：Supervisor / Worker Session、Acceptance、Event
+- `src/playbookos/executor/`：执行适配层与 autopilot
+- `src/playbookos/reflection/`：反思、知识回写与发布链
+- `src/playbookos/runtime_settings.py`：模型与全局运行时设置
+- `tests/`：单元测试
 
-## 当前阶段
+## 已实现能力
 
-当前版本提供：
+### 1. 控制面对象
 
-- 手动设置 Goal / Playbook / Skill / MCP / Knowledge / Task 的控制面基础能力
-- 产品与架构基线文档
-- Goal / Playbook / Skill / Task / Session / Run / Acceptance / Artifact / Reflection / Event 领域模型
-- FastAPI 控制面 API 骨架
-- 基于 SQLite 的本地持久化数据流
-- Playbook 驱动的任务规划器
-- Orchestrator 调度核心与 Temporal-ready 工作流快照
-- Supervisor 主控会话 / 子会话编排链路
-- OpenAI Agents SDK 风格执行适配层
-- Run 级 Artifact 元数据持久化与查询
-- 原始 SOP 文本对象存储与回看链接
-- MCP 控制面注册表与从 SOP 工具缺口一键生成 draft MCP
-- 一个优美的内置前端控制台首页（`GET /`），并可中英文切换与直接录入 Goal / SOP / Skill / Knowledge / Task
-- SOP 自我迭代提案骨架
-- 用户可见的 Session / Acceptance / Event / Knowledge Update 追踪视图
-- PostgreSQL schema 文件，供后续正式部署接入
+当前已落地的核心对象包括：
 
-## 已实现 API
+- Goal
+- Playbook
+- Skill
+- MCPServer
+- KnowledgeBase
+- KnowledgeUpdate
+- Task
+- Session
+- Run
+- Acceptance
+- Artifact
+- Reflection
+- Event
+- StoredObject
+
+### 2. SOP ingestion（Markdown）
+
+当前 ingest 主链支持：
+
+- 上传 / 粘贴 Markdown SOP
+- 启发式提取步骤并生成 `compiled_spec.steps`
+- 识别 GitHub / Slack / Notion / Jira / Email / Sheets / Calendar 等工具域
+- 生成 Skill 建议
+- 生成 MCP 缺口与可复用候选
+- 输出工具发现、Skill 上传、MCP 接入三类 prompt blocks
+- 一键物化 draft Skill
+- 一键物化 draft MCP
+- 原始 SOP 持久化到本地对象存储，并通过 `/api/objects/*` 回看原文
+
+### 3. 执行主链
+
+当前执行链支持：
+
+- `Playbook -> Task DAG` 规划
+- 任务依赖推进与批次派发
+- Supervisor / Worker Session 自动建立
+- Run 执行与 Artifact 元数据生成
+- waiting_human / approve / reject / complete 状态联动
+- Run 反思、KnowledgeUpdate 提案、Reflection 评测 / 批准 / 发布
+
+### 4. Dashboard / 设置页
+
+当前内置控制台已经不是单页堆叠，而是：
+
+- 默认首页：全局看板
+- 左侧导航：目标、SOP、Skill、MCP、知识库、任务、会话、自动迭代、审批流、提示词
+- 设置页：模型设置、全局设置、会话管理
+
+设置页当前支持：
+
+- 运行时模型设置修改
+- provider preset 应用
+- 模型连通性测试
+- 命名模型环境保存 / 激活
+- 最近成功 probe 展示
+- 全局默认语言 / 路由 / 筛选 / 自动刷新 / 环境标签
+- 会话按 Goal / Run 过滤和基础更新
+
+## API（以代码为准）
+
+`src/playbookos/api/app.py` 是当前 API 的单一事实来源。下面是当前实际已实现的主要接口分组。
+
+### 首页 / 系统
 
 - `GET /`
+- `GET /healthz`
+- `GET /api/board`
+- `GET /api/meta/enums`
+- `GET /api/errors`
+
+### 运行时设置
+
+- `GET /api/runtime-settings`
+- `PUT /api/runtime-settings`
+- `POST /api/runtime-settings/test`
+- `POST /api/runtime-settings/profiles`
+- `POST /api/runtime-settings/profiles/activate`
+
+### Goals
+
 - `POST /api/goals`
 - `GET /api/goals`
 - `GET /api/goals/{goal_id}`
+- `PUT /api/goals/{goal_id}`
 - `POST /api/goals/{goal_id}/plan`
 - `POST /api/goals/{goal_id}/dispatch`
 - `POST /api/goals/{goal_id}/autopilot`
 - `GET /api/goals/{goal_id}/learning`
 - `POST /api/goals/{goal_id}/start`
 - `POST /api/goals/{goal_id}/complete-review`
+
+### Playbooks / ingestion
+
 - `POST /api/playbooks/import`
 - `POST /api/playbooks/ingest`
-- `POST /api/playbooks/{playbook_id}/skill-drafts`
-- `POST /api/playbooks/{playbook_id}/mcp-drafts`
-- `GET /api/skills/{skill_id}/authoring-pack`
-- `POST /api/skills/{skill_id}/apply-authoring-pack`
 - `GET /api/playbooks`
 - `GET /api/playbooks/{playbook_id}`
+- `PUT /api/playbooks/{playbook_id}`
 - `POST /api/playbooks/{playbook_id}/compile`
+- `POST /api/playbooks/{playbook_id}/skill-drafts`
+- `POST /api/playbooks/{playbook_id}/mcp-drafts`
+
+### Skills
+
 - `POST /api/skills`
 - `GET /api/skills`
 - `GET /api/skills/{skill_id}`
+- `PUT /api/skills/{skill_id}`
+- `GET /api/skills/{skill_id}/authoring-pack`
+- `POST /api/skills/{skill_id}/apply-authoring-pack`
+- `POST /api/skills/{skill_id}/create-version`
+- `POST /api/skills/{skill_id}/activate`
+- `POST /api/skills/{skill_id}/deprecate`
+- `POST /api/skills/{skill_id}/rollback`
+
+### MCP / Knowledge / Session
+
 - `POST /api/mcp-servers`
 - `GET /api/mcp-servers`
 - `GET /api/mcp-servers/{mcp_server_id}`
@@ -93,18 +186,21 @@ PlaybookOS 用来把目标、SOP、技能、工具权限、执行记录和反思
 - `POST /api/knowledge-bases`
 - `GET /api/knowledge-bases`
 - `GET /api/knowledge-bases/{knowledge_id}`
+- `PUT /api/knowledge-bases/{knowledge_id}`
 - `GET /api/knowledge-updates`
 - `GET /api/knowledge-updates/{knowledge_update_id}`
 - `POST /api/knowledge-updates/{knowledge_update_id}/apply`
 - `POST /api/knowledge-updates/{knowledge_update_id}/reject`
 - `GET /api/sessions`
 - `GET /api/sessions/{session_id}`
-- `GET /api/acceptances`
-- `GET /api/acceptances/{acceptance_id}`
-- `GET /api/events`
+- `PUT /api/sessions/{session_id}`
+
+### Tasks / Runs / Artifacts / Objects / Reflections
+
 - `POST /api/tasks`
 - `GET /api/tasks`
 - `GET /api/tasks/{task_id}`
+- `PUT /api/tasks/{task_id}`
 - `POST /api/tasks/{task_id}/accept`
 - `POST /api/tasks/{task_id}/complete`
 - `POST /api/runs`
@@ -117,134 +213,22 @@ PlaybookOS 用来把目标、SOP、技能、工具权限、执行记录和反思
 - `POST /api/artifacts`
 - `GET /api/artifacts`
 - `GET /api/artifacts/{artifact_id}`
+- `GET /api/objects`
+- `GET /api/objects/{object_id}`
+- `GET /api/objects/{object_id}/content`
 - `POST /api/reflections`
 - `GET /api/reflections`
 - `POST /api/reflections/{reflection_id}/evaluate`
 - `POST /api/reflections/{reflection_id}/approve`
 - `POST /api/reflections/{reflection_id}/reject`
 - `POST /api/reflections/{reflection_id}/publish`
-- `GET /api/errors`
-- `GET /api/board`
-- `GET /api/meta/enums`
-- `GET /api/objects`
-- `GET /api/objects/{object_id}`
-- `GET /api/objects/{object_id}/content`
-- `GET /healthz`
+- `GET /api/acceptances`
+- `GET /api/acceptances/{acceptance_id}`
+- `GET /api/events`
 
-## Planner 规则
+## 运行方式
 
-`planner` 会优先读取 `playbook.compiled_spec.steps` 来生成 `Task DAG`：
-
-- 无显式依赖时，默认串行生成依赖链
-- `depends_on` 可引用前序步骤名称，或前序步骤索引
-- 无 `steps` 时，回退为一个默认执行任务
-- 第一个可执行任务标记为 `ready`，其余依赖任务标记为 `inbox`
-- 重复对同一个 `Goal` 执行规划时，不会重复创建任务
-
-## Orchestrator 规则
-
-`orchestrator` 负责把 `Task DAG` 推进成可执行运行批次：
-
-- 把依赖已满足的 `inbox` 任务提升到 `ready`
-- 为 `ready` 任务创建 `Run`
-- 为每个 Goal 自动建立一个 `Supervisor Session`
-- 为每个 Run 自动建立一个 `Worker Session`
-- 调度与执行过程沉淀为 `Event` 流
-- 普通任务派发后进入 `running`
-- 需要审批的任务派发后进入 `waiting_human`
-- `POST /api/tasks/{task_id}/complete` 会完成当前任务，并自动推进下游节点
-- 所有任务完成后，`Goal` 自动进入 `review`
-
-当前实现不依赖 Temporal SDK，但已经输出 `TemporalWorkflowSpec`，后续可直接映射到真正的 Temporal workflow/activity 输入。
-
-## Executor 规则
-
-`executor` 负责把 `Run` 变成真正的执行动作：
-
-- `OpenAIAgentsSDKAdapter` 会按当前环境配置生成并发送真实 OpenAI API 请求；未配置 API Key 时会进入“prepared_only”模式，仅保留可见请求载荷与配置摘要
-- `DeterministicExecutorAdapter` 用于本地测试和无依赖环境
-- `POST /api/runs/{run_id}/execute` 会执行单个 `Run`
-- 每次执行会自动生成一个 `run_report` Artifact，沉淀输出、trace、tool_calls 和指标摘要
-- 成功执行后会把任务推进到完成链路，失败/审批等待则保留为阻塞信号
-- Run 对应的 Worker Session 会同步更新为 `running / waiting_human / completed / failed`
-
-## 自我迭代能力
-
-你要的“给定一个 SOP 和 MCP，自动完成大量相似任务，并从经验反过来优化 SOP”现在已经有第一版骨架，但还不是最终闭环。
-
-目前已实现：
-
-- `POST /api/goals/{goal_id}/autopilot`：自动规划、调度、执行可自动完成的任务
-- `Session`：一个 Goal 对应主控会话，一个 Run 对应子会话
-- `Task.knowledge_base_ids`：任务可显式绑定知识库条目参与执行
-- `POST /api/tasks/{task_id}/accept`：对任务结果做人类验收与签收
-- `KnowledgeUpdate`：每次反思可生成知识回写提案，并支持人工应用 / 拒绝
-- `Event`：记录调度、执行、验收等关键动作，便于用户可见与审计
-- `POST /api/runs/{run_id}/reflect`：从单次 Run 生成 SOP patch proposal
-- `GET /api/goals/{goal_id}/learning`：聚合一个 Goal 下的失败分类和 SOP 改进提案
-- 成功模式、审批瓶颈、执行波动都会沉淀为 `sop_patch` 提案
-
-当前还没做完的部分：
-
-- 知识提案在页面内的一键 apply/reject 操作入口（当前 API 已支持，UI 还未补按钮）
-- 更细的 patch diff、版本回放与审批工作流（当前已支持页面内直接编辑既有实体）
-- 主控会话自动拆分更多层级子会话并并行汇总
-- AI 主动改写 Skill / Knowledge Base 的专门 authoring 流程
-- 基于真实 OpenAI Agents SDK + MCP 调用结果的在线评测（现已支持真实 API 适配层与可见请求载荷，但还缺少 MCP tool runtime 和在线评测治理）
-- publish 后自动把 proposal 合并回更细粒度的 Skill/Playbook 发布策略
-- Artifact blob 正式落到对象存储，而不只保存元数据
-
-也就是说：
-
-- “自动跑大量相似任务”已经有骨架
-- “自动总结并提出 SOP 优化建议”已经有 proposal/evaluate/approve/publish 闭环
-- “主进程收集 / 检测 / 验收 / 记录子会话轨迹”已经有第一版 Session + Acceptance + Event 能力
-- “自动把建议无人工发布到生产”仍然没有做，而且按你的架构原则也不应该直接自动发布
-
-## 存储说明
-
-默认使用 SQLite 持久化到 `data/playbookos.db`，这样在当前环境里不依赖额外数据库驱动也能跑通 API。
-
-当前版本已开始补齐“原始 SOP 接入”能力：支持把粘贴的 Markdown / text / JSON SOP 导入为 Playbook 草案，并返回解析摘要与 Skill 建议，供页面进一步引导配置。
-
-现在原始 SOP 还会被持久化到本地对象存储，并通过 `source_object_*` 元数据回链到 `playbook.compiled_spec`；前端导入引导区可直接打开原文内容进行审计。
-
-当前这一轮优先聚焦 `Markdown SOP`：系统会从 Markdown 步骤里识别需要接入的工具域，生成 `工具发现 / Skill 上传 / MCP 接入` 三类提示词，并在页面内明确告诉用户应先补哪些 Skill 与 MCP。现在还支持从这些缺口一键生成 `draft MCP`，先把 SOP -> 工具 -> MCP/Skill 的配置链打通。
-
-当前已接入持久化的主表：
-
-- `goals`
-- `playbooks`
-- `skills`
-- `mcp_servers`
-- `knowledge_bases`
-- `knowledge_updates`
-- `tasks`
-- `sessions`
-- `runs`
-- `acceptances`
-- `events`
-- `artifacts`
-- `reflections`
-
-可用环境变量：
-
-- `PLAYBOOKOS_DB_PATH`：自定义 SQLite 文件路径
-- `DATABASE_URL=sqlite:///absolute/or/relative/path.db`：显式指定 SQLite URL
-- `DATABASE_URL=postgresql://...`：当前会给出明确提示；正式 PostgreSQL schema 已放在 `data/sql/postgres_schema.sql`
-- `PLAYBOOKOS_ERROR_LOG_PATH`：错误记录文件路径，默认是 `data/error_records.jsonl`
-- `PLAYBOOKOS_OBJECT_STORE_PATH`：原始 SOP / 本地对象存储目录，默认是 `data/object_store`
-- `PLAYBOOKOS_OPENAI_API_KEY` / `OPENAI_API_KEY`：真实执行时使用的 API Key
-- `PLAYBOOKOS_OPENAI_BASE_URL` / `OPENAI_BASE_URL`：API Base URL，默认 `https://api.openai.com/v1`
-- `PLAYBOOKOS_OPENAI_MODEL` / `OPENAI_MODEL`：默认模型，未配置时使用 `gpt-4.1`
-- `PLAYBOOKOS_OPENAI_API_FORMAT`：`responses` 或 `chat.completions`，默认 `responses`
-- `PLAYBOOKOS_OPENAI_TIMEOUT`：请求超时秒数
-- `PLAYBOOKOS_OPENAI_MAX_OUTPUT_TOKENS`：输出 token 上限
-- `PLAYBOOKOS_OPENAI_TEMPERATURE`：采样温度
-
-## 本地运行
-
-安装依赖后可直接启动：
+### 1. API 服务
 
 ```bash
 pip install -e .
@@ -254,49 +238,50 @@ playbookos-api
 或者：
 
 ```bash
-uvicorn playbookos.api.app:app --host 0.0.0.0 --port 8000
+PYTHONPATH=src uvicorn playbookos.api.app:app --host 0.0.0.0 --port 8000
 ```
 
-启动后打开首页即可看到控制台：`http://127.0.0.1:8000/`
+打开：`http://127.0.0.1:8000/`
 
-
-当前已经具备的前置建模闭环是：`Markdown SOP -> Playbook steps -> 工具识别 -> Skill 建议 -> Authoring Wizard -> draft MCP`。
-
-当前仍未完成的关键板块主要是：
-
-- MCP 运行时：真实连接校验、凭证治理、健康探测与 tool runtime
-- 多格式 / 多附件 SOP 解析：当前只稳定支持 Markdown
-- ingestion 自动物化更多对象：Knowledge、Task template、approval checklist 仍需补齐
-- 更强的引导式配置：逐步问答、风险解释、发布门禁仍是第一版
-
-如果当前环境还没安装 `fastapi` / `uvicorn`，也可以直接用零依赖预览服务：
+### 2. Preview Demo
 
 ```bash
-PYTHONPATH=src python3 -m playbookos.ui.preview_server --demo --port 8081
+PYTHONPATH=src python3 -m playbookos.ui.preview_server --demo --host 0.0.0.0 --port 8081
 ```
 
-然后访问：`http://127.0.0.1:8081/`
+打开：`http://127.0.0.1:8081/`
 
-当前 8081 预览页已内置工作台表单，可直接创建 Goal、SOP、Skill、Knowledge 和 Task，并支持选择已有实体查看与编辑；知识更新提案会在资源区可见。
+## 存储与环境变量
 
-页面还新增了一个“操作中心”，可直接对 Goal 执行规划 / 派发 / 自动执行，对等待人工处理的 Run 做批准 / 拒绝 / 执行，对 Task 做验收，对 Knowledge Update 做 apply / reject，对 Reflection 做 evaluate / approve / reject / publish。
-页面也新增了“主控 / 子会话树”，会按 Goal 展示 supervisor 与 worker 的层级结构，让主进程和子会话调度路径对用户可见。
-现在还有专门的 “SOP 补丁审阅” 区，可集中查看 reflection proposal、变更清单、评测结果，以及 approve / reject / publish 操作。
-现在还新增了 “技能版本中心”，可集中查看 Skill 版本链、当前激活版本、回滚目标，以及 create-version / activate / deprecate / rollback 动作。
-现在页面还新增了 “主控聚合中心”，主进程会按 Goal 汇总子会话、Run、验收、复盘、知识更新与事件，同时 worker 下会展开 Context synthesis / AI execution / Supervisor verification / Reflection and learning 等多层子会话。
-现在又补上了“并行波次 + 主控仲裁”：dispatch 会生成可见的 `Dispatch wave` 批次会话，把同一批 ready task 挂到一个父会话下；supervisor 还会生成专门的 `Supervisor arbitration` 子会话，并在页面里显示下一步推荐动作、待审批项、待验收项、待发布 SOP 提案等主控决策信息。
+默认：
 
-如果前端脚本启动失败，首页会在头部显示一个可见的错误面板，直接给出浏览器侧错误详情，避免再次出现只有外框没有内容的空白页。
+- SQLite：`data/playbookos.db`
+- 错误日志：`data/error_records.jsonl`
+- 对象存储：`data/object_store/`
+- 运行时设置：`data/runtime_settings.json`
 
-## 下一步
+常用环境变量：
 
-下一步可以继续补：
+- `PLAYBOOKOS_DB_PATH`
+- `DATABASE_URL`
+- `PLAYBOOKOS_ERROR_LOG_PATH`
+- `PLAYBOOKOS_OBJECT_STORE_PATH`
+- `PLAYBOOKOS_RUNTIME_SETTINGS_PATH`
+- `PLAYBOOKOS_OPENAI_API_KEY` / `OPENAI_API_KEY`
+- `PLAYBOOKOS_OPENAI_BASE_URL` / `OPENAI_BASE_URL`
+- `PLAYBOOKOS_OPENAI_MODEL` / `OPENAI_MODEL`
+- `PLAYBOOKOS_OPENAI_API_FORMAT`
+- `PLAYBOOKOS_OPENAI_TIMEOUT`
+- `PLAYBOOKOS_OPENAI_MAX_OUTPUT_TOKENS`
+- `PLAYBOOKOS_OPENAI_TEMPERATURE`
 
-- Temporal Python SDK 真正接入 workflow/activity
-- PostgreSQL 运行时 adapter 或 SQLAlchemy/ORM 层
-- 真实 OpenAI Agents SDK + MCP 调用执行器
-- Dashboard 的交互筛选、详情页和更丰富的操作入口
-- Artifact blob/object storage 落盘与下载能力
-- Plane webhook / MCP 对接
+## 验证
 
-当前已开始补齐 `MCP registry`：控制台支持创建/查看/编辑 MCP 记录，SOP ingestion 的工具缺口也可直接一键物化为 `draft MCP`，用于后续人工补完 endpoint、scope 与鉴权配置。
+常用本地验证命令：
+
+```bash
+python3 -m compileall src tests
+PYTHONPATH=src python3 -m unittest discover -s tests -p 'test*_unittest.py'
+```
+
+如果要校验 Dashboard 脚本，可从 `build_dashboard_html()` 提取 `<script>` 后执行 `node --check`。

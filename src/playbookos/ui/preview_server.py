@@ -463,7 +463,7 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
             self._write_json({"detail": f"Missing field: {exc.args[0]}"}, status=HTTPStatus.BAD_REQUEST)
         except SOPIngestionError as exc:
             record_error(exc, component="preview_server", operation="do_POST", metadata={"path": path}, path=self.server.error_log_path)
-            self._write_json({"detail": str(exc)}, status=HTTPStatus.CONFLICT)
+            self._write_json({"detail": str(exc)}, status=HTTPStatus.BAD_REQUEST)
         except Exception as exc:
             record_error(exc, component="preview_server", operation="do_POST", metadata={"path": path}, path=self.server.error_log_path)
             self._write_json({"detail": str(exc)}, status=HTTPStatus.BAD_REQUEST)

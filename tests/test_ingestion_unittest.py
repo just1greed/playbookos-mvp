@@ -34,24 +34,23 @@ class SOPIngestionTestCase(unittest.TestCase):
         self.assertIn("github", result.tooling_guidance.required_mcp_servers)
         self.assertIn("github", result.tooling_guidance.missing_mcp_servers)
         self.assertGreaterEqual(len(result.tooling_guidance.prompt_blocks), 3)
+        self.assertIn("第 1 步", result.tooling_guidance.action_items[0])
+        self.assertIn("reuse_registered_mcp", result.tooling_guidance.prompt_blocks[0].prompt)
         self.assertEqual(result.playbook.goal_id, goal.id)
         self.assertEqual(len(result.playbook.compiled_spec["steps"]), 3)
         self.assertIn("skill_suggestions", result.playbook.compiled_spec)
         self.assertIn("tooling_guidance", result.playbook.compiled_spec)
 
-    def test_ingest_json_sop_uses_structured_steps(self) -> None:
+    def test_ingest_rejects_non_markdown_source_kind(self) -> None:
         store = InMemoryStore()
 
-        result = ingest_sop_in_store(
-            store,
-            name="Structured SOP",
-            source_kind="json",
-            source_text='{"steps": [{"name": "Prepare draft", "description": "Write the draft"}], "mcp_servers": ["github"]}',
-        )
-
-        self.assertEqual(result.step_count, 1)
-        self.assertEqual(result.playbook.compiled_spec["steps"][0]["name"], "Prepare draft")
-        self.assertEqual(result.detected_mcp_servers, ["github"])
+        with self.assertRaises(SOPIngestionError):
+            ingest_sop_in_store(
+                store,
+                name="Structured SOP",
+                source_kind="json",
+                source_text='{"steps": [{"name": "Prepare draft", "description": "Write the draft"}], "mcp_servers": ["github"]}',
+            )
 
     def test_ingest_requires_source_text(self) -> None:
         store = InMemoryStore()

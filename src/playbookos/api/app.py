@@ -302,7 +302,8 @@ def create_app(store: StoreProtocol | None = None) -> FastAPI:
             )
             store.playbooks.save(result.playbook)
         except SOPIngestionError as exc:
-            raise _conflict_http_exception(exc, operation="ingest_playbook", metadata={"goal_id": payload.goal_id}) from exc
+            record_error(exc, component="api", operation="ingest_playbook", metadata={"goal_id": payload.goal_id})
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
         return PlaybookIngestRead(
             playbook=PlaybookRead.model_validate(result.playbook),
             step_count=result.step_count,

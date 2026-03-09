@@ -220,6 +220,30 @@ class RuntimeSettingsApiTestCase(unittest.TestCase):
         self.assertFalse(updated.json()["global"]["show_system_group"])
         self.assertEqual(updated.json()["global"]["environment_label"], "staging")
 
+
+    def test_ingest_api_rejects_non_markdown_kind(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir, patch.dict(
+            os.environ,
+            {
+                "PLAYBOOKOS_RUNTIME_SETTINGS_PATH": f"{tmpdir}/runtime_settings.json",
+            },
+            clear=False,
+        ):
+            app = create_app(store=InMemoryStore())
+            client = TestClient(app)
+
+            response = client.post(
+                "/api/playbooks/ingest",
+                json={
+                    "name": "Structured SOP",
+                    "source_kind": "json",
+                    "source_text": '{"steps": [{"name": "Prepare draft"}]}',
+                },
+            )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("Only Markdown SOP ingestion is supported right now", response.json()["detail"])
+
     def test_runtime_settings_profile_endpoints_validate_input(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir, patch.dict(
             os.environ,

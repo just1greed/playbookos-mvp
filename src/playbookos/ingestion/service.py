@@ -192,33 +192,9 @@ class SOPCompiler:
 
     def _compile_source(self, source_kind: str, source_text: str) -> tuple[dict[str, Any], list[str]]:
         normalized_kind = str(source_kind or "markdown").strip().lower()
-        if normalized_kind == "json":
-            return self._compile_json(source_text)
+        if normalized_kind not in {"markdown", "md", ""}:
+            raise SOPIngestionError("Only Markdown SOP ingestion is supported right now. Please convert the SOP to Markdown before uploading.")
         return self._compile_text(source_text)
-
-    def _compile_json(self, source_text: str) -> tuple[dict[str, Any], list[str]]:
-        try:
-            payload = json.loads(source_text)
-        except json.JSONDecodeError as exc:
-            raise SOPIngestionError(f"Invalid JSON SOP source: {exc.msg}") from exc
-
-        if isinstance(payload, dict):
-            steps = payload.get("steps", [])
-            mcp_servers = payload.get("mcp_servers", [])
-        elif isinstance(payload, list):
-            steps = payload
-            mcp_servers = []
-        else:
-            raise SOPIngestionError("JSON SOP source must be an object or array")
-
-        compiled_spec = {
-            "steps": self._normalize_steps(steps),
-            "mcp_servers": self._normalize_mcp_servers(mcp_servers),
-        }
-        notes = ["Parsed structured JSON SOP payload."]
-        if not compiled_spec["steps"]:
-            notes.append("JSON source did not include explicit steps; manual refinement is recommended.")
-        return compiled_spec, notes
 
     def _compile_text(self, source_text: str) -> tuple[dict[str, Any], list[str]]:
         lines = [line.rstrip() for line in source_text.splitlines()]
@@ -366,27 +342,29 @@ class SOPCompiler:
         registered_names = {item.split(" (")[0] for item in existing_mcp_candidates}
         suggested_skill_names = [item.name for item in suggested_skills]
         required_mcp_servers = list(detected_mcp_servers)
+        missing_mcp_servers = [item for item in required_mcp_servers if item not in registered_names]
         if required_mcp_servers:
             mcp_summary = ", ".join(required_mcp_servers)
-            summary = f"该 Markdown SOP 识别出 {len(required_mcp_servers)} 个外部工具域：{mcp_summary}。建议先确认 MCP，再上传或创建对应 Skill。"
+            summary = f"该 Markdown SOP 识别出 {len(required_mcp_servers)} 个外部工具域：{mcp_summary}。当前逻辑建议按‘先复用已登记 MCP / Skill，再补缺口，再绑定步骤’的顺序推进。"
         else:
-            summary = "该 Markdown SOP 尚未稳定识别出外部工具，请用工具发现提示词人工确认后再配置 Skill / MCP。"
+            summary = "该 Markdown SOP 尚未稳定识别出外部工具，请先用工具发现提示词人工确认，再决定要上传哪些 Skill 与 MCP。"
         action_items = [
-            f"先确认这份 SOP 需要的 MCP：{', '.join(required_mcp_servers) if required_mcp_servers else '请人工确认工具域'}。",
-            f"优先上传或创建这些 Skill：{', '.join(suggested_skill_names[:3]) if suggested_skill_names else 'General SOP Operator'}。",
-            "把 Skill 绑定到涉及外部系统的步骤，再应用 Authoring Wizard 补齐 schema、审批策略与评测策略。",
+            f"第 1 步：确认这份 SOP 需要的 MCP：{', '.join(required_mcp_servers) if required_mcp_servers else '请人工确认工具域'}。",
+            f"第 2 步：优先复用已登记 MCP：{', '.join(existing_mcp_candidates[:3]) if existing_mcp_candidates else '当前没有已登记候选，需要创建 draft MCP'}。",
+            f"第 3 步：优先复用或上传这些 Skill：{', '.join(existing_candidates[:3]) if existing_candidates else ', '.join(suggested_skill_names[:3]) if suggested_skill_names else 'General SOP Operator'}。",
+            f"第 4 步：补齐仍缺的 MCP：{', '.join(missing_mcp_servers) if missing_mcp_servers else '当前未发现 MCP 缺口'}。",
+            "第 5 步：把 Skill 绑定到涉及外部系统的步骤，再应用 Authoring Wizard 补齐 schema、审批策略与评测策略。",
+            "当前版本重点支持 Markdown SOP；附件、多格式解析和 MCP 真正注册流后续再补。",
         ]
-        if existing_candidates:
-            action_items.append(f"仓库里已有可复用 Skill 候选：{', '.join(existing_candidates[:3])}。可先复用，再决定是否新建。")
-        if existing_mcp_candidates:
-            action_items.append(f"已登记的 MCP 候选：{', '.join(existing_mcp_candidates[:3])}。优先复用，缺口再创建 draft MCP。")
-        action_items.append("当前版本重点支持 Markdown SOP；附件、多格式解析和 MCP 真正注册流后续再补。")
         prompt_blocks = self._build_prompt_blocks(
             playbook_name=playbook_name,
             steps=steps,
             tool_requirements=tool_requirements,
             required_mcp_servers=required_mcp_servers,
             suggested_skill_names=suggested_skill_names,
+            existing_skill_candidates=existing_candidates,
+            existing_mcp_candidates=existing_mcp_candidates,
+            missing_mcp_servers=missing_mcp_servers,
         )
         return ToolingGuidance(
             summary=summary,
@@ -394,7 +372,7 @@ class SOPCompiler:
             suggested_skill_names=suggested_skill_names,
             existing_skill_candidates=existing_candidates,
             existing_mcp_candidates=existing_mcp_candidates,
-            missing_mcp_servers=[item for item in required_mcp_servers if item not in registered_names],
+            missing_mcp_servers=missing_mcp_servers,
             action_items=action_items,
             tool_requirements=tool_requirements,
             prompt_blocks=prompt_blocks,
@@ -467,6 +445,9 @@ class SOPCompiler:
         tool_requirements: list[ToolRequirement],
         required_mcp_servers: list[str],
         suggested_skill_names: list[str],
+        existing_skill_candidates: list[str],
+        existing_mcp_candidates: list[str],
+        missing_mcp_servers: list[str],
     ) -> list[PromptBlock]:
         step_lines = [f"- {step.get('name') or step.get('description') or 'step'}" for step in steps[:8]]
         requirement_lines = [
@@ -477,6 +458,9 @@ class SOPCompiler:
         tool_common = "\n".join(requirement_lines) or "- tool=manual_review; purpose=Confirm tools manually"
         mcp_list = ", ".join(required_mcp_servers) or "manual confirmation required"
         skill_list = ", ".join(suggested_skill_names) or "General SOP Operator"
+        existing_skill_list = ", ".join(existing_skill_candidates) or "none"
+        existing_mcp_list = ", ".join(existing_mcp_candidates) or "none"
+        missing_mcp_list = ", ".join(missing_mcp_servers) or "none"
         return [
             PromptBlock(
                 key="tool_discovery",
@@ -487,15 +471,20 @@ class SOPCompiler:
                     "输出 JSON 结构：{\n"
                     '  "tools": [{"tool_name": "", "why_needed": "", "related_steps": [], "suggested_mcp_server": "", "risk_level": "low|medium|high"}],\n'
                     '  "skills": [{"skill_name": "", "covered_steps": [], "required_mcp_servers": [], "why": ""}],\n'
-                    '  "gaps": [{"type": "missing_mcp|missing_skill", "name": "", "reason": ""}]\n'
+                    '  "gaps": [{"type": "missing_mcp|missing_skill", "name": "", "reason": ""}],\n'
+                    '  "execution_order": ["reuse_registered_mcp", "reuse_or_upload_skill", "create_missing_mcp", "bind_skill_to_steps"]\n'
                     "}\n\n"
                     f"SOP 名称：{playbook_name}\n"
                     f"步骤：\n{prompt_common}\n\n"
                     f"当前启发式识别结果：\n{tool_common}\n\n"
+                    f"已登记 MCP：{existing_mcp_list}\n"
+                    f"已存在 Skill 候选：{existing_skill_list}\n"
+                    f"当前缺口 MCP：{missing_mcp_list}\n\n"
                     "要求：\n"
                     "1. 优先识别真正需要接入的外部系统，而不是泛化的抽象动作。\n"
                     "2. 每个 tool 都要回指 SOP 里的步骤证据。\n"
-                    "3. 如果无法确定，请显式写进 gaps，而不是猜测。"
+                    "3. 如果已有已登记 MCP / Skill 候选，优先给出 reuse 建议，不要默认新建。\n"
+                    "4. 如果无法确定，请显式写进 gaps，而不是猜测。"
                 ),
             ),
             PromptBlock(
@@ -505,16 +494,19 @@ class SOPCompiler:
                 prompt=(
                     "你是 PlaybookOS 的 skill authoring copilot。请根据 SOP 与工具需求，给出建议上传的 Skill 清单。\n\n"
                     "输出 JSON 结构：{\n"
-                    '  "skills": [{"name": "", "description": "", "covered_steps": [], "required_mcp_servers": [], "approval_mode": "manual_review|auto_execute", "evaluation_focus": []}]\n'
+                    '  "skills": [{"name": "", "description": "", "covered_steps": [], "required_mcp_servers": [], "use_existing_skill": true, "existing_skill_name": "", "approval_mode": "manual_review|auto_execute", "evaluation_focus": []}],\n'
+                    '  "recommended_sequence": ["reuse_existing_skill_or_upload_new", "bind_steps", "apply_authoring_wizard"]\n'
                     "}\n\n"
                     f"SOP 名称：{playbook_name}\n"
                     f"步骤：\n{prompt_common}\n\n"
                     f"建议优先 Skill：{skill_list}\n"
-                    f"需要的 MCP：{mcp_list}\n\n"
+                    f"需要的 MCP：{mcp_list}\n"
+                    f"仓库里已有 Skill 候选：{existing_skill_list}\n\n"
                     "要求：\n"
                     "1. Skill 要尽量高内聚，不要把所有步骤塞进一个大 Skill。\n"
-                    "2. 涉及外发、发布、部署、写系统动作时，默认给 manual_review。\n"
-                    "3. required_mcp_servers 只保留真正执行所需的最小集合。"
+                    "2. 如果已有合适 Skill 候选，优先标记 use_existing_skill=true，而不是重新造一个重复 Skill。\n"
+                    "3. 涉及外发、发布、部署、写系统动作时，默认给 manual_review。\n"
+                    "4. required_mcp_servers 只保留真正执行所需的最小集合。"
                 ),
             ),
             PromptBlock(
@@ -524,16 +516,20 @@ class SOPCompiler:
                 prompt=(
                     "你是 PlaybookOS 的 MCP onboarding planner。请把 SOP 所需工具整理成 MCP 接入清单。\n\n"
                     "输出 JSON 结构：{\n"
-                    '  "mcp_servers": [{"name": "", "purpose": "", "minimum_scopes": [], "write_actions": [], "related_skills": []}],\n'
-                    '  "review_points": []\n'
+                    '  "mcp_servers": [{"name": "", "purpose": "", "use_existing_mcp": true, "existing_mcp_name": "", "minimum_scopes": [], "write_actions": [], "related_skills": []}],\n'
+                    '  "review_points": [],\n'
+                    '  "recommended_sequence": ["reuse_registered_mcp", "create_missing_mcp", "connect_skill"]\n'
                     "}\n\n"
                     f"SOP 名称：{playbook_name}\n"
                     f"需要的 MCP：{mcp_list}\n"
                     f"工具证据：\n{tool_common}\n\n"
+                    f"已登记 MCP：{existing_mcp_list}\n"
+                    f"仍缺的 MCP：{missing_mcp_list}\n\n"
                     "要求：\n"
                     "1. minimum_scopes 必须体现最小权限原则。\n"
-                    "2. 如果某个 MCP 只需要读能力，不要给写权限。\n"
-                    "3. 把需要人工确认的高风险写操作列进 review_points。"
+                    "2. 如果某个 MCP 已登记，优先标记 use_existing_mcp=true，而不是要求重新创建。\n"
+                    "3. 如果某个 MCP 只需要读能力，不要给写权限。\n"
+                    "4. 把需要人工确认的高风险写操作列进 review_points。"
                 ),
             ),
         ]
