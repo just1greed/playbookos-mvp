@@ -203,6 +203,8 @@ TRANSLATIONS = {
         "topbar_scope_goal": "按 Goal",
         "topbar_scope_playbook": "按 SOP",
         "topbar_scope_status": "按状态",
+        "topbar_scope_value_label": "筛选值",
+        "topbar_scope_value_all": "全部",
         "global_flow_title": "任务流程总览",
         "global_flow_subtitle": "从 Goal 到 Knowledge 的全局链路状态，一眼看清哪里在推进、哪里在阻塞。",
         "dashboard_blockers_title": "关键阻塞区",
@@ -555,6 +557,8 @@ TRANSLATIONS = {
         "topbar_scope_goal": "By Goal",
         "topbar_scope_playbook": "By SOP",
         "topbar_scope_status": "By Status",
+        "topbar_scope_value_label": "Filter Value",
+        "topbar_scope_value_all": "All",
         "global_flow_title": "Flow Overview",
         "global_flow_subtitle": "A global chain from Goal to Knowledge so you can instantly see what is moving and what is blocked.",
         "dashboard_blockers_title": "Key Blockers",
@@ -989,6 +993,10 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
                 <option value="status"></option>
               </select>
             </div>
+            <div class="scope-card">
+              <label id="topbar-scope-value-label"></label>
+              <select id="global-scope-value-select"></select>
+            </div>
           </div>
         </section>
 
@@ -1345,13 +1353,17 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
       const resourceSingular = {resource_singular_json};
       const resourcePaths = {resource_paths_json};
       const translations = {translations_json};
+      let rawSnapshot = {snapshot_json};
       let currentSnapshot = {snapshot_json};
+      let allResources = {{}};
       let latestResources = {{}};
       let latestIngestionResult = null;
       let latestAuthoringPacks = {{}};
       const editableSections = ['goals', 'playbooks', 'skills', 'mcp_servers', 'knowledge_bases', 'tasks'];
       let currentLanguage = localStorage.getItem('playbookos-language') || 'zh';
       let currentRoute = (window.location.hash || '#dashboard').replace(/^#/, '') || 'dashboard';
+      let currentScopeKind = localStorage.getItem('playbookos-scope-kind') || 'all';
+      let currentScopeValue = localStorage.getItem('playbookos-scope-value') || '';
       const navGroups = [
         {{ titleKey: 'nav_group_overview', routes: ['dashboard'] }},
         {{ titleKey: 'nav_group_workbench', routes: ['goals', 'playbooks', 'skills', 'mcp', 'knowledge', 'tasks', 'sessions', 'learning', 'approvals', 'prompts'] }},
@@ -1745,16 +1757,170 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         ].join('');
       }}
 
-      function updatePageHeader() {{
-        const config = routeConfigs[currentRoute] || routeConfigs.dashboard;
-        document.getElementById('page-title').textContent = t(config.titleKey);
-        document.getElementById('page-subtitle').textContent = t(config.subtitleKey);
-        document.getElementById('topbar-scope-label').textContent = t('topbar_scope_label');
+      function statusValueForItem(item, section = '') {{
+        if (!item) return 'unknown';
+        if (section === 'reflections') return item.eval_status || item.approval_status || item.status || 'unknown';
+        return item.status || item.kind || item.type || item.eval_status || item.approval_status || 'unknown';
+      }}
+
+      function deriveSnapshotFromResources(resources) {{
+        const fields = {{
+          reflections: 'eval_status',
+        }};
+        const snapshot = {{}};
+        sectionOrder.forEach((section) => {{
+          const items = resources[section] || [];
+          const field = fields[section] || null;
+          snapshot[section] = (items || []).reduce((acc, item) => {{
+            const key = String(field ? (item && item[field]) : statusValueForItem(item, section));
+            const normalized = key && key !== 'undefined' ? key : 'unknown';
+            acc[normalized] = (acc[normalized] || 0) + 1;
+            return acc;
+          }}, {{}});
+        }});
+        return snapshot;
+      }}
+
+      function scopeOptions(kind) {{
+        if (kind === 'goal') {{
+          return (allResources.goals || []).map((item) => ({{ value: item.id, label: `${{item.title || item.id}} · ${{item.id.slice(0, 8)}}` }}));
+        }}
+        if (kind === 'playbook') {{
+          return (allResources.playbooks || []).map((item) => ({{ value: item.id, label: `${{item.name || item.id}} · ${{item.id.slice(0, 8)}}` }}));
+        }}
+        if (kind === 'status') {{
+          const values = new Set();
+          Object.entries(allResources || {{}}).forEach(([section, items]) => {{
+            (items || []).forEach((item) => values.add(statusValueForItem(item, section)));
+          }});
+          return [...values].filter(Boolean).sort().map((value) => ({{ value, label: formatStateLabel(value) }}));
+        }}
+        return [];
+      }}
+
+      function updateScopeControls() {{
         const scopeSelect = document.getElementById('global-scope-select');
+        const valueSelect = document.getElementById('global-scope-value-select');
+        document.getElementById('topbar-scope-label').textContent = t('topbar_scope_label');
+        document.getElementById('topbar-scope-value-label').textContent = t('topbar_scope_value_label');
         scopeSelect.options[0].text = t('topbar_scope_all');
         scopeSelect.options[1].text = t('topbar_scope_goal');
         scopeSelect.options[2].text = t('topbar_scope_playbook');
         scopeSelect.options[3].text = t('topbar_scope_status');
+        scopeSelect.value = currentScopeKind;
+        const options = scopeOptions(currentScopeKind);
+        const entries = [`<option value="">${{escapeHtml(t('topbar_scope_value_all'))}}</option>`]
+          .concat(options.map((item) => `<option value="${{escapeHtml(item.value)}}">${{escapeHtml(item.label)}}</option>`));
+        valueSelect.innerHTML = entries.join('');
+        if ([...valueSelect.options].some((option) => option.value === currentScopeValue)) {{
+          valueSelect.value = currentScopeValue;
+        }} else {{
+          currentScopeValue = '';
+          valueSelect.value = '';
+        }}
+        valueSelect.disabled = currentScopeKind === 'all';
+      }}
+
+      function filterResourcesByScope(resources) {{
+        if (!currentScopeKind || currentScopeKind === 'all' || !currentScopeValue) return resources;
+        if (currentScopeKind === 'status') {{
+          const filtered = {{}};
+          Object.entries(resources || {{}}).forEach(([section, items]) => {{
+            filtered[section] = (items || []).filter((item) => statusValueForItem(item, section) === currentScopeValue);
+          }});
+          return filtered;
+        }}
+        const filtered = {{}};
+        const goals = resources.goals || [];
+        const playbooks = resources.playbooks || [];
+        const tasks = resources.tasks || [];
+        let goalIds = new Set();
+        let playbookIds = new Set();
+        let taskIds = new Set();
+        let runIds = new Set();
+        let sessionIds = new Set();
+        let skillIds = new Set();
+        let knowledgeIds = new Set();
+        let mcpNames = new Set();
+        if (currentScopeKind === 'goal') {{
+          goalIds = new Set([currentScopeValue]);
+          playbookIds = new Set(playbooks.filter((item) => item.goal_id === currentScopeValue).map((item) => item.id));
+          taskIds = new Set(tasks.filter((item) => item.goal_id === currentScopeValue).map((item) => item.id));
+        }}
+        if (currentScopeKind === 'playbook') {{
+          const playbook = playbooks.find((item) => item.id === currentScopeValue) || null;
+          playbookIds = new Set([currentScopeValue]);
+          if (playbook && playbook.goal_id) goalIds = new Set([playbook.goal_id]);
+          taskIds = new Set(tasks.filter((item) => item.playbook_id === currentScopeValue).map((item) => item.id));
+        }}
+        const scopedTasks = tasks.filter((item) => taskIds.has(item.id));
+        runIds = new Set((resources.runs || []).filter((item) => taskIds.has(item.task_id)).map((item) => item.id));
+        sessionIds = new Set((resources.sessions || []).filter((item) => goalIds.has(item.goal_id) || taskIds.has(item.task_id) || runIds.has(item.run_id)).map((item) => item.id));
+        skillIds = new Set(scopedTasks.map((item) => item.assigned_skill_id).filter(Boolean));
+        if (currentScopeKind === 'playbook') {{
+          const playbook = playbooks.find((item) => item.id === currentScopeValue) || null;
+          const stepSkills = (((playbook || {{}}).compiled_spec || {{}}).steps || []).map((step) => step.assigned_skill_id).filter(Boolean);
+          stepSkills.forEach((id) => skillIds.add(id));
+          ((((playbook || {{}}).compiled_spec || {{}}).mcp_servers || [])).forEach((name) => mcpNames.add(name));
+        }}
+        (resources.skills || []).filter((item) => skillIds.has(item.id)).forEach((item) => (item.required_mcp_servers || []).forEach((name) => mcpNames.add(name)));
+        scopedTasks.forEach((item) => (item.knowledge_base_ids || []).forEach((id) => knowledgeIds.add(id)));
+        const scopedGoalIds = goalIds;
+        filtered.goals = (resources.goals || []).filter((item) => scopedGoalIds.has(item.id));
+        filtered.playbooks = (resources.playbooks || []).filter((item) => playbookIds.has(item.id) || scopedGoalIds.has(item.goal_id));
+        filtered.tasks = scopedTasks;
+        filtered.runs = (resources.runs || []).filter((item) => runIds.has(item.id));
+        filtered.sessions = (resources.sessions || []).filter((item) => sessionIds.has(item.id));
+        filtered.acceptances = (resources.acceptances || []).filter((item) => taskIds.has(item.task_id) || scopedGoalIds.has(item.goal_id));
+        filtered.reflections = (resources.reflections || []).filter((item) => runIds.has(item.run_id));
+        filtered.knowledge_updates = (resources.knowledge_updates || []).filter((item) => scopedGoalIds.has(item.goal_id) || taskIds.has(item.task_id) || runIds.has(item.run_id));
+        filtered.skills = (resources.skills || []).filter((item) => skillIds.has(item.id));
+        filtered.mcp_servers = (resources.mcp_servers || []).filter((item) => mcpNames.has(item.name));
+        filtered.knowledge_bases = (resources.knowledge_bases || []).filter((item) => knowledgeIds.has(item.id) || scopedGoalIds.has(item.goal_id));
+        filtered.events = (resources.events || []).filter((item) => sessionIds.has(item.session_id) || runIds.has(item.run_id) || taskIds.has(item.task_id));
+        filtered.artifacts = (resources.artifacts || []).filter((item) => runIds.has(item.run_id) || taskIds.has(item.task_id));
+        sectionOrder.forEach((section) => {{ if (!filtered[section]) filtered[section] = []; }});
+        return filtered;
+      }}
+
+      function applyGlobalScope(kind = currentScopeKind, value = currentScopeValue, persist = true) {{
+        currentScopeKind = kind || 'all';
+        currentScopeValue = value || '';
+        latestResources = filterResourcesByScope(allResources || {{}});
+        currentSnapshot = deriveSnapshotFromResources(latestResources || {{}});
+        if (persist) {{
+          localStorage.setItem('playbookos-scope-kind', currentScopeKind);
+          localStorage.setItem('playbookos-scope-value', currentScopeValue);
+        }}
+        updateScopeControls();
+        renderSummary(currentSnapshot);
+        renderRouteFocus();
+        renderRouteDetails();
+        renderGlobalFlow();
+        renderDashboardAlerts();
+        renderDashboardTaskSections();
+        renderDashboardLearningSections();
+        renderResourceRows(latestResources);
+        renderEndpointCards();
+        renderWorkbenchOptions();
+        refreshEditorResourceOptions();
+        renderActionCenter();
+        renderSupervisorCenter();
+        renderSkillVersions();
+        renderPatchReviews();
+        renderSessionTree();
+        renderSkillAuthoringWizard();
+        renderExecutionInspector();
+        renderSettingsPanels();
+        renderSidebarNav();
+        updatePageHeader();
+      }}
+
+      function updatePageHeader() {{
+        const config = routeConfigs[currentRoute] || routeConfigs.dashboard;
+        document.getElementById('page-title').textContent = t(config.titleKey);
+        document.getElementById('page-subtitle').textContent = t(config.subtitleKey);
+        updateScopeControls();
       }}
 
       function setWorkbenchMode(route) {{
@@ -3034,23 +3200,9 @@ ${{t('skill_version_servers')}}: ${{(skill.required_mcp_servers || []).join(', '
             failures.push(`${{section}}: ${{result.reason && result.reason.message ? result.reason.message : String(result.reason)}}`);
           }}
         }});
-        renderSummary(board);
-        renderGlobalFlow();
-        renderDashboardAlerts();
-        renderDashboardTaskSections();
-        renderDashboardLearningSections();
-        renderResourceRows(payloads);
-        renderRouteDetails();
-        renderSettingsPanels();
-        renderWorkbenchOptions();
-        refreshEditorResourceOptions();
-        renderActionCenter();
-        renderSupervisorCenter();
-        renderSkillVersions();
-        renderPatchReviews();
-        renderSessionTree();
-        renderSkillAuthoringWizard();
-        renderExecutionInspector();
+        rawSnapshot = board;
+        allResources = payloads;
+        applyGlobalScope(currentScopeKind, currentScopeValue, false);
         if (failures.length) {{
           showBootError(new Error(`Partial API load failure: ${{failures.join('; ')}}`));
         }} else {{
@@ -3281,6 +3433,15 @@ ${{t('skill_version_servers')}}: ${{(skill.required_mcp_servers || []).join(', '
         const button = event.target.closest('[data-route]');
         if (!button) return;
         applyRoute(button.dataset.route, true);
+      }});
+
+      document.getElementById('global-scope-select').addEventListener('change', (event) => {{
+        const kind = event.target.value || 'all';
+        applyGlobalScope(kind, '', true);
+      }});
+
+      document.getElementById('global-scope-value-select').addEventListener('change', (event) => {{
+        applyGlobalScope(currentScopeKind, event.target.value || '', true);
       }});
 
       document.getElementById('refresh-board').addEventListener('click', async () => {{

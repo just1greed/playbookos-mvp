@@ -214,3 +214,7 @@
 - 已继续补完整局看板第三阶段：新增 `进行中任务区 / 自动迭代动态区`，首页现在会主动展示 ready/running/waiting_human 任务，以及最近的 reflection / knowledge update / draft capability 信号
 - 到目前为止，全局看板六块核心信息都已具备：系统摘要、流程总览、关键阻塞、推荐动作、进行中任务、自动迭代动态
 - 已补充 `tests/test_dashboard_unittest.py` 覆盖 `dashboard-tasks-section`、`dashboard-learning-section`、`renderDashboardTaskSections()` 与 `renderDashboardLearningSections()`
+
+- 已把顶部 `全局范围` 做成真实筛选器：新增二级值选择，支持按 `Goal / SOP / 状态` 过滤页面数据，而不再只是静态下拉框
+- 当前筛选会联动全局看板、工作台摘要、资源速览、操作区、会话/学习/设置页摘要，以及左侧导航计数
+- 已补充 `tests/test_dashboard_unittest.py` 覆盖 `global-scope-value-select`、`applyGlobalScope()`、`scopeOptions()` 与 `filterResourcesByScope()`
