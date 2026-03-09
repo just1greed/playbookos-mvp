@@ -185,3 +185,7 @@
 - 已修复 `BoardSnapshot` API 响应模型遗漏 `mcp_servers` 统计的问题，避免前端看板漏显示 MCP 资源数量
 - 已补齐 `playbookos.ingestion` 对 `materialize_required_mcp_in_store` 等对象的导出，修复 preview server / tests 的导入错误
 - 已更新测试与文档，当前全量 `44` 个单测已全部通过：`python3 -m compileall src tests && PYTHONPATH=src python3 -m unittest discover -s tests -p 'test*_unittest.py'`
+
+- 已完成前端重构的第一轮方案设计，并新增 `docs/ui-redesign.md`：把首页重新定义为“全局看板”，同时确定左侧导航、工作台节点、设置页、共享组件和分阶段实施 TODO
+- 已明确新的导航结构：`全局看板` + `目标 / SOP / Skill / MCP / 知识库 / 任务 / 会话 / 自动迭代 / 审批流 / 提示词` + `模型设置 / 全局设置 / 会话管理`
+- 已确认实现顺序：先做 `AppShell + 左侧导航 + 全局看板`，再把现有 Action Center / Session Tree / Patch Review / Authoring Wizard 等模块迁移到对应工作台页面

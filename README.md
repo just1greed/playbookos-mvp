@@ -28,6 +28,7 @@ PlaybookOS 用来把目标、SOP、技能、工具权限、执行记录和反思
 - `docs/architecture.md`：系统架构与模块边界
 - `docs/data-model.md`：核心对象与表结构草案
 - `docs/mvp-plan.md`：MVP 接口、模块与里程碑
+- `docs/ui-redesign.md`：前端重构方案、信息架构与实施 TODO
 - `docs/records/progress.md`：持续进展记录
 - `data/sql/postgres_schema.sql`：PostgreSQL 表结构草案
 - `data/sql/sqlite_schema.sql`：本地持久化开发 schema
