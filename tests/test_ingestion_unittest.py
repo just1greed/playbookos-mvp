@@ -30,9 +30,13 @@ class SOPIngestionTestCase(unittest.TestCase):
         self.assertIn("github", result.detected_mcp_servers)
         self.assertIn("slack", result.detected_mcp_servers)
         self.assertGreaterEqual(len(result.suggested_skills), 2)
+        self.assertIsNotNone(result.tooling_guidance)
+        self.assertIn("github", result.tooling_guidance.required_mcp_servers)
+        self.assertGreaterEqual(len(result.tooling_guidance.prompt_blocks), 3)
         self.assertEqual(result.playbook.goal_id, goal.id)
         self.assertEqual(len(result.playbook.compiled_spec["steps"]), 3)
         self.assertIn("skill_suggestions", result.playbook.compiled_spec)
+        self.assertIn("tooling_guidance", result.playbook.compiled_spec)
 
     def test_ingest_json_sop_uses_structured_steps(self) -> None:
         store = InMemoryStore()

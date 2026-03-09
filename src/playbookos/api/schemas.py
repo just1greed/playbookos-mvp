@@ -236,6 +236,32 @@ class SkillSuggestionRead(APIModel):
     approval_hint: str = ""
 
 
+class ToolRequirementRead(APIModel):
+    tool_name: str
+    purpose: str
+    rationale: str = ""
+    related_steps: list[str] = Field(default_factory=list)
+    suggested_skill_name: str = ""
+    suggested_mcp_server: str = ""
+
+
+class PromptBlockRead(APIModel):
+    key: str
+    title: str
+    objective: str
+    prompt: str
+
+
+class ToolingGuidanceRead(APIModel):
+    summary: str = ""
+    required_mcp_servers: list[str] = Field(default_factory=list)
+    suggested_skill_names: list[str] = Field(default_factory=list)
+    existing_skill_candidates: list[str] = Field(default_factory=list)
+    action_items: list[str] = Field(default_factory=list)
+    tool_requirements: list[ToolRequirementRead] = Field(default_factory=list)
+    prompt_blocks: list[PromptBlockRead] = Field(default_factory=list)
+
+
 class PlaybookIngest(APIModel):
     name: str
     source_text: str
@@ -267,6 +293,7 @@ class PlaybookIngestRead(APIModel):
     detected_mcp_servers: list[str] = Field(default_factory=list)
     suggested_skills: list[SkillSuggestionRead] = Field(default_factory=list)
     parsing_notes: list[str] = Field(default_factory=list)
+    tooling_guidance: ToolingGuidanceRead | None = None
     source_object: "StoredObjectRead | None" = None
 
 

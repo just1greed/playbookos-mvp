@@ -201,6 +201,8 @@ PlaybookOS 用来把目标、SOP、技能、工具权限、执行记录和反思
 
 现在原始 SOP 还会被持久化到本地对象存储，并通过 `source_object_*` 元数据回链到 `playbook.compiled_spec`；前端导入引导区可直接打开原文内容进行审计。
 
+当前这一轮优先聚焦 `Markdown SOP`：系统会从 Markdown 步骤里识别需要接入的工具域，生成 `工具发现 / Skill 上传 / MCP 接入` 三类提示词，并在页面内明确告诉用户应先补哪些 Skill 与 MCP。
+
 当前已接入持久化的主表：
 
 - `goals`

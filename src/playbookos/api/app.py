@@ -41,6 +41,7 @@ from playbookos.api.schemas import (
     SkillCreate,
     SkillRead,
     SkillSuggestionRead,
+    ToolingGuidanceRead,
     TaskAcceptanceCreate,
     TaskAcceptanceRead,
     ReflectionEvaluationRead,
@@ -260,6 +261,7 @@ def create_app(store: StoreProtocol | None = None) -> FastAPI:
             detected_mcp_servers=result.detected_mcp_servers,
             suggested_skills=[SkillSuggestionRead.model_validate(item) for item in result.suggested_skills],
             parsing_notes=result.parsing_notes,
+            tooling_guidance=ToolingGuidanceRead.model_validate(result.tooling_guidance) if result.tooling_guidance else None,
             source_object=StoredObjectRead.model_validate(source_object),
         )
 

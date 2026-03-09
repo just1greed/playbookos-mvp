@@ -182,6 +182,11 @@ TRANSLATIONS = {
         "ingest_guidance_empty": "导入 SOP 后，这里会显示推荐 Skill 与解析摘要。",
         "ingest_source_saved": "原始 SOP 已保存",
         "ingest_source_view": "查看原文",
+        "ingest_tooling_summary": "工具与上传引导",
+        "ingest_tooling_required_mcp": "需要补齐的 MCP",
+        "ingest_tooling_existing_skills": "可复用 Skill",
+        "ingest_tooling_actions": "下一步动作",
+        "ingest_tooling_prompts": "推荐提示词",
         "action_ingest_playbook": "解析并导入",
         "action_create_skill_draft": "创建 Draft Skill",
         "action_create_bound_skill_draft": "创建并绑定步骤",
@@ -396,6 +401,11 @@ TRANSLATIONS = {
         "ingest_guidance_empty": "After ingesting an SOP, recommended skills and parsing notes appear here.",
         "ingest_source_saved": "Raw SOP saved",
         "ingest_source_view": "View source",
+        "ingest_tooling_summary": "Tooling and upload guidance",
+        "ingest_tooling_required_mcp": "Required MCP",
+        "ingest_tooling_existing_skills": "Reusable Skills",
+        "ingest_tooling_actions": "Next actions",
+        "ingest_tooling_prompts": "Recommended prompts",
         "action_ingest_playbook": "Parse and ingest",
         "action_create_skill_draft": "Create Draft Skill",
         "action_create_bound_skill_draft": "Create + Bind Steps",
@@ -1133,6 +1143,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
           return;
         }}
         const notes = (result.parsing_notes || []).map((item) => `<li>${{escapeHtml(item)}}</li>`).join('');
+        const tooling = result.tooling_guidance || null;
         const sourceObject = result.source_object || null;
         const sourceObjectHtml = sourceObject && sourceObject.id
           ? `
@@ -1141,6 +1152,30 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
               <div class="patch-change"><code>${{escapeHtml(sourceObject.id)}}</code><a href="${{escapeHtml(`${{apiBase}}/objects/${{sourceObject.id}}/content`)}}" target="_blank" rel="noreferrer">${{escapeHtml(t('ingest_source_view'))}}</a></div>
               <div class="patch-change"><span>${{escapeHtml(sourceObject.mime_type || 'application/octet-stream')}}</span><span>${{escapeHtml(String(sourceObject.size_bytes || 0))}} bytes</span></div>
             </div>
+          `
+          : '';
+        const toolingHtml = tooling
+          ? `
+            <div class="patch-review-card">
+              <div class="patch-review-head"><div><strong>${{escapeHtml(t('ingest_tooling_summary'))}}</strong><small>${{escapeHtml(tooling.summary || '')}}</small></div></div>
+              <div class="patch-changes"><strong>${{escapeHtml(t('ingest_tooling_required_mcp'))}}</strong>${{(tooling.required_mcp_servers || []).map((item) => `<div class="patch-change"><code>${{escapeHtml(item)}}</code><span>MCP</span></div>`).join('') || `<div class="patch-change"><span>n/a</span><span>manual confirm</span></div>`}}</div>
+              <div class="patch-changes"><strong>${{escapeHtml(t('ingest_tooling_existing_skills'))}}</strong>${{(tooling.existing_skill_candidates || []).map((item) => `<div class="patch-change"><span>${{escapeHtml(item)}}</span><span>candidate</span></div>`).join('') || `<div class="patch-change"><span>n/a</span><span>new upload recommended</span></div>`}}</div>
+              <div class="patch-changes"><strong>${{escapeHtml(t('ingest_tooling_actions'))}}</strong>${{(tooling.action_items || []).map((item) => `<div class="patch-change"><span>${{escapeHtml(item)}}</span><span>action</span></div>`).join('')}}</div>
+            </div>
+            ${{(tooling.tool_requirements || []).map((item) => `
+              <div class="patch-review-card">
+                <div class="patch-review-head"><div><strong>${{escapeHtml(item.tool_name || 'tool')}}</strong><small>${{escapeHtml(item.purpose || '')}}</small></div></div>
+                <div class="patch-changes"><strong>Why</strong><div class="patch-change"><span>${{escapeHtml(item.rationale || '')}}</span><span>${{escapeHtml(item.suggested_skill_name || 'n/a')}}</span></div></div>
+                <div class="patch-changes"><strong>Steps</strong>${{(item.related_steps || []).map((step) => `<div class="patch-change"><span>${{escapeHtml(step)}}</span><span>${{escapeHtml(item.suggested_mcp_server || item.tool_name || '')}}</span></div>`).join('')}}</div>
+              </div>
+            `).join('')}}
+            <div class="patch-changes"><strong>${{escapeHtml(t('ingest_tooling_prompts'))}}</strong></div>
+            ${{(tooling.prompt_blocks || []).map((item) => `
+              <div class="patch-review-card">
+                <div class="patch-review-head"><div><strong>${{escapeHtml(item.title || item.key || 'prompt')}}</strong><small>${{escapeHtml(item.objective || '')}}</small></div></div>
+                <pre style="white-space:pre-wrap;overflow:auto;margin:0;">${{escapeHtml(item.prompt || '')}}</pre>
+              </div>
+            `).join('')}}
           `
           : '';
         const skills = (result.suggested_skills || []).map((item, index) => `
@@ -1161,6 +1196,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
           <small>${{escapeHtml(`steps: ${{result.step_count || 0}}, mcp: ${{(result.detected_mcp_servers || []).join(', ') || 'n/a'}}`)}}</small>
           ${{sourceObjectHtml}}
           <ul style="margin:8px 0 12px 18px;">${{notes || `<li>${{escapeHtml(t('ingest_guidance_empty'))}}</li>`}}</ul>
+          ${{toolingHtml}}
           ${{skills || `<small>${{escapeHtml(t('ingest_guidance_empty'))}}</small>`}}
         `);
       }}

@@ -173,4 +173,5 @@
 - Dashboard 的 `Skill 配置引导` 区块现会展示原始 SOP 已保存提示，并提供原文回看链接，方便用户在配置 Skill 时回审原文
 - 已新增 `tests/test_object_store_unittest.py`，并扩充 ingestion / dashboard 测试覆盖对象存储与前端呈现
 - 设计文档已更新：当前系统已具备“文本类 SOP 导入 -> Playbook/Skill 建议 -> authoring wizard 引导 -> 原文落对象存储”的第一版闭环；剩余缺口集中在任意格式附件解析、更多对象自动物化与更强的引导式配置
-
+- 已把 SOP ingestion 的重点从“扩更多文件格式”调整为“打磨 Markdown SOP 的工具识别提示词链”：新增工具发现、Skill 上传、MCP 接入三类 prompt block，并在页面内直接回显
+- ingest 结果现在会返回结构化 `tooling_guidance`，包含 required MCP、可复用 Skill 候选、下一步动作、工具证据与推荐提示词，帮助用户按 SOP 反推该上传哪些 Skill / MCP

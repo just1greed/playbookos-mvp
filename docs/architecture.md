@@ -168,7 +168,7 @@ PlaybookOS 推荐采用三层架构：
 
 截至 2026-03-09，距离“用户上传任意格式 SOP 后自动解析成各种对象，并主动引导用户配置 Skill”的目标，当前仍剩以下缺口：
 
-1. `任意格式` 仍未完成：现在稳定支持 `markdown/text/json/csv` 文本输入，尚未覆盖 PDF、Docx、图片、压缩包及多附件组合上传。
+1. `任意格式` 本轮不优先：当前实现有意收敛到 `Markdown SOP`，先把“从 SOP 中找工具 -> 识别需要的 MCP -> 引导上传对应 Skill”这条提示词链打磨清楚；PDF、Docx、图片、多附件后续再补。
 2. `附件拆解` 仍未完成：对象存储当前只保留原始文本主体，尚未建立附件索引、分块、引用关系与解析产物树。
 3. `对象归一化` 仍未完成：已能生成 Playbook 与 Skill 草案，但 Knowledge、Task template、approval checklist 等派生对象还没有在 ingestion 阶段自动物化。
 4. `主动引导` 仍是第一版：authoring wizard 已能补齐 schema / approval / evaluation 默认值，但缺少逐步问答式确认、风险解释和发布门禁。

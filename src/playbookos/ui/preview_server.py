@@ -170,6 +170,7 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
                         "detected_mcp_servers": result.detected_mcp_servers,
                         "suggested_skills": _to_jsonable(result.suggested_skills),
                         "parsing_notes": result.parsing_notes,
+                        "tooling_guidance": _to_jsonable(result.tooling_guidance),
                         "source_object": _to_jsonable(source_object),
                     },
                     status=HTTPStatus.CREATED,
