@@ -4,7 +4,7 @@ from collections import Counter
 from threading import RLock
 from typing import Generic, Protocol, TypeVar
 
-from playbookos.domain.models import Acceptance, Artifact, Event, Goal, KnowledgeBase, KnowledgeUpdate, Playbook, Reflection, Run, Session, Skill, Task
+from playbookos.domain.models import Acceptance, Artifact, Event, Goal, KnowledgeBase, KnowledgeUpdate, MCPServer, Playbook, Reflection, Run, Session, Skill, Task
 
 EntityT = TypeVar("EntityT")
 
@@ -25,6 +25,7 @@ class StoreProtocol(Protocol):
     goals: RepositoryProtocol[Goal]
     playbooks: RepositoryProtocol[Playbook]
     skills: RepositoryProtocol[Skill]
+    mcp_servers: RepositoryProtocol[MCPServer]
     knowledge_bases: RepositoryProtocol[KnowledgeBase]
     knowledge_updates: RepositoryProtocol[KnowledgeUpdate]
     tasks: RepositoryProtocol[Task]
@@ -66,6 +67,7 @@ class InMemoryStore:
         self.goals = InMemoryRepository[Goal]()
         self.playbooks = InMemoryRepository[Playbook]()
         self.skills = InMemoryRepository[Skill]()
+        self.mcp_servers = InMemoryRepository[MCPServer]()
         self.knowledge_bases = InMemoryRepository[KnowledgeBase]()
         self.knowledge_updates = InMemoryRepository[KnowledgeUpdate]()
         self.tasks = InMemoryRepository[Task]()
@@ -80,6 +82,7 @@ class InMemoryStore:
         goal_counts = Counter(goal.status.value for goal in self.goals.list())
         playbook_counts = Counter(playbook.status.value for playbook in self.playbooks.list())
         skill_counts = Counter(skill.status.value for skill in self.skills.list())
+        mcp_server_counts = Counter(item.status.value for item in self.mcp_servers.list())
         knowledge_counts = Counter(item.status.value for item in self.knowledge_bases.list())
         knowledge_update_counts = Counter(item.status.value for item in self.knowledge_updates.list())
         task_counts = Counter(task.status.value for task in self.tasks.list())
@@ -93,6 +96,7 @@ class InMemoryStore:
             "goals": dict(goal_counts),
             "playbooks": dict(playbook_counts),
             "skills": dict(skill_counts),
+            "mcp_servers": dict(mcp_server_counts),
             "knowledge_bases": dict(knowledge_counts),
             "knowledge_updates": dict(knowledge_update_counts),
             "tasks": dict(task_counts),

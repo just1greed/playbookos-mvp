@@ -8,6 +8,7 @@ SECTION_ORDER = [
     "goals",
     "playbooks",
     "skills",
+    "mcp_servers",
     "knowledge_bases",
     "knowledge_updates",
     "tasks",
@@ -30,7 +31,7 @@ TRANSLATIONS = {
         "view_board_json": "查看原始 Board JSON",
         "live_data_source": "实时数据源",
         "total_resources": "总资源数",
-        "total_resources_desc": "Goals、Playbooks、Skills、Knowledge、Knowledge Updates、Tasks、Sessions、Runs、Acceptances、Artifacts、Reflections、Events 总量",
+        "total_resources_desc": "Goals、Playbooks、Skills、MCP Servers、Knowledge、Knowledge Updates、Tasks、Sessions、Runs、Acceptances、Artifacts、Reflections、Events 总量",
         "blocked_signals": "阻塞信号",
         "blocked_signals_desc": "Blocked goals + waiting human runs",
         "learning_signals": "学习信号",
@@ -137,7 +138,7 @@ TRANSLATIONS = {
         "quick_resource_peek": "资源速览",
         "quick_resource_peek_subtitle": "从 API 抓取最近的实体样本",
         "loading_resources_title": "等待加载资源",
-        "loading_resources_body": "页面会自动抓取 goals / playbooks / skills / knowledge_bases / knowledge_updates / tasks / sessions / runs / acceptances / reflections / artifacts / events。",
+        "loading_resources_body": "页面会自动抓取 goals / playbooks / skills / mcp_servers / knowledge_bases / knowledge_updates / tasks / sessions / runs / acceptances / reflections / artifacts / events。",
         "operating_rhythm": "运行节奏",
         "operating_rhythm_subtitle": "当前 MVP 推荐的执行循环",
         "timeline_1": "用户先配置 Goal / SOP / Skill / Knowledge / Task，系统再把 SOP 规划成可执行任务图。",
@@ -164,6 +165,7 @@ TRANSLATIONS = {
         "ingest_playbook": "导入原始 SOP",
         "create_playbook": "新建 SOP",
         "create_skill": "新建 Skill",
+        "create_mcp_server": "新建 MCP",
         "create_knowledge": "新建 Knowledge",
         "create_task": "新建 Task",
         "goal_title": "目标标题",
@@ -185,6 +187,8 @@ TRANSLATIONS = {
         "ingest_tooling_summary": "工具与上传引导",
         "ingest_tooling_required_mcp": "需要补齐的 MCP",
         "ingest_tooling_existing_skills": "可复用 Skill",
+        "ingest_tooling_existing_mcp": "已登记 MCP",
+        "action_create_mcp_draft": "创建 MCP Draft",
         "ingest_tooling_actions": "下一步动作",
         "ingest_tooling_prompts": "推荐提示词",
         "action_ingest_playbook": "解析并导入",
@@ -194,6 +198,10 @@ TRANSLATIONS = {
         "skill_name": "Skill 名称",
         "skill_description": "Skill 说明",
         "skill_required_mcp_servers": "依赖 MCP（每行一条）",
+        "mcp_server_name": "MCP 名称",
+        "mcp_server_transport": "传输方式",
+        "mcp_server_endpoint": "服务端点",
+        "mcp_server_scopes": "权限范围（每行一条）",
         "knowledge_name": "知识条目名称",
         "knowledge_description": "知识摘要",
         "knowledge_content": "知识正文",
@@ -228,6 +236,7 @@ TRANSLATIONS = {
             "goals": "目标",
             "playbooks": "SOP",
             "skills": "技能",
+            "mcp_servers": "MCP",
             "knowledge_bases": "知识库",
             "knowledge_updates": "知识更新",
             "tasks": "任务",
@@ -356,7 +365,7 @@ TRANSLATIONS = {
         "quick_resource_peek": "Quick Resource Peek",
         "quick_resource_peek_subtitle": "Recent entity samples fetched from the API",
         "loading_resources_title": "Waiting for resources",
-        "loading_resources_body": "The page will automatically fetch goals / playbooks / skills / knowledge_bases / knowledge_updates / tasks / sessions / runs / acceptances / reflections / artifacts / events.",
+        "loading_resources_body": "The page will automatically fetch goals / playbooks / skills / mcp_servers / knowledge_bases / knowledge_updates / tasks / sessions / runs / acceptances / reflections / artifacts / events.",
         "operating_rhythm": "Operating Rhythm",
         "operating_rhythm_subtitle": "Recommended workflow loop for the current MVP",
         "timeline_1": "Users configure goals, SOPs, skills, knowledge, and tasks first; the system turns SOPs into executable task graphs.",
@@ -383,6 +392,7 @@ TRANSLATIONS = {
         "ingest_playbook": "Ingest Raw SOP",
         "create_playbook": "Create SOP",
         "create_skill": "Create Skill",
+        "create_mcp_server": "Create MCP",
         "create_knowledge": "Create Knowledge",
         "create_task": "Create Task",
         "goal_title": "Goal title",
@@ -404,6 +414,8 @@ TRANSLATIONS = {
         "ingest_tooling_summary": "Tooling and upload guidance",
         "ingest_tooling_required_mcp": "Required MCP",
         "ingest_tooling_existing_skills": "Reusable Skills",
+        "ingest_tooling_existing_mcp": "Registered MCP",
+        "action_create_mcp_draft": "Create MCP Draft",
         "ingest_tooling_actions": "Next actions",
         "ingest_tooling_prompts": "Recommended prompts",
         "action_ingest_playbook": "Parse and ingest",
@@ -413,6 +425,10 @@ TRANSLATIONS = {
         "skill_name": "Skill name",
         "skill_description": "Skill description",
         "skill_required_mcp_servers": "Required MCP servers (one per line)",
+        "mcp_server_name": "MCP name",
+        "mcp_server_transport": "Transport",
+        "mcp_server_endpoint": "Endpoint",
+        "mcp_server_scopes": "Scopes (one per line)",
         "knowledge_name": "Knowledge item name",
         "knowledge_description": "Knowledge summary",
         "knowledge_content": "Knowledge content",
@@ -447,6 +463,7 @@ TRANSLATIONS = {
             "goals": "Goals",
             "playbooks": "SOPs",
             "skills": "Skills",
+            "mcp_servers": "MCP",
             "knowledge_bases": "Knowledge",
             "knowledge_updates": "Knowledge Updates",
             "tasks": "Tasks",
@@ -464,6 +481,7 @@ RESOURCE_SINGULAR = {
     "goals": "Goal",
     "playbooks": "SOP",
     "skills": "Skill",
+    "mcp_servers": "MCP",
     "knowledge_bases": "Knowledge",
     "knowledge_updates": "Knowledge Update",
     "tasks": "Task",
@@ -479,6 +497,7 @@ RESOURCE_PATHS = {
     "goals": "goals",
     "playbooks": "playbooks",
     "skills": "skills",
+    "mcp_servers": "mcp-servers",
     "knowledge_bases": "knowledge-bases",
     "knowledge_updates": "knowledge-updates",
     "tasks": "tasks",
@@ -752,6 +771,17 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
               <div class="form-actions"><button class="button" type="submit" data-i18n="submit_create"></button></div>
             </form>
 
+            <form class="form-card" id="mcp-server-form">
+              <h3 data-i18n="create_mcp_server"></h3>
+              <div class="field-grid">
+                <div class="field"><label data-i18n="mcp_server_name"></label><input id="mcp-server-name-input" required /></div>
+                <div class="field"><label data-i18n="mcp_server_transport"></label><input id="mcp-server-transport-input" value="streamable_http" required /></div>
+                <div class="field"><label data-i18n="mcp_server_endpoint"></label><input id="mcp-server-endpoint-input" required /></div>
+                <div class="field"><label data-i18n="mcp_server_scopes"></label><textarea id="mcp-server-scopes-input"></textarea></div>
+              </div>
+              <div class="form-actions"><button class="button" type="submit" data-i18n="submit_create"></button></div>
+            </form>
+
             <form class="form-card" id="knowledge-form">
               <h3 data-i18n="create_knowledge"></h3>
               <div class="field-grid">
@@ -915,7 +945,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
       let latestResources = {{}};
       let latestIngestionResult = null;
       let latestAuthoringPacks = {{}};
-      const editableSections = ['goals', 'playbooks', 'skills', 'knowledge_bases', 'tasks'];
+      const editableSections = ['goals', 'playbooks', 'skills', 'mcp_servers', 'knowledge_bases', 'tasks'];
       let currentLanguage = localStorage.getItem('playbookos-language') || 'zh';
 
       function t(key) {{
@@ -1136,6 +1166,21 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         suggestion.bound_step_count = result.bound_step_count || 0;
       }}
 
+      function markMaterializedMcp(result) {{
+        if (!latestIngestionResult || !result || !result.mcp_server) return;
+        const tooling = latestIngestionResult.tooling_guidance || null;
+        if (!tooling) return;
+        const serverName = String(result.tool_name || result.mcp_server.name || '').trim().toLowerCase();
+        if (!serverName) return;
+        const label = result.mcp_server.name || serverName;
+        const existing = Array.isArray(tooling.existing_mcp_candidates) ? tooling.existing_mcp_candidates.slice() : [];
+        if (!existing.some((item) => String(item || '').split(' (')[0].trim().toLowerCase() === label.toLowerCase())) {{
+          existing.push(label);
+        }}
+        tooling.existing_mcp_candidates = existing;
+        tooling.missing_mcp_servers = (tooling.missing_mcp_servers || []).filter((item) => String(item || '').trim().toLowerCase() !== serverName);
+      }}
+
       function renderIngestionGuidance() {{
         const result = latestIngestionResult;
         if (!result) {{
@@ -1160,6 +1205,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
               <div class="patch-review-head"><div><strong>${{escapeHtml(t('ingest_tooling_summary'))}}</strong><small>${{escapeHtml(tooling.summary || '')}}</small></div></div>
               <div class="patch-changes"><strong>${{escapeHtml(t('ingest_tooling_required_mcp'))}}</strong>${{(tooling.required_mcp_servers || []).map((item) => `<div class="patch-change"><code>${{escapeHtml(item)}}</code><span>MCP</span></div>`).join('') || `<div class="patch-change"><span>n/a</span><span>manual confirm</span></div>`}}</div>
               <div class="patch-changes"><strong>${{escapeHtml(t('ingest_tooling_existing_skills'))}}</strong>${{(tooling.existing_skill_candidates || []).map((item) => `<div class="patch-change"><span>${{escapeHtml(item)}}</span><span>candidate</span></div>`).join('') || `<div class="patch-change"><span>n/a</span><span>new upload recommended</span></div>`}}</div>
+              <div class="patch-changes"><strong>${{escapeHtml(t('ingest_tooling_existing_mcp'))}}</strong>${{(tooling.existing_mcp_candidates || []).map((item) => `<div class="patch-change"><span>${{escapeHtml(item)}}</span><span>registered</span></div>`).join('') || `<div class="patch-change"><span>n/a</span><span>draft recommended</span></div>`}}</div>
               <div class="patch-changes"><strong>${{escapeHtml(t('ingest_tooling_actions'))}}</strong>${{(tooling.action_items || []).map((item) => `<div class="patch-change"><span>${{escapeHtml(item)}}</span><span>action</span></div>`).join('')}}</div>
             </div>
             ${{(tooling.tool_requirements || []).map((item) => `
@@ -1167,6 +1213,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
                 <div class="patch-review-head"><div><strong>${{escapeHtml(item.tool_name || 'tool')}}</strong><small>${{escapeHtml(item.purpose || '')}}</small></div></div>
                 <div class="patch-changes"><strong>Why</strong><div class="patch-change"><span>${{escapeHtml(item.rationale || '')}}</span><span>${{escapeHtml(item.suggested_skill_name || 'n/a')}}</span></div></div>
                 <div class="patch-changes"><strong>Steps</strong>${{(item.related_steps || []).map((step) => `<div class="patch-change"><span>${{escapeHtml(step)}}</span><span>${{escapeHtml(item.suggested_mcp_server || item.tool_name || '')}}</span></div>`).join('')}}</div>
+                <div class="action-buttons" style="margin-top:12px;">${{actionButton('action_create_mcp_draft', 'playbook', result.playbook.id, 'materialize-mcp', {{ server_name: item.suggested_mcp_server || item.tool_name || '' }}, true)}}</div>
               </div>
             `).join('')}}
             <div class="patch-changes"><strong>${{escapeHtml(t('ingest_tooling_prompts'))}}</strong></div>
@@ -1611,6 +1658,9 @@ ${{t('skill_version_servers')}}: ${{(skill.required_mcp_servers || []).join(', '
         if (actionKind === 'playbook' && actionName === 'materialize-skill') {{
           return await postJson(`playbooks/${{actionTarget}}/skill-drafts`, body);
         }}
+        if (actionKind === 'playbook' && actionName === 'materialize-mcp') {{
+          return await postJson(`playbooks/${{actionTarget}}/mcp-drafts`, body);
+        }}
         if (actionKind === 'goal') {{
           return await postJson(`goals/${{actionTarget}}/${{actionName}}`, body);
         }}
@@ -1790,6 +1840,16 @@ ${{t('skill_version_servers')}}: ${{(skill.required_mcp_servers || []).join(', '
             status: item.status,
           }};
         }}
+        if (section === 'mcp_servers') {{
+          return {{
+            name: item.name,
+            transport: item.transport,
+            endpoint: item.endpoint,
+            scopes: item.scopes || [],
+            auth_config: item.auth_config || {{}},
+            status: item.status,
+          }};
+        }}
         if (section === 'knowledge_bases') {{
           return {{
             name: item.name,
@@ -1959,6 +2019,21 @@ ${{t('skill_version_servers')}}: ${{(skill.required_mcp_servers || []).join(', '
         event.target.reset();
       }}
 
+      async function handleMcpServerSubmit(event) {{
+        event.preventDefault();
+        const name = document.getElementById('mcp-server-name-input').value.trim();
+        await postJson('mcp-servers', {{
+          name,
+          transport: document.getElementById('mcp-server-transport-input').value.trim() || 'streamable_http',
+          endpoint: document.getElementById('mcp-server-endpoint-input').value.trim() || `https://example.com/mcp/${{name}}`,
+          scopes: splitLines(document.getElementById('mcp-server-scopes-input').value),
+          auth_config: {{ mode: 'manual_setup' }},
+          status: 'inactive',
+        }});
+        event.target.reset();
+        document.getElementById('mcp-server-transport-input').value = 'streamable_http';
+      }}
+
       async function handleKnowledgeSubmit(event) {{
         event.preventDefault();
         const name = document.getElementById('knowledge-name-input').value.trim();
@@ -2024,6 +2099,7 @@ ${{t('skill_version_servers')}}: ${{(skill.required_mcp_servers || []).join(', '
       }});
       document.getElementById('playbook-form').addEventListener('submit', (event) => handleWorkbenchSubmit(handlePlaybookSubmit, event));
       document.getElementById('skill-form').addEventListener('submit', (event) => handleWorkbenchSubmit(handleSkillSubmit, event));
+      document.getElementById('mcp-server-form').addEventListener('submit', (event) => handleWorkbenchSubmit(handleMcpServerSubmit, event));
       document.getElementById('knowledge-form').addEventListener('submit', (event) => handleWorkbenchSubmit(handleKnowledgeSubmit, event));
       document.getElementById('task-form').addEventListener('submit', (event) => handleWorkbenchSubmit(handleTaskSubmit, event));
       document.getElementById('ingest-playbook-file-input').addEventListener('change', async (event) => {{
@@ -2060,6 +2136,14 @@ ${{t('skill_version_servers')}}: ${{(skill.required_mcp_servers || []).join(', '
               setWorkbenchStatus(currentLanguage === 'zh'
                 ? `已创建 Skill draft：${{result.skill.name}}`
                 : `Created draft skill: ${{result.skill.name}}`, 'success');
+            }}
+          }}
+          if (button.dataset.actionKind === 'playbook' && button.dataset.actionName === 'materialize-mcp') {{
+            markMaterializedMcp(result);
+            if (result && result.mcp_server) {{
+              setWorkbenchStatus(currentLanguage === 'zh'
+                ? `已创建 MCP draft：${{result.mcp_server.name}}`
+                : `Created draft MCP: ${{result.mcp_server.name}}`, 'success');
             }}
           }}
           if (button.dataset.actionKind === 'skill' && button.dataset.actionName === 'apply-authoring-pack' && result && result.skill) {{

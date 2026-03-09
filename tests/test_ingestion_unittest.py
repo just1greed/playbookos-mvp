@@ -2,7 +2,7 @@ import unittest
 
 from playbookos.api.store import InMemoryStore
 from playbookos.domain.models import Goal, PlaybookStatus
-from playbookos.ingestion import SOPIngestionError, ingest_sop_in_store, materialize_suggested_skill_in_store
+from playbookos.ingestion import SOPIngestionError, ingest_sop_in_store, materialize_required_mcp_in_store, materialize_suggested_skill_in_store
 from playbookos.object_store import LocalObjectStore, attach_source_object_to_playbook
 
 
@@ -32,6 +32,7 @@ class SOPIngestionTestCase(unittest.TestCase):
         self.assertGreaterEqual(len(result.suggested_skills), 2)
         self.assertIsNotNone(result.tooling_guidance)
         self.assertIn("github", result.tooling_guidance.required_mcp_servers)
+        self.assertIn("github", result.tooling_guidance.missing_mcp_servers)
         self.assertGreaterEqual(len(result.tooling_guidance.prompt_blocks), 3)
         self.assertEqual(result.playbook.goal_id, goal.id)
         self.assertEqual(len(result.playbook.compiled_spec["steps"]), 3)
@@ -92,6 +93,25 @@ class SOPIngestionTestCase(unittest.TestCase):
         step_skills = [step.get("assigned_skill_id") for step in rebound_playbook.compiled_spec["steps"]]
         self.assertTrue(all(skill_id == materialized.skill.id for skill_id in step_skills))
         self.assertEqual(materialized.bound_step_count, 2)
+
+    def test_materialize_required_mcp_creates_inactive_mcp_draft(self) -> None:
+        store = InMemoryStore()
+        result = ingest_sop_in_store(
+            store,
+            name="Launch SOP",
+            source_kind="markdown",
+            source_text="""# Launch
+1. Collect release notes from GitHub
+2. Notify Slack
+""",
+        )
+
+        materialized = materialize_required_mcp_in_store(store, result.playbook.id, server_name="github")
+
+        self.assertTrue(materialized.created)
+        self.assertEqual(materialized.mcp_server.name, "github")
+        self.assertEqual(materialized.mcp_server.status.value, "inactive")
+        self.assertIn("repos:read", materialized.mcp_server.scopes)
 
     def test_attach_source_object_can_follow_ingestion_result(self) -> None:
         store = InMemoryStore()

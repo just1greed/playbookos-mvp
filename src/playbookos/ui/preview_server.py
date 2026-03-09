@@ -13,10 +13,10 @@ from typing import Any
 from urllib.parse import urlparse
 
 from playbookos.api.store import InMemoryStore, StoreProtocol
-from playbookos.domain.models import Goal, KnowledgeBase, Playbook, PlaybookStatus, ReflectionStatus, RunStatus, Skill, Task, TaskStatus, utc_now
+from playbookos.domain.models import Goal, KnowledgeBase, MCPServer, MCPServerStatus, Playbook, PlaybookStatus, ReflectionStatus, RunStatus, Skill, Task, TaskStatus, utc_now
 from playbookos.authoring import apply_skill_authoring_pack_in_store, build_skill_authoring_pack_in_store
 from playbookos.executor.service import DeterministicExecutorAdapter, OpenAIAgentsSDKAdapter, autopilot_goal_in_store, execute_run_in_store
-from playbookos.ingestion import SOPIngestionError, ingest_sop_in_store, materialize_suggested_skill_in_store
+from playbookos.ingestion import SOPIngestionError, ingest_sop_in_store, materialize_required_mcp_in_store, materialize_suggested_skill_in_store
 from playbookos.object_store import attach_source_object_to_playbook, create_object_store_from_env
 from playbookos.observability import get_error_log_path, list_recorded_errors, record_error
 from playbookos.persistence import create_store_from_env
@@ -53,6 +53,13 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
                 return
             if path == "/api/skills":
                 self._write_json(_serialize_items(self.server.store.skills.list()))
+                return
+            if path == "/api/mcp-servers":
+                self._write_json(_serialize_items(self.server.store.mcp_servers.list()))
+                return
+            if path.startswith("/api/mcp-servers/"):
+                mcp_server_id = path.split("/")[-1]
+                self._write_json(_to_jsonable(self.server.store.mcp_servers.get(mcp_server_id)))
                 return
             if path == "/api/objects":
                 object_store = create_object_store_from_env()
@@ -194,6 +201,23 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
                     status=HTTPStatus.CREATED,
                 )
                 return
+            if path.startswith("/api/playbooks/") and path.endswith("/mcp-drafts"):
+                playbook_id = path.split("/")[-2]
+                result = materialize_required_mcp_in_store(
+                    self.server.store,
+                    playbook_id,
+                    server_name=payload.get("server_name", ""),
+                )
+                self._write_json(
+                    {
+                        "playbook_id": result.playbook.id,
+                        "tool_name": result.tool_name,
+                        "created": result.created,
+                        "mcp_server": _to_jsonable(result.mcp_server),
+                    },
+                    status=HTTPStatus.CREATED,
+                )
+                return
             if path == "/api/skills":
                 skill = Skill(
                     name=payload["name"],
@@ -206,6 +230,18 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
                 )
                 self.server.store.skills.save(skill)
                 self._write_json(_to_jsonable(skill), status=HTTPStatus.CREATED)
+                return
+            if path == "/api/mcp-servers":
+                item = MCPServer(
+                    name=payload["name"],
+                    transport=payload["transport"],
+                    endpoint=payload["endpoint"],
+                    scopes=list(payload.get("scopes", [])),
+                    auth_config=dict(payload.get("auth_config", {})),
+                    status=MCPServerStatus(payload.get("status", MCPServerStatus.INACTIVE.value)),
+                )
+                self.server.store.mcp_servers.save(item)
+                self._write_json(_to_jsonable(item), status=HTTPStatus.CREATED)
                 return
             if path.startswith("/api/skills/") and path.endswith("/apply-authoring-pack"):
                 skill_id = path.split("/")[-2]
@@ -464,6 +500,17 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
                 self.server.store.skills.save(item)
                 self._write_json(_to_jsonable(item))
                 return
+            if resource_name == "mcp-servers":
+                item = self.server.store.mcp_servers.get(item_id)
+                for field_name in ["name", "transport", "endpoint", "scopes", "auth_config", "status"]:
+                    if field_name in payload:
+                        setattr(item, field_name, payload[field_name])
+                if "status" in payload:
+                    item.status = MCPServerStatus(payload["status"])
+                item.updated_at = datetime.now(UTC)
+                self.server.store.mcp_servers.save(item)
+                self._write_json(_to_jsonable(item))
+                return
             if resource_name == "knowledge-bases":
                 item = self.server.store.knowledge_bases.get(item_id)
                 goal_id = payload.get("goal_id") or None
@@ -557,6 +604,8 @@ def build_demo_store() -> StoreProtocol:
             definition_of_done=["Dashboard visible", "Artifacts visible", "Reflection published safely"],
         )
     )
+    store.mcp_servers.save(MCPServer(name="github", transport="streamable_http", endpoint="https://example.com/mcp/github", scopes=["repos:read", "pull_requests:read"], auth_config={"mode": "demo"}, status=MCPServerStatus.ACTIVE))
+    store.mcp_servers.save(MCPServer(name="slack", transport="streamable_http", endpoint="https://example.com/mcp/slack", scopes=["channels:read", "chat:write"], auth_config={"mode": "demo"}, status=MCPServerStatus.ACTIVE))
     launch_skill = store.skills.save(
         Skill(name="Launch operator", description="Coordinate rollout tasks", input_schema={}, output_schema={}, required_mcp_servers=["plane", "github", "slack"])
     )

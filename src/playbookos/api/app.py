@@ -27,10 +27,14 @@ from playbookos.api.schemas import (
     KnowledgeBaseCreate,
     KnowledgeBaseRead,
     KnowledgeUpdateRead,
+    MCPServerCreate,
+    MCPServerRead,
     PlaybookIngest,
     PlaybookIngestRead,
     StoredObjectRead,
     PlaybookImport,
+    PlaybookMCPDraftCreate,
+    PlaybookMCPDraftRead,
     PlaybookSkillDraftCreate,
     PlaybookSkillDraftRead,
     PlaybookRead,
@@ -61,6 +65,7 @@ from playbookos.api.store import NotFoundError, RepositoryProtocol, StoreProtoco
 from playbookos.domain.models import (
     Artifact,
     Goal,
+    MCPServer,
     GoalStatus,
     KnowledgeBase,
     KnowledgeStatus,
@@ -80,7 +85,7 @@ from playbookos.domain.models import (
 )
 from playbookos.authoring import apply_skill_authoring_pack_in_store, build_skill_authoring_pack_in_store
 from playbookos.executor import ExecutionError, OpenAIAgentsSDKAdapter, autopilot_goal_in_store, execute_run_in_store
-from playbookos.ingestion import SOPIngestionError, ingest_sop_in_store, materialize_suggested_skill_in_store
+from playbookos.ingestion import SOPIngestionError, ingest_sop_in_store, materialize_required_mcp_in_store, materialize_suggested_skill_in_store
 from playbookos.object_store import attach_source_object_to_playbook, create_object_store_from_env
 from playbookos.observability import record_error
 from playbookos.knowledge import KnowledgeUpdateError, apply_knowledge_update_in_store, reject_knowledge_update_in_store
@@ -283,6 +288,19 @@ def create_app(store: StoreProtocol | None = None) -> FastAPI:
             skill=SkillRead.model_validate(result.skill),
         )
 
+    @api.post("/api/playbooks/{playbook_id}/mcp-drafts", response_model=PlaybookMCPDraftRead, status_code=status.HTTP_201_CREATED)
+    def create_playbook_mcp_draft(playbook_id: str, payload: PlaybookMCPDraftCreate, store: store_dep) -> PlaybookMCPDraftRead:
+        try:
+            result = materialize_required_mcp_in_store(store, playbook_id, server_name=payload.server_name)
+        except SOPIngestionError as exc:
+            raise _conflict_http_exception(exc, operation="create_playbook_mcp_draft", metadata={"playbook_id": playbook_id, "server_name": payload.server_name}) from exc
+        return PlaybookMCPDraftRead(
+            playbook_id=result.playbook.id,
+            tool_name=result.tool_name,
+            created=result.created,
+            mcp_server=MCPServerRead.model_validate(result.mcp_server),
+        )
+
     @api.get("/api/playbooks", response_model=list[PlaybookRead])
     def list_playbooks(store: store_dep) -> list[PlaybookRead]:
         return [PlaybookRead.model_validate(playbook) for playbook in store.playbooks.list()]
@@ -390,6 +408,29 @@ def create_app(store: StoreProtocol | None = None) -> FastAPI:
         except SkillLifecycleError as exc:
             raise _conflict_http_exception(exc, operation="rollback_skill", metadata={"skill_id": skill_id}) from exc
         return SkillRead.model_validate(result.active_skill)
+
+    @api.post("/api/mcp-servers", response_model=MCPServerRead, status_code=status.HTTP_201_CREATED)
+    def create_mcp_server(payload: MCPServerCreate, store: store_dep) -> MCPServerRead:
+        item = MCPServer(**payload.model_dump())
+        store.mcp_servers.save(item)
+        return MCPServerRead.model_validate(item)
+
+    @api.get("/api/mcp-servers", response_model=list[MCPServerRead])
+    def list_mcp_servers(store: store_dep) -> list[MCPServerRead]:
+        return [MCPServerRead.model_validate(item) for item in store.mcp_servers.list()]
+
+    @api.get("/api/mcp-servers/{mcp_server_id}", response_model=MCPServerRead)
+    def get_mcp_server(mcp_server_id: str, store: store_dep) -> MCPServerRead:
+        return MCPServerRead.model_validate(_fetch(store.mcp_servers, mcp_server_id, "MCPServer", operation="get_mcp_server", metadata={"mcp_server_id": mcp_server_id}))
+
+    @api.put("/api/mcp-servers/{mcp_server_id}", response_model=MCPServerRead)
+    def update_mcp_server(mcp_server_id: str, payload: MCPServerCreate, store: store_dep) -> MCPServerRead:
+        item = _fetch(store.mcp_servers, mcp_server_id, "MCPServer", operation="update_mcp_server", metadata={"mcp_server_id": mcp_server_id})
+        for field_name, value in payload.model_dump().items():
+            setattr(item, field_name, value)
+        item.updated_at = utc_now()
+        store.mcp_servers.save(item)
+        return MCPServerRead.model_validate(item)
 
     @api.post("/api/knowledge-bases", response_model=KnowledgeBaseRead, status_code=status.HTTP_201_CREATED)
     def create_knowledge_base(payload: KnowledgeBaseCreate, store: store_dep) -> KnowledgeBaseRead:

@@ -257,6 +257,8 @@ class ToolingGuidanceRead(APIModel):
     required_mcp_servers: list[str] = Field(default_factory=list)
     suggested_skill_names: list[str] = Field(default_factory=list)
     existing_skill_candidates: list[str] = Field(default_factory=list)
+    existing_mcp_candidates: list[str] = Field(default_factory=list)
+    missing_mcp_servers: list[str] = Field(default_factory=list)
     action_items: list[str] = Field(default_factory=list)
     tool_requirements: list[ToolRequirementRead] = Field(default_factory=list)
     prompt_blocks: list[PromptBlockRead] = Field(default_factory=list)
@@ -307,6 +309,32 @@ class PlaybookSkillDraftRead(APIModel):
     suggestion_index: int
     bound_step_count: int = 0
     skill: "SkillRead"
+
+
+class MCPServerCreate(APIModel):
+    name: str
+    transport: str
+    endpoint: str
+    scopes: list[str] = Field(default_factory=list)
+    auth_config: dict[str, Any] = Field(default_factory=dict)
+    status: MCPServerStatus = MCPServerStatus.INACTIVE
+
+
+class MCPServerRead(MCPServerCreate):
+    id: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class PlaybookMCPDraftCreate(APIModel):
+    server_name: str
+
+
+class PlaybookMCPDraftRead(APIModel):
+    playbook_id: str
+    tool_name: str
+    created: bool = True
+    mcp_server: MCPServerRead
 
 
 class SkillAuthoringPackRead(APIModel):
@@ -449,6 +477,7 @@ class BoardSnapshot(APIModel):
     goals: dict[str, int] = Field(default_factory=dict)
     playbooks: dict[str, int] = Field(default_factory=dict)
     skills: dict[str, int] = Field(default_factory=dict)
+    mcp_servers: dict[str, int] = Field(default_factory=dict)
     knowledge_bases: dict[str, int] = Field(default_factory=dict)
     knowledge_updates: dict[str, int] = Field(default_factory=dict)
     tasks: dict[str, int] = Field(default_factory=dict)

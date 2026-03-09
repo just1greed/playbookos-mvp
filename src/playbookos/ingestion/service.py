@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from playbookos.api.store import StoreProtocol
-from playbookos.domain.models import Playbook, PlaybookStatus, Skill, SkillStatus, utc_now
+from playbookos.domain.models import MCPServer, MCPServerStatus, Playbook, PlaybookStatus, Skill, SkillStatus, utc_now
 from playbookos.supervisor import append_event
 
 
@@ -48,6 +48,8 @@ class ToolingGuidance:
     required_mcp_servers: list[str] = field(default_factory=list)
     suggested_skill_names: list[str] = field(default_factory=list)
     existing_skill_candidates: list[str] = field(default_factory=list)
+    existing_mcp_candidates: list[str] = field(default_factory=list)
+    missing_mcp_servers: list[str] = field(default_factory=list)
     action_items: list[str] = field(default_factory=list)
     tool_requirements: list[ToolRequirement] = field(default_factory=list)
     prompt_blocks: list[PromptBlock] = field(default_factory=list)
@@ -69,6 +71,14 @@ class SkillMaterializationResult:
     skill: Skill
     suggestion_index: int
     bound_step_count: int = 0
+
+
+@dataclass(slots=True)
+class MCPDraftMaterializationResult:
+    playbook: Playbook
+    mcp_server: MCPServer
+    tool_name: str
+    created: bool = True
 
 
 class SOPCompiler:
@@ -352,6 +362,8 @@ class SOPCompiler:
     ) -> ToolingGuidance:
         tool_requirements = self._tool_requirements(steps, detected_mcp_servers, suggested_skills)
         existing_candidates = self._existing_skill_candidates(store, detected_mcp_servers, suggested_skills)
+        existing_mcp_candidates = self._existing_mcp_candidates(store, detected_mcp_servers)
+        registered_names = {item.split(" (")[0] for item in existing_mcp_candidates}
         suggested_skill_names = [item.name for item in suggested_skills]
         required_mcp_servers = list(detected_mcp_servers)
         if required_mcp_servers:
@@ -366,6 +378,8 @@ class SOPCompiler:
         ]
         if existing_candidates:
             action_items.append(f"仓库里已有可复用 Skill 候选：{', '.join(existing_candidates[:3])}。可先复用，再决定是否新建。")
+        if existing_mcp_candidates:
+            action_items.append(f"已登记的 MCP 候选：{', '.join(existing_mcp_candidates[:3])}。优先复用，缺口再创建 draft MCP。")
         action_items.append("当前版本重点支持 Markdown SOP；附件、多格式解析和 MCP 真正注册流后续再补。")
         prompt_blocks = self._build_prompt_blocks(
             playbook_name=playbook_name,
@@ -379,6 +393,8 @@ class SOPCompiler:
             required_mcp_servers=required_mcp_servers,
             suggested_skill_names=suggested_skill_names,
             existing_skill_candidates=existing_candidates,
+            existing_mcp_candidates=existing_mcp_candidates,
+            missing_mcp_servers=[item for item in required_mcp_servers if item not in registered_names],
             action_items=action_items,
             tool_requirements=tool_requirements,
             prompt_blocks=prompt_blocks,
@@ -431,6 +447,16 @@ class SOPCompiler:
             if overlap:
                 label = f"{label} ({', '.join(sorted(overlap))})"
             candidates.append(label)
+        return list(dict.fromkeys(candidates))[:5]
+
+
+    def _existing_mcp_candidates(self, store: StoreProtocol, detected_mcp_servers: list[str]) -> list[str]:
+        detected = set(detected_mcp_servers)
+        candidates: list[str] = []
+        for item in store.mcp_servers.list():
+            if item.name not in detected:
+                continue
+            candidates.append(f"{item.name} ({item.status.value})")
         return list(dict.fromkeys(candidates))[:5]
 
     def _build_prompt_blocks(
@@ -589,6 +615,8 @@ class SOPCompiler:
             "required_mcp_servers": list(item.required_mcp_servers),
             "suggested_skill_names": list(item.suggested_skill_names),
             "existing_skill_candidates": list(item.existing_skill_candidates),
+            "existing_mcp_candidates": list(item.existing_mcp_candidates),
+            "missing_mcp_servers": list(item.missing_mcp_servers),
             "action_items": list(item.action_items),
             "tool_requirements": [self._tool_requirement_to_dict(requirement) for requirement in item.tool_requirements],
             "prompt_blocks": [self._prompt_block_to_dict(block) for block in item.prompt_blocks],
@@ -708,3 +736,84 @@ def materialize_suggested_skill_in_store(
         suggestion_index=suggestion_index,
         bound_step_count=bound_step_count,
     )
+
+
+
+def materialize_required_mcp_in_store(
+    store: StoreProtocol,
+    playbook_id: str,
+    *,
+    server_name: str,
+) -> MCPDraftMaterializationResult:
+    playbook = store.playbooks.get(playbook_id)
+    tooling_guidance = dict(playbook.compiled_spec.get("tooling_guidance", {}))
+    tool_requirements = list(tooling_guidance.get("tool_requirements", []))
+    normalized_name = str(server_name or "").strip().lower()
+    if not normalized_name:
+        raise SOPIngestionError("MCP server name is required")
+
+    existing = next((item for item in store.mcp_servers.list() if item.name.strip().lower() == normalized_name), None)
+    if existing is not None:
+        return MCPDraftMaterializationResult(playbook=playbook, mcp_server=existing, tool_name=existing.name, created=False)
+
+    requirement = next(
+        (
+            item
+            for item in tool_requirements
+            if str(item.get("suggested_mcp_server") or item.get("tool_name") or "").strip().lower() == normalized_name
+        ),
+        None,
+    )
+    if requirement is None:
+        requirement = {
+            "tool_name": normalized_name,
+            "purpose": f"Support SOP execution steps that depend on {normalized_name}",
+            "related_steps": [],
+        }
+
+    mcp_server = MCPServer(
+        name=normalized_name,
+        transport="streamable_http",
+        endpoint=f"https://example.com/mcp/{normalized_name}",
+        scopes=_recommended_scopes_for_mcp(normalized_name),
+        auth_config={
+            "mode": "manual_setup",
+            "purpose": requirement.get("purpose", ""),
+            "related_steps": list(requirement.get("related_steps", [])),
+            "playbook_id": playbook.id,
+        },
+        status=MCPServerStatus.INACTIVE,
+    )
+    store.mcp_servers.save(mcp_server)
+    append_event(
+        store,
+        entity_type="mcp_server",
+        entity_id=mcp_server.id,
+        event_type="mcp_server.draft_materialized",
+        payload={
+            "playbook_id": playbook.id,
+            "tool_name": requirement.get("tool_name", normalized_name),
+            "server_name": normalized_name,
+        },
+        source="human",
+    )
+    return MCPDraftMaterializationResult(
+        playbook=playbook,
+        mcp_server=mcp_server,
+        tool_name=str(requirement.get("tool_name") or normalized_name),
+        created=True,
+    )
+
+
+def _recommended_scopes_for_mcp(server_name: str) -> list[str]:
+    normalized = str(server_name or "").strip().lower()
+    mapping = {
+        "github": ["repos:read", "pull_requests:read"],
+        "slack": ["channels:read", "chat:write"],
+        "notion": ["pages:read", "pages:write"],
+        "jira": ["issues:read", "issues:write"],
+        "email": ["mail:send"],
+        "calendar": ["calendar:read", "calendar:write"],
+        "sheets": ["spreadsheets:read", "spreadsheets:write"],
+    }
+    return list(mapping.get(normalized, ["manual_scope_review"]))

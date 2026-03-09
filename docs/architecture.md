@@ -173,3 +173,6 @@ PlaybookOS 推荐采用三层架构：
 3. `对象归一化` 仍未完成：已能生成 Playbook 与 Skill 草案，但 Knowledge、Task template、approval checklist 等派生对象还没有在 ingestion 阶段自动物化。
 4. `主动引导` 仍是第一版：authoring wizard 已能补齐 schema / approval / evaluation 默认值，但缺少逐步问答式确认、风险解释和发布门禁。
 5. `外部对象存储` 仍未完成：当前实现是本地文件目录，后续还需要升级到真正的云对象存储与评测数据集治理。
+6. `MCP runtime` 仍未完成：MCP 控制面注册表、CRUD 与从 SOP 缺口一键生成 draft MCP 已经落地，但还没有连接校验、凭证治理、健康探测和真实 tool runtime。
+
+这意味着：当前系统已经能回答“这份 Markdown SOP 需要哪些工具、应该补哪些 Skill、哪些 MCP 还缺、先创建哪些 draft MCP”，但还不能直接回答“这些 MCP 现在是否真的可连通、可安全执行、可投入生产”。下一阶段的重点因此转向 MCP runtime / credential / health 三件事。

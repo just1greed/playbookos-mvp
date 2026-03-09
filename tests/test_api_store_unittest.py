@@ -1,7 +1,7 @@
 import unittest
 
 from playbookos.api.store import InMemoryStore, NotFoundError
-from playbookos.domain.models import Artifact, Goal, KnowledgeBase, Playbook, Reflection, Run, Skill, Task
+from playbookos.domain.models import Artifact, Goal, KnowledgeBase, MCPServer, Playbook, Reflection, Run, Skill, Task
 
 
 class InMemoryStoreTestCase(unittest.TestCase):
@@ -13,6 +13,9 @@ class InMemoryStoreTestCase(unittest.TestCase):
         )
         store.skills.save(
             Skill(name="Writer", description="Draft and edit SOP content", input_schema={}, output_schema={})
+        )
+        store.mcp_servers.save(
+            MCPServer(name="github", transport="streamable_http", endpoint="https://example.com/mcp/github")
         )
         store.knowledge_bases.save(
             KnowledgeBase(name="Context pack", description="Reusable notes", content="Important context for execution")
@@ -49,6 +52,7 @@ class InMemoryStoreTestCase(unittest.TestCase):
         self.assertEqual(snapshot["goals"]["draft"], 1)
         self.assertEqual(snapshot["playbooks"]["draft"], 1)
         self.assertEqual(snapshot["skills"]["draft"], 1)
+        self.assertEqual(snapshot["mcp_servers"]["active"], 1)
         self.assertEqual(snapshot["knowledge_bases"]["draft"], 1)
         self.assertEqual(snapshot["tasks"]["inbox"], 1)
         self.assertEqual(snapshot["runs"]["queued"], 1)

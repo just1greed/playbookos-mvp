@@ -47,6 +47,19 @@ CREATE TABLE IF NOT EXISTS skills (
 );
 CREATE INDEX IF NOT EXISTS idx_skills_status ON skills(status);
 
+CREATE TABLE IF NOT EXISTS mcp_servers (
+    id UUID PRIMARY KEY,
+    name TEXT NOT NULL,
+    transport TEXT NOT NULL,
+    endpoint TEXT NOT NULL,
+    scopes_json JSONB NOT NULL DEFAULT '[]'::jsonb,
+    auth_config_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+    status TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_mcp_servers_status ON mcp_servers(status);
+
 CREATE TABLE IF NOT EXISTS tasks (
     id UUID PRIMARY KEY,
     goal_id UUID NOT NULL REFERENCES goals(id) ON DELETE CASCADE,

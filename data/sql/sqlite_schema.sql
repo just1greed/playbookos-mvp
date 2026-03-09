@@ -44,6 +44,18 @@ CREATE TABLE IF NOT EXISTS skills (
     updated_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS mcp_servers (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    transport TEXT NOT NULL,
+    endpoint TEXT NOT NULL,
+    scopes_json TEXT NOT NULL,
+    auth_config_json TEXT NOT NULL,
+    status TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS tasks (
     id TEXT PRIMARY KEY,
     goal_id TEXT NOT NULL,

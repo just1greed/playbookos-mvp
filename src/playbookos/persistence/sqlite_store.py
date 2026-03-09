@@ -25,6 +25,8 @@ from playbookos.domain.models import (
     KnowledgeStatus,
     KnowledgeUpdate,
     KnowledgeUpdateStatus,
+    MCPServer,
+    MCPServerStatus,
     Skill,
     SkillStatus,
     Playbook,
@@ -93,6 +95,19 @@ CREATE TABLE IF NOT EXISTS skills (
     updated_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_skills_status ON skills(status);
+
+CREATE TABLE IF NOT EXISTS mcp_servers (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    transport TEXT NOT NULL,
+    endpoint TEXT NOT NULL,
+    scopes_json TEXT NOT NULL,
+    auth_config_json TEXT NOT NULL,
+    status TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_mcp_servers_status ON mcp_servers(status);
 
 CREATE TABLE IF NOT EXISTS knowledge_bases (
     id TEXT PRIMARY KEY,
@@ -377,6 +392,12 @@ class SQLiteStore:
             to_record=_skill_to_record,
             from_row=_skill_from_row,
         )
+        self.mcp_servers = SQLiteRepository[MCPServer](
+            db_path=self.db_path,
+            table_name="mcp_servers",
+            to_record=_mcp_server_to_record,
+            from_row=_mcp_server_from_row,
+        )
         self.knowledge_bases = SQLiteRepository[KnowledgeBase](
             db_path=self.db_path,
             table_name="knowledge_bases",
@@ -437,6 +458,7 @@ class SQLiteStore:
             "goals": self._status_counts("goals", "status"),
             "playbooks": self._status_counts("playbooks", "status"),
             "skills": self._status_counts("skills", "status"),
+            "mcp_servers": self._status_counts("mcp_servers", "status"),
             "knowledge_bases": self._status_counts("knowledge_bases", "status"),
             "knowledge_updates": self._status_counts("knowledge_updates", "status"),
             "tasks": self._status_counts("tasks", "status"),
@@ -453,6 +475,7 @@ class SQLiteStore:
             connection.executescript(SQLITE_SCHEMA)
             self._ensure_reflection_columns(connection)
             self._ensure_task_columns(connection)
+            self._ensure_mcp_server_table(connection)
             connection.commit()
 
     def _ensure_reflection_columns(self, connection: sqlite3.Connection) -> None:
@@ -464,6 +487,24 @@ class SQLiteStore:
         columns = {row[1] for row in connection.execute("PRAGMA table_info(tasks)").fetchall()}
         if "knowledge_base_ids_json" not in columns:
             connection.execute('ALTER TABLE tasks ADD COLUMN knowledge_base_ids_json TEXT NOT NULL DEFAULT "[]"')
+
+    def _ensure_mcp_server_table(self, connection: sqlite3.Connection) -> None:
+        connection.executescript(
+            """
+            CREATE TABLE IF NOT EXISTS mcp_servers (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                transport TEXT NOT NULL,
+                endpoint TEXT NOT NULL,
+                scopes_json TEXT NOT NULL,
+                auth_config_json TEXT NOT NULL,
+                status TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_mcp_servers_status ON mcp_servers(status);
+            """
+        )
 
     def _status_counts(self, table_name: str, status_column: str) -> dict[str, int]:
         query = f"SELECT {status_column} AS status, COUNT(*) AS count FROM {table_name} GROUP BY {status_column}"
@@ -605,6 +646,33 @@ def _skill_from_row(row: sqlite3.Row) -> Skill:
         rollback_version=row["rollback_version"],
         version=row["version"],
         status=SkillStatus(row["status"]),
+        created_at=datetime.fromisoformat(row["created_at"]),
+        updated_at=datetime.fromisoformat(row["updated_at"]),
+    )
+
+def _mcp_server_to_record(mcp_server: MCPServer) -> dict[str, Any]:
+    return {
+        "id": mcp_server.id,
+        "name": mcp_server.name,
+        "transport": mcp_server.transport,
+        "endpoint": mcp_server.endpoint,
+        "scopes_json": _dump_json(mcp_server.scopes),
+        "auth_config_json": _dump_json(mcp_server.auth_config),
+        "status": mcp_server.status.value,
+        "created_at": mcp_server.created_at.isoformat(),
+        "updated_at": mcp_server.updated_at.isoformat(),
+    }
+
+
+def _mcp_server_from_row(row: sqlite3.Row) -> MCPServer:
+    return MCPServer(
+        id=row["id"],
+        name=row["name"],
+        transport=row["transport"],
+        endpoint=row["endpoint"],
+        scopes=_load_json(row["scopes_json"], []),
+        auth_config=_load_json(row["auth_config_json"], {}),
+        status=MCPServerStatus(row["status"]),
         created_at=datetime.fromisoformat(row["created_at"]),
         updated_at=datetime.fromisoformat(row["updated_at"]),
     )

@@ -3,9 +3,9 @@
 ## 当前状态
 
 - 仓库位置：`/home/greed/playbookos-mvp`
-- Git 状态：`master` 分支，当前还没有任何提交
-- 项目结构：已包含 `src/`、`tests/`、`docs/`、`data/` 目录，但暂时没有实际代码文件
-- 约束文件：当前未在仓库内发现额外的 `AGENTS.md`
+- Git 状态：`master` 分支持续开发中，最近一次已推送提交为 `82421cf`（`Add prompt-driven tooling guidance for SOP ingestion`）
+- 项目结构：`src/`、`tests/`、`docs/`、`data/` 已形成可运行 MVP，覆盖控制面、持久化、预览服务与前端 Dashboard
+- 约束文件：当前未在仓库内发现额外的仓库级 `AGENTS.md`
 
 ## 协作约定
 
@@ -175,3 +175,13 @@
 - 设计文档已更新：当前系统已具备“文本类 SOP 导入 -> Playbook/Skill 建议 -> authoring wizard 引导 -> 原文落对象存储”的第一版闭环；剩余缺口集中在任意格式附件解析、更多对象自动物化与更强的引导式配置
 - 已把 SOP ingestion 的重点从“扩更多文件格式”调整为“打磨 Markdown SOP 的工具识别提示词链”：新增工具发现、Skill 上传、MCP 接入三类 prompt block，并在页面内直接回显
 - ingest 结果现在会返回结构化 `tooling_guidance`，包含 required MCP、可复用 Skill 候选、下一步动作、工具证据与推荐提示词，帮助用户按 SOP 反推该上传哪些 Skill / MCP
+- 已补上 `MCPServer` 控制面主链：内存/SQLite store、API、preview server、Dashboard 资源区与表单都已支持 MCP 的创建、查询与编辑
+- SOP ingestion 的 `tooling_guidance` 现在会区分已登记 MCP 与缺失 MCP，并支持从引导卡片一键生成 `draft MCP`，把“识别工具 -> 补 MCP”真正串起来
+
+- 已继续完成 `MCPServer` 控制面主链：内存/SQLite store、FastAPI、preview server、Dashboard 工作台与编辑器都支持 MCP 的创建、查询、更新
+- 已新增 `POST /api/playbooks/{playbook_id}/mcp-drafts`，支持根据 SOP `tooling_guidance` 中的缺口一键生成 draft MCP
+- ingest 结果现在会返回 `existing_mcp_candidates` / `missing_mcp_servers`，前端可直接把“已登记 MCP”和“仍缺的 MCP”区分展示
+- Dashboard 已补齐 `materialize-mcp` 动作链，用户可从 SOP 工具引导卡片直接创建 draft MCP，并在页面上立即看到状态变化
+- 已修复 `BoardSnapshot` API 响应模型遗漏 `mcp_servers` 统计的问题，避免前端看板漏显示 MCP 资源数量
+- 已补齐 `playbookos.ingestion` 对 `materialize_required_mcp_in_store` 等对象的导出，修复 preview server / tests 的导入错误
+- 已更新测试与文档，当前全量 `44` 个单测已全部通过：`python3 -m compileall src tests && PYTHONPATH=src python3 -m unittest discover -s tests -p 'test*_unittest.py'`

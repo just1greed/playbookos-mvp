@@ -67,3 +67,5 @@
 - 现在第一版原件治理也已补上：原始 SOP 文本会落入本地对象存储，并可从导入引导区直接回看原文。
 - 当前最主要未完成项变为：Markdown SOP 之外的多格式与多附件解析、自动派生更多对象（Knowledge / Task template / checklist）、以及更强的问答式 Skill authoring 与发布门禁。
 - 当前前置建模链的重点已经收敛到“提示词质量”：要先把从 SOP 识别工具、反推出 MCP、再引导用户上传 Skill 的 prompt 设计打磨稳定。
+- 现在已补上 MCPServer 控制面注册表、CRUD 与从 SOP 缺口一键生成 draft MCP；当前前置建模链的下一个重点会从“有没有 MCP”转向“如何把 MCP 做成可校验、可连通、可治理的真实运行时能力”。
+- 因此新的缺口排序变为：`MCP runtime / credential / health` > `Markdown 之外的多格式与附件解析` > `ingestion 自动物化更多对象` > `更强的引导式 authoring 与发布门禁`。

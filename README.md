@@ -44,7 +44,7 @@ PlaybookOS 用来把目标、SOP、技能、工具权限、执行记录和反思
 
 当前版本提供：
 
-- 手动设置 Goal / Playbook / Skill / Knowledge / Task 的控制面基础能力
+- 手动设置 Goal / Playbook / Skill / MCP / Knowledge / Task 的控制面基础能力
 - 产品与架构基线文档
 - Goal / Playbook / Skill / Task / Session / Run / Acceptance / Artifact / Reflection / Event 领域模型
 - FastAPI 控制面 API 骨架
@@ -55,6 +55,7 @@ PlaybookOS 用来把目标、SOP、技能、工具权限、执行记录和反思
 - OpenAI Agents SDK 风格执行适配层
 - Run 级 Artifact 元数据持久化与查询
 - 原始 SOP 文本对象存储与回看链接
+- MCP 控制面注册表与从 SOP 工具缺口一键生成 draft MCP
 - 一个优美的内置前端控制台首页（`GET /`），并可中英文切换与直接录入 Goal / SOP / Skill / Knowledge / Task
 - SOP 自我迭代提案骨架
 - 用户可见的 Session / Acceptance / Event / Knowledge Update 追踪视图
@@ -74,6 +75,8 @@ PlaybookOS 用来把目标、SOP、技能、工具权限、执行记录和反思
 - `POST /api/goals/{goal_id}/complete-review`
 - `POST /api/playbooks/import`
 - `POST /api/playbooks/ingest`
+- `POST /api/playbooks/{playbook_id}/skill-drafts`
+- `POST /api/playbooks/{playbook_id}/mcp-drafts`
 - `GET /api/skills/{skill_id}/authoring-pack`
 - `POST /api/skills/{skill_id}/apply-authoring-pack`
 - `GET /api/playbooks`
@@ -82,6 +85,10 @@ PlaybookOS 用来把目标、SOP、技能、工具权限、执行记录和反思
 - `POST /api/skills`
 - `GET /api/skills`
 - `GET /api/skills/{skill_id}`
+- `POST /api/mcp-servers`
+- `GET /api/mcp-servers`
+- `GET /api/mcp-servers/{mcp_server_id}`
+- `PUT /api/mcp-servers/{mcp_server_id}`
 - `POST /api/knowledge-bases`
 - `GET /api/knowledge-bases`
 - `GET /api/knowledge-bases/{knowledge_id}`
@@ -201,13 +208,14 @@ PlaybookOS 用来把目标、SOP、技能、工具权限、执行记录和反思
 
 现在原始 SOP 还会被持久化到本地对象存储，并通过 `source_object_*` 元数据回链到 `playbook.compiled_spec`；前端导入引导区可直接打开原文内容进行审计。
 
-当前这一轮优先聚焦 `Markdown SOP`：系统会从 Markdown 步骤里识别需要接入的工具域，生成 `工具发现 / Skill 上传 / MCP 接入` 三类提示词，并在页面内明确告诉用户应先补哪些 Skill 与 MCP。
+当前这一轮优先聚焦 `Markdown SOP`：系统会从 Markdown 步骤里识别需要接入的工具域，生成 `工具发现 / Skill 上传 / MCP 接入` 三类提示词，并在页面内明确告诉用户应先补哪些 Skill 与 MCP。现在还支持从这些缺口一键生成 `draft MCP`，先把 SOP -> 工具 -> MCP/Skill 的配置链打通。
 
 当前已接入持久化的主表：
 
 - `goals`
 - `playbooks`
 - `skills`
+- `mcp_servers`
 - `knowledge_bases`
 - `knowledge_updates`
 - `tasks`
@@ -250,6 +258,16 @@ uvicorn playbookos.api.app:app --host 0.0.0.0 --port 8000
 
 启动后打开首页即可看到控制台：`http://127.0.0.1:8000/`
 
+
+当前已经具备的前置建模闭环是：`Markdown SOP -> Playbook steps -> 工具识别 -> Skill 建议 -> Authoring Wizard -> draft MCP`。
+
+当前仍未完成的关键板块主要是：
+
+- MCP 运行时：真实连接校验、凭证治理、健康探测与 tool runtime
+- 多格式 / 多附件 SOP 解析：当前只稳定支持 Markdown
+- ingestion 自动物化更多对象：Knowledge、Task template、approval checklist 仍需补齐
+- 更强的引导式配置：逐步问答、风险解释、发布门禁仍是第一版
+
 如果当前环境还没安装 `fastapi` / `uvicorn`，也可以直接用零依赖预览服务：
 
 ```bash
@@ -279,3 +297,5 @@ PYTHONPATH=src python3 -m playbookos.ui.preview_server --demo --port 8081
 - Dashboard 的交互筛选、详情页和更丰富的操作入口
 - Artifact blob/object storage 落盘与下载能力
 - Plane webhook / MCP 对接
+
+当前已开始补齐 `MCP registry`：控制台支持创建/查看/编辑 MCP 记录，SOP ingestion 的工具缺口也可直接一键物化为 `draft MCP`，用于后续人工补完 endpoint、scope 与鉴权配置。
