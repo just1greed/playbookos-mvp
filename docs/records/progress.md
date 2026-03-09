@@ -189,3 +189,8 @@
 - 已完成前端重构的第一轮方案设计，并新增 `docs/ui-redesign.md`：把首页重新定义为“全局看板”，同时确定左侧导航、工作台节点、设置页、共享组件和分阶段实施 TODO
 - 已明确新的导航结构：`全局看板` + `目标 / SOP / Skill / MCP / 知识库 / 任务 / 会话 / 自动迭代 / 审批流 / 提示词` + `模型设置 / 全局设置 / 会话管理`
 - 已确认实现顺序：先做 `AppShell + 左侧导航 + 全局看板`，再把现有 Action Center / Session Tree / Patch Review / Authoring Wizard 等模块迁移到对应工作台页面
+
+- 已开始落地前端重构第一阶段：Dashboard 现已具备 `AppShell` 壳层、左侧导航、顶部上下文栏和 hash 路由，默认打开即进入 `全局看板`
+- 左侧导航已接入一级节点：`全局看板 / 目标 / SOP / Skill / MCP / 知识库 / 任务 / 会话 / 自动迭代 / 审批流 / 提示词 / 模型设置 / 全局设置 / 会话管理`，并按当前快照展示数量徽标
+- 首页已新增 `任务流程总览` 区块，把 `Goal -> SOP -> Skill/MCP -> Task -> Run -> Acceptance/Reflection -> Knowledge` 做成可点击的全局链路摘要
+- 本轮先重组前端壳层与信息架构，不改后端 API；后续继续把现有 Workbench / Action Center / Session Tree / Patch Review 分别迁移到对应页面

@@ -147,6 +147,69 @@ TRANSLATIONS = {
         "snapshot_json": "快照 JSON",
         "snapshot_json_subtitle": "适合排查 UI 与数据不一致问题",
         "footer": "PlaybookOS MVP · 单文件控制台 · 无外部前端依赖",
+        "nav_group_overview": "总览",
+        "nav_group_workbench": "工作台",
+        "nav_group_settings": "设置",
+        "nav_group_system": "系统",
+        "nav_dashboard": "全局看板",
+        "nav_goals": "目标",
+        "nav_playbooks": "SOP",
+        "nav_skills": "Skill",
+        "nav_mcp": "MCP",
+        "nav_knowledge": "知识库",
+        "nav_tasks": "任务",
+        "nav_sessions": "会话",
+        "nav_learning": "自动迭代",
+        "nav_approvals": "审批流",
+        "nav_prompts": "提示词",
+        "nav_model_settings": "模型设置",
+        "nav_global_settings": "全局设置",
+        "nav_session_admin": "会话管理",
+        "nav_api_health": "API 健康",
+        "nav_errors": "错误记录",
+        "nav_versions": "版本信息",
+        "page_dashboard_title": "全局看板",
+        "page_dashboard_subtitle": "先看系统健康度、流程进度和阻塞点，再进入具体工作台处理对象。",
+        "page_goals_title": "目标工作台",
+        "page_goals_subtitle": "管理业务目标、推进节奏和目标级执行闭环。",
+        "page_playbooks_title": "SOP 工作台",
+        "page_playbooks_subtitle": "从 Markdown SOP 到 Playbook、工具识别、补丁审阅与执行入口。",
+        "page_skills_title": "Skill 工作台",
+        "page_skills_subtitle": "管理技能草稿、版本演进、依赖 MCP 与发布策略。",
+        "page_mcp_title": "MCP 工作台",
+        "page_mcp_subtitle": "管理 MCP 注册表、草稿接入、依赖关系和后续运行时治理。",
+        "page_knowledge_title": "知识库工作台",
+        "page_knowledge_subtitle": "管理知识沉淀、更新提案与任务执行上下文。",
+        "page_tasks_title": "任务工作台",
+        "page_tasks_subtitle": "查看任务图、执行状态、阻塞依赖和任务级动作。",
+        "page_sessions_title": "会话工作台",
+        "page_sessions_subtitle": "追踪主控会话、子会话树和执行上下文流转。",
+        "page_learning_title": "自动迭代工作台",
+        "page_learning_subtitle": "管理反思提案、知识回写、补丁发布和学习闭环。",
+        "page_approvals_title": "审批流工作台",
+        "page_approvals_subtitle": "集中处理等待人工确认、验收、批准与拒绝的关键节点。",
+        "page_prompts_title": "提示词工作台",
+        "page_prompts_subtitle": "查看系统关键提示词、用途、输入上下文和后续调优入口。",
+        "page_model_settings_title": "模型设置",
+        "page_model_settings_subtitle": "管理当前 AI 模型、接口格式和调用参数。",
+        "page_global_settings_title": "全局设置",
+        "page_global_settings_subtitle": "管理控制台默认行为、显示偏好和系统级参数。",
+        "page_session_admin_title": "会话管理",
+        "page_session_admin_subtitle": "查看会话资源、异常状态和后续治理入口。",
+        "page_system_title": "系统信息",
+        "page_system_subtitle": "查看 API 健康、错误记录和版本信息。",
+        "topbar_scope_label": "全局范围",
+        "topbar_scope_all": "全部 Goal",
+        "topbar_scope_goal": "按 Goal",
+        "topbar_scope_playbook": "按 SOP",
+        "topbar_scope_status": "按状态",
+        "global_flow_title": "任务流程总览",
+        "global_flow_subtitle": "从 Goal 到 Knowledge 的全局链路状态，一眼看清哪里在推进、哪里在阻塞。",
+        "route_placeholder_title": "该页面正在迁移",
+        "route_placeholder_body": "这一页的导航壳和信息架构已经就位，下一阶段会把现有模块逐步迁移到这里。",
+        "settings_model_card": "模型配置会集中展示 provider、model、base url、timeout 和输出参数。",
+        "settings_global_card": "全局设置会管理语言、刷新频率、对象存储路径和实验性开关。",
+        "settings_session_card": "会话管理会展示 supervisor / worker session 总量、异常状态与治理动作。",
         "tracked_items": "个跟踪对象",
         "overview_suffix": "概览",
         "last_updated": "最近刷新",
@@ -374,6 +437,69 @@ TRANSLATIONS = {
         "snapshot_json": "Snapshot JSON",
         "snapshot_json_subtitle": "Useful for debugging mismatches between UI and data",
         "footer": "PlaybookOS MVP · single-file dashboard · no external frontend dependencies",
+        "nav_group_overview": "Overview",
+        "nav_group_workbench": "Workbenches",
+        "nav_group_settings": "Settings",
+        "nav_group_system": "System",
+        "nav_dashboard": "Global Board",
+        "nav_goals": "Goals",
+        "nav_playbooks": "SOP",
+        "nav_skills": "Skills",
+        "nav_mcp": "MCP",
+        "nav_knowledge": "Knowledge",
+        "nav_tasks": "Tasks",
+        "nav_sessions": "Sessions",
+        "nav_learning": "Autopilot",
+        "nav_approvals": "Approvals",
+        "nav_prompts": "Prompts",
+        "nav_model_settings": "Model Settings",
+        "nav_global_settings": "Global Settings",
+        "nav_session_admin": "Session Admin",
+        "nav_api_health": "API Health",
+        "nav_errors": "Error Log",
+        "nav_versions": "Version Info",
+        "page_dashboard_title": "Global Board",
+        "page_dashboard_subtitle": "See system health, flow progress, and blockers first, then jump into the right workbench.",
+        "page_goals_title": "Goals Workbench",
+        "page_goals_subtitle": "Manage business goals, delivery rhythm, and goal-level execution loops.",
+        "page_playbooks_title": "SOP Workbench",
+        "page_playbooks_subtitle": "From Markdown SOP to Playbook, tool discovery, patch review, and execution entrypoints.",
+        "page_skills_title": "Skills Workbench",
+        "page_skills_subtitle": "Manage draft skills, version evolution, MCP dependencies, and release strategy.",
+        "page_mcp_title": "MCP Workbench",
+        "page_mcp_subtitle": "Manage the MCP registry, draft onboarding, dependencies, and future runtime governance.",
+        "page_knowledge_title": "Knowledge Workbench",
+        "page_knowledge_subtitle": "Manage knowledge entries, update proposals, and execution context.",
+        "page_tasks_title": "Tasks Workbench",
+        "page_tasks_subtitle": "Inspect task graphs, execution states, blockers, and task-level actions.",
+        "page_sessions_title": "Sessions Workbench",
+        "page_sessions_subtitle": "Trace supervisor sessions, worker trees, and execution context flow.",
+        "page_learning_title": "Autopilot Workbench",
+        "page_learning_subtitle": "Manage reflections, knowledge write-backs, patch releases, and the learning loop.",
+        "page_approvals_title": "Approvals Workbench",
+        "page_approvals_subtitle": "Handle waiting human approvals, acceptance, and critical review gates in one place.",
+        "page_prompts_title": "Prompts Workbench",
+        "page_prompts_subtitle": "Inspect key system prompts, their purpose, input context, and future tuning entrypoints.",
+        "page_model_settings_title": "Model Settings",
+        "page_model_settings_subtitle": "Manage the current AI model, API format, and invocation parameters.",
+        "page_global_settings_title": "Global Settings",
+        "page_global_settings_subtitle": "Manage console defaults, display preferences, and system-level parameters.",
+        "page_session_admin_title": "Session Admin",
+        "page_session_admin_subtitle": "Inspect session resources, abnormal states, and follow-up governance actions.",
+        "page_system_title": "System",
+        "page_system_subtitle": "Inspect API health, error logs, and version metadata.",
+        "topbar_scope_label": "Global Scope",
+        "topbar_scope_all": "All Goals",
+        "topbar_scope_goal": "By Goal",
+        "topbar_scope_playbook": "By SOP",
+        "topbar_scope_status": "By Status",
+        "global_flow_title": "Flow Overview",
+        "global_flow_subtitle": "A global chain from Goal to Knowledge so you can instantly see what is moving and what is blocked.",
+        "route_placeholder_title": "This page is being migrated",
+        "route_placeholder_body": "The navigation shell and information architecture are ready; existing modules will move here step by step in the next phase.",
+        "settings_model_card": "Model settings will surface provider, model, base URL, timeout, and output parameters.",
+        "settings_global_card": "Global settings will manage language, refresh cadence, object-store paths, and experimental toggles.",
+        "settings_session_card": "Session admin will show supervisor / worker totals, abnormal states, and governance actions.",
         "tracked_items": "tracked items",
         "overview_suffix": "overview",
         "last_updated": "Last updated",
@@ -551,6 +677,38 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
           radial-gradient(circle at top right, rgba(6, 182, 212, 0.22), transparent 28%),
           linear-gradient(180deg, #020617 0%, var(--bg) 100%);
       }}
+      .app-shell {{ width: min(1480px, calc(100vw - 32px)); margin: 24px auto 48px; display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 24px; align-items: start; }}
+      .sidebar {{ position: sticky; top: 24px; padding: 20px; border: 1px solid var(--border); border-radius: 28px; background: linear-gradient(180deg, rgba(15, 23, 42, 0.94), rgba(9, 18, 33, 0.88)); box-shadow: var(--shadow); backdrop-filter: blur(18px); }}
+      .sidebar-head {{ display: grid; gap: 8px; margin-bottom: 18px; }}
+      .sidebar-title {{ font-size: 16px; font-weight: 700; }}
+      .sidebar-copy {{ color: var(--muted); font-size: 13px; line-height: 1.6; }}
+      .sidebar-group {{ margin-top: 18px; display: grid; gap: 8px; }}
+      .sidebar-group-title {{ color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; padding: 0 8px; }}
+      .nav-button {{ width: 100%; border: 0; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 12px; border-radius: 14px; color: var(--text); background: transparent; text-align: left; font: inherit; }}
+      .nav-button:hover {{ background: rgba(99, 102, 241, 0.12); }}
+      .nav-button.active {{ background: linear-gradient(135deg, rgba(124, 58, 237, 0.24), rgba(79, 70, 229, 0.22)); border: 1px solid rgba(196, 181, 253, 0.18); }}
+      .nav-button-label {{ display: inline-flex; align-items: center; gap: 10px; }}
+      .nav-badge {{ min-width: 24px; height: 24px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.9); border: 1px solid var(--border); color: var(--muted); font-size: 12px; padding: 0 8px; }}
+      .shell {{ width: auto; margin: 0; }}
+      .topbar {{ display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 22px; border: 1px solid var(--border); border-radius: 24px; background: rgba(15, 23, 42, 0.72); box-shadow: var(--shadow); backdrop-filter: blur(14px); }}
+      .topbar-title strong {{ display: block; font-size: 24px; line-height: 1.2; }}
+      .topbar-title span {{ display: block; margin-top: 6px; color: var(--muted); font-size: 14px; line-height: 1.6; max-width: 720px; }}
+      .topbar-controls {{ display: flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }}
+      .scope-card {{ display: grid; gap: 6px; min-width: 200px; }}
+      .scope-card label {{ color: var(--muted); font-size: 12px; }}
+      .scope-card select {{ width: 100%; border-radius: 14px; border: 1px solid rgba(148, 163, 184, 0.16); background: rgba(2, 6, 23, 0.74); color: var(--text); padding: 11px 12px; font: inherit; }}
+      .view-page[hidden] {{ display: none !important; }}
+      .route-placeholder-grid {{ display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }}
+      .placeholder-card {{ grid-column: span 4; padding: 18px; border-radius: 20px; background: rgba(15, 23, 42, 0.62); border: 1px solid rgba(148, 163, 184, 0.12); }}
+      .placeholder-card h3 {{ margin: 0 0 8px; font-size: 18px; }}
+      .placeholder-card p {{ margin: 0; color: var(--muted); line-height: 1.7; }}
+      .flow-grid {{ display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }}
+      .flow-card {{ grid-column: span 3; padding: 18px; border-radius: 20px; background: rgba(15, 23, 42, 0.62); border: 1px solid rgba(148, 163, 184, 0.12); }}
+      .flow-card strong {{ display: block; font-size: 18px; margin-bottom: 6px; }}
+      .flow-card small {{ display: block; color: var(--muted); line-height: 1.6; }}
+      .flow-card .pill-row {{ display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }}
+      .flow-link {{ display: inline-flex; margin-top: 14px; color: #c4b5fd; cursor: pointer; text-decoration: none; }}
+      .flow-link:hover {{ color: #ddd6fe; }}
       .shell {{ width: min(1180px, calc(100vw - 32px)); margin: 24px auto 48px; }}
       .hero {{
         padding: 32px;
@@ -668,14 +826,44 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
       .boot-error small {{ display: block; color: #fecaca; opacity: 0.9; }}
       .boot-error-detail {{ margin-top: 12px; white-space: pre-wrap; word-break: break-word; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; line-height: 1.6; }}
       @media (max-width: 980px) {{
+        .app-shell {{ grid-template-columns: 1fr; }}
+        .sidebar {{ position: static; }}
+        .topbar {{ flex-direction: column; align-items: stretch; }}
         .hero-meta {{ grid-template-columns: 1fr; }}
-        .endpoint-card, .list-card, .activity-card, .form-card, .action-card {{ grid-column: span 12; }}
+        .endpoint-card, .list-card, .activity-card, .form-card, .action-card, .placeholder-card, .flow-card {{ grid-column: span 12; }}
       }}
     </style>
   </head>
   <body>
-    <main class="shell">
-      <section class="hero">
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="sidebar-head">
+          <div class="sidebar-title" id="sidebar-title">PlaybookOS</div>
+          <div class="sidebar-copy" id="sidebar-copy">AI Work OS control plane</div>
+        </div>
+        <nav id="sidebar-nav"></nav>
+      </aside>
+      <main class="shell">
+        <section class="topbar">
+          <div class="topbar-title">
+            <strong id="page-title"></strong>
+            <span id="page-subtitle"></span>
+          </div>
+          <div class="topbar-controls">
+            <div class="scope-card">
+              <label id="topbar-scope-label"></label>
+              <select id="global-scope-select">
+                <option value="all"></option>
+                <option value="goal"></option>
+                <option value="playbook"></option>
+                <option value="status"></option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <section class="hero" id="dashboard-hero" data-route-section>
+
         <div class="hero-top">
           <div>
             <span class="badge" id="hero-badge"></span>
@@ -710,17 +898,17 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         </div>
       </section>
 
-      <section class="section">
+      <section class="section" id="dashboard-summary-section" data-route-section>
         <div class="section-title"><h2 id="control-board-title"></h2><span id="control-board-subtitle"></span></div>
         <div class="grid" id="summary-grid"></div>
       </section>
 
-      <section class="section">
+      <section class="section" id="dashboard-api-section" data-route-section>
         <div class="section-title"><h2 id="api-entry-title"></h2><span id="api-entry-subtitle"></span></div>
         <div class="grid" id="endpoint-grid"></div>
       </section>
 
-      <section class="section">
+      <section class="section" id="workbench-section" data-route-section>
         <article class="card workbench-card">
           <div class="section-title"><h2 data-i18n="workbench_title"></h2><span data-i18n="workbench_subtitle"></span></div>
           <div class="workbench-status" id="workbench-status"></div>
@@ -819,14 +1007,14 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         </article>
       </section>
 
-      <section class="section">
+      <section class="section" id="authoring-section" data-route-section>
         <article class="card workbench-card">
           <div class="section-title"><h2 data-i18n="authoring_wizard_title"></h2><span data-i18n="authoring_wizard_subtitle"></span></div>
           <div class="patch-review-grid" id="authoring-wizard-rows"></div>
         </article>
       </section>
 
-      <section class="section">
+      <section class="section" id="editor-section" data-route-section>
         <article class="card workbench-card">
           <div class="section-title"><h2 data-i18n="editor_title"></h2><span data-i18n="editor_subtitle"></span></div>
           <div class="workbench-status" id="editor-status"></div>
@@ -854,7 +1042,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         </article>
       </section>
 
-      <section class="section">
+      <section class="section" id="action-center-section" data-route-section>
         <article class="card workbench-card">
           <div class="section-title"><h2 data-i18n="action_center"></h2><span data-i18n="action_center_subtitle"></span></div>
           <div class="action-status" id="action-status"></div>
@@ -875,42 +1063,42 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         </article>
       </section>
 
-      <section class="section">
+      <section class="section" id="supervisor-section" data-route-section>
         <article class="card workbench-card">
           <div class="section-title"><h2 data-i18n="supervisor_center_title"></h2><span data-i18n="supervisor_center_subtitle"></span></div>
           <div class="patch-review-grid" id="supervisor-summary-rows"></div>
         </article>
       </section>
 
-      <section class="section">
+      <section class="section" id="skill-version-section" data-route-section>
         <article class="card workbench-card">
           <div class="section-title"><h2 data-i18n="skill_version_title"></h2><span data-i18n="skill_version_subtitle"></span></div>
           <div class="skill-version-grid" id="skill-version-rows"></div>
         </article>
       </section>
 
-      <section class="section">
+      <section class="section" id="patch-review-section" data-route-section>
         <article class="card workbench-card">
           <div class="section-title"><h2 data-i18n="patch_review_title"></h2><span data-i18n="patch_review_subtitle"></span></div>
           <div class="patch-review-grid" id="patch-review-rows"></div>
         </article>
       </section>
 
-      <section class="section">
+      <section class="section" id="session-tree-section" data-route-section>
         <article class="card workbench-card">
           <div class="section-title"><h2 data-i18n="session_tree_title"></h2><span data-i18n="session_tree_subtitle"></span></div>
           <div class="session-groups" id="session-groups"></div>
         </article>
       </section>
 
-      <section class="section">
+      <section class="section" id="execution-inspector-section" data-route-section>
         <article class="card workbench-card">
           <div class="section-title"><h2 data-i18n="execution_inspector_title"></h2><span data-i18n="execution_inspector_subtitle"></span></div>
           <div class="patch-review-grid" id="execution-inspector-rows"></div>
         </article>
       </section>
 
-      <section class="section">
+      <section class="section" id="resource-peek-section" data-route-section>
         <div class="grid">
           <article class="card list-card">
             <div class="section-title"><h2 id="resource-peek-title"></h2><span id="resource-peek-subtitle"></span></div>
@@ -927,13 +1115,39 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         </div>
       </section>
 
-      <section class="section">
+      <section class="section" id="snapshot-section" data-route-section>
         <div class="section-title"><h2 id="snapshot-json-title"></h2><span id="snapshot-json-subtitle"></span></div>
         <article class="card"><pre id="snapshot-json"></pre></article>
       </section>
 
+      <section class="section" id="dashboard-flow-section" data-route-section>
+        <div class="section-title"><h2 id="global-flow-title"></h2><span id="global-flow-subtitle"></span></div>
+        <div class="flow-grid" id="global-flow-rows"></div>
+      </section>
+
+      <section class="section" id="settings-placeholder-section" data-route-section hidden>
+        <article class="card workbench-card">
+          <div class="section-title"><h2 data-i18n="route_placeholder_title"></h2><span data-i18n="route_placeholder_body"></span></div>
+          <div class="route-placeholder-grid">
+            <div class="placeholder-card" id="model-settings-panel" data-settings-panel="model-settings">
+              <h3 data-i18n="nav_model_settings"></h3>
+              <p data-i18n="settings_model_card"></p>
+            </div>
+            <div class="placeholder-card" id="global-settings-panel" data-settings-panel="global-settings">
+              <h3 data-i18n="nav_global_settings"></h3>
+              <p data-i18n="settings_global_card"></p>
+            </div>
+            <div class="placeholder-card" id="session-admin-panel" data-settings-panel="session-admin">
+              <h3 data-i18n="nav_session_admin"></h3>
+              <p data-i18n="settings_session_card"></p>
+            </div>
+          </div>
+        </article>
+      </section>
+
       <div class="footer" id="footer-text"></div>
-    </main>
+      </main>
+    </div>
 
     <script>
       const apiBase = {api_base_json};
@@ -947,6 +1161,56 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
       let latestAuthoringPacks = {{}};
       const editableSections = ['goals', 'playbooks', 'skills', 'mcp_servers', 'knowledge_bases', 'tasks'];
       let currentLanguage = localStorage.getItem('playbookos-language') || 'zh';
+      let currentRoute = (window.location.hash || '#dashboard').replace(/^#/, '') || 'dashboard';
+      const navGroups = [
+        {{ titleKey: 'nav_group_overview', routes: ['dashboard'] }},
+        {{ titleKey: 'nav_group_workbench', routes: ['goals', 'playbooks', 'skills', 'mcp', 'knowledge', 'tasks', 'sessions', 'learning', 'approvals', 'prompts'] }},
+        {{ titleKey: 'nav_group_settings', routes: ['model-settings', 'global-settings', 'session-admin'] }},
+        {{ titleKey: 'nav_group_system', routes: ['system'] }},
+      ];
+      const routeConfigs = {{
+        dashboard: {{ navKey: 'nav_dashboard', titleKey: 'page_dashboard_title', subtitleKey: 'page_dashboard_subtitle' }},
+        goals: {{ navKey: 'nav_goals', titleKey: 'page_goals_title', subtitleKey: 'page_goals_subtitle' }},
+        playbooks: {{ navKey: 'nav_playbooks', titleKey: 'page_playbooks_title', subtitleKey: 'page_playbooks_subtitle' }},
+        skills: {{ navKey: 'nav_skills', titleKey: 'page_skills_title', subtitleKey: 'page_skills_subtitle' }},
+        mcp: {{ navKey: 'nav_mcp', titleKey: 'page_mcp_title', subtitleKey: 'page_mcp_subtitle' }},
+        knowledge: {{ navKey: 'nav_knowledge', titleKey: 'page_knowledge_title', subtitleKey: 'page_knowledge_subtitle' }},
+        tasks: {{ navKey: 'nav_tasks', titleKey: 'page_tasks_title', subtitleKey: 'page_tasks_subtitle' }},
+        sessions: {{ navKey: 'nav_sessions', titleKey: 'page_sessions_title', subtitleKey: 'page_sessions_subtitle' }},
+        learning: {{ navKey: 'nav_learning', titleKey: 'page_learning_title', subtitleKey: 'page_learning_subtitle' }},
+        approvals: {{ navKey: 'nav_approvals', titleKey: 'page_approvals_title', subtitleKey: 'page_approvals_subtitle' }},
+        prompts: {{ navKey: 'nav_prompts', titleKey: 'page_prompts_title', subtitleKey: 'page_prompts_subtitle' }},
+        'model-settings': {{ navKey: 'nav_model_settings', titleKey: 'page_model_settings_title', subtitleKey: 'page_model_settings_subtitle' }},
+        'global-settings': {{ navKey: 'nav_global_settings', titleKey: 'page_global_settings_title', subtitleKey: 'page_global_settings_subtitle' }},
+        'session-admin': {{ navKey: 'nav_session_admin', titleKey: 'page_session_admin_title', subtitleKey: 'page_session_admin_subtitle' }},
+        system: {{ navKey: 'nav_versions', titleKey: 'page_system_title', subtitleKey: 'page_system_subtitle' }},
+      }};
+      const routeSections = {{
+        dashboard: ['dashboard-hero', 'dashboard-summary-section', 'dashboard-flow-section', 'dashboard-api-section', 'action-center-section', 'supervisor-section', 'resource-peek-section', 'snapshot-section'],
+        goals: ['workbench-section', 'editor-section', 'action-center-section'],
+        playbooks: ['workbench-section', 'patch-review-section', 'editor-section'],
+        skills: ['workbench-section', 'authoring-section', 'skill-version-section', 'editor-section'],
+        mcp: ['workbench-section', 'editor-section'],
+        knowledge: ['workbench-section', 'editor-section'],
+        tasks: ['workbench-section', 'editor-section', 'action-center-section'],
+        sessions: ['session-tree-section', 'execution-inspector-section', 'supervisor-section'],
+        learning: ['patch-review-section', 'skill-version-section', 'supervisor-section'],
+        approvals: ['action-center-section'],
+        prompts: ['workbench-section'],
+        'model-settings': ['settings-placeholder-section'],
+        'global-settings': ['settings-placeholder-section'],
+        'session-admin': ['settings-placeholder-section', 'session-tree-section'],
+        system: ['dashboard-api-section', 'snapshot-section'],
+      }};
+      const workbenchRouteForms = {{
+        goals: ['goal-form'],
+        playbooks: ['sop-ingest-form', 'playbook-form', 'ingest-guidance'],
+        skills: ['skill-form'],
+        mcp: ['mcp-server-form'],
+        knowledge: ['knowledge-form'],
+        tasks: ['task-form'],
+        prompts: ['ingest-guidance'],
+      }};
 
       function t(key) {{
         return translations[currentLanguage][key];
@@ -1030,6 +1294,115 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         node.style.color = state === 'error' ? '#fca5a5' : state === 'success' ? '#86efac' : 'var(--muted)';
       }}
 
+      function routeCount(route) {{
+        if (route === 'dashboard') return sectionOrder.reduce((total, section) => total + sumValues(currentSnapshot[section] || {{}}), 0);
+        if (route === 'goals') return sumValues(currentSnapshot.goals || {{}});
+        if (route === 'playbooks') return sumValues(currentSnapshot.playbooks || {{}});
+        if (route === 'skills') return sumValues(currentSnapshot.skills || {{}});
+        if (route === 'mcp') return sumValues(currentSnapshot.mcp_servers || {{}});
+        if (route === 'knowledge') return sumValues(currentSnapshot.knowledge_bases || {{}}) + sumValues(currentSnapshot.knowledge_updates || {{}});
+        if (route === 'tasks') return sumValues(currentSnapshot.tasks || {{}});
+        if (route === 'sessions') return sumValues(currentSnapshot.sessions || {{}});
+        if (route === 'learning') return sumValues(currentSnapshot.reflections || {{}}) + sumValues(currentSnapshot.knowledge_updates || {{}});
+        if (route === 'approvals') return Number((currentSnapshot.runs || {{}}).waiting_human || 0) + Number((currentSnapshot.tasks || {{}}).review || 0);
+        if (route === 'prompts') return latestIngestionResult && latestIngestionResult.tooling_guidance ? (latestIngestionResult.tooling_guidance.prompt_blocks || []).length : 0;
+        return 0;
+      }}
+
+      function renderSidebarNav() {{
+        const nav = document.getElementById('sidebar-nav');
+        nav.innerHTML = navGroups.map((group) => `
+          <div class="sidebar-group">
+            <div class="sidebar-group-title">${{escapeHtml(t(group.titleKey))}}</div>
+            ${{group.routes.map((route) => {{
+              const config = routeConfigs[route];
+              const active = currentRoute === route ? 'active' : '';
+              const count = routeCount(route);
+              return `
+                <button class="nav-button ${{active}}" type="button" data-route="${{route}}">
+                  <span class="nav-button-label">${{escapeHtml(t(config.navKey))}}</span>
+                  <span class="nav-badge">${{count}}</span>
+                </button>
+              `;
+            }}).join('')}}
+          </div>
+        `).join('');
+      }}
+
+      function renderGlobalFlow() {{
+        const items = [
+          {{ route: 'goals', label: t('nav_goals'), total: sumValues(currentSnapshot.goals || {{}}), pending: Number((currentSnapshot.goals || {{}}).running || 0) + Number((currentSnapshot.goals || {{}}).blocked || 0), errors: Number((currentSnapshot.goals || {{}}).blocked || 0) }},
+          {{ route: 'playbooks', label: t('nav_playbooks'), total: sumValues(currentSnapshot.playbooks || {{}}), pending: Number((currentSnapshot.playbooks || {{}}).draft || 0), errors: Number((currentSnapshot.playbooks || {{}}).deprecated || 0) }},
+          {{ route: 'skills', label: `${{t('nav_skills')}} / ${{t('nav_mcp')}}`, total: sumValues(currentSnapshot.skills || {{}}) + sumValues(currentSnapshot.mcp_servers || {{}}), pending: Number((currentSnapshot.skills || {{}}).draft || 0) + Number((currentSnapshot.mcp_servers || {{}}).inactive || 0), errors: Number((currentSnapshot.mcp_servers || {{}}).error || 0) }},
+          {{ route: 'tasks', label: t('nav_tasks'), total: sumValues(currentSnapshot.tasks || {{}}), pending: Number((currentSnapshot.tasks || {{}}).ready || 0) + Number((currentSnapshot.tasks || {{}}).running || 0) + Number((currentSnapshot.tasks || {{}}).waiting_human || 0), errors: Number((currentSnapshot.tasks || {{}}).blocked || 0) + Number((currentSnapshot.tasks || {{}}).failed || 0) }},
+          {{ route: 'sessions', label: `${{t('nav_sessions')}} / Run`, total: sumValues(currentSnapshot.sessions || {{}}) + sumValues(currentSnapshot.runs || {{}}), pending: Number((currentSnapshot.runs || {{}}).running || 0) + Number((currentSnapshot.runs || {{}}).waiting_human || 0), errors: Number((currentSnapshot.runs || {{}}).failed || 0) + Number((currentSnapshot.runs || {{}}).timed_out || 0) }},
+          {{ route: 'approvals', label: 'Acceptance / Reflection', total: sumValues(currentSnapshot.acceptances || {{}}) + sumValues(currentSnapshot.reflections || {{}}), pending: Number((currentSnapshot.runs || {{}}).waiting_human || 0) + Number((currentSnapshot.reflections || {{}}).proposed || 0), errors: Number((currentSnapshot.reflections || {{}}).rejected || 0) }},
+          {{ route: 'learning', label: `${{t('nav_learning')}} / Knowledge`, total: sumValues(currentSnapshot.knowledge_updates || {{}}) + sumValues(currentSnapshot.knowledge_bases || {{}}), pending: Number((currentSnapshot.knowledge_updates || {{}}).proposed || 0), errors: Number((currentSnapshot.knowledge_updates || {{}}).rejected || 0) }},
+        ];
+        const container = document.getElementById('global-flow-rows');
+        if (!container) return;
+        container.innerHTML = items.map((item) => `
+          <article class="flow-card">
+            <strong>${{escapeHtml(item.label)}}</strong>
+            <small>${{escapeHtml(`${{item.total}} total · ${{item.pending}} pending · ${{item.errors}} issues`)}}</small>
+            <div class="pill-row">
+              <span class="pill">total · ${{item.total}}</span>
+              <span class="pill">pending · ${{item.pending}}</span>
+              <span class="pill">issues · ${{item.errors}}</span>
+            </div>
+            <a class="flow-link" href="#${{item.route}}">${{escapeHtml(t(routeConfigs[item.route].navKey))}} →</a>
+          </article>
+        `).join('');
+      }}
+
+      function updatePageHeader() {{
+        const config = routeConfigs[currentRoute] || routeConfigs.dashboard;
+        document.getElementById('page-title').textContent = t(config.titleKey);
+        document.getElementById('page-subtitle').textContent = t(config.subtitleKey);
+        document.getElementById('topbar-scope-label').textContent = t('topbar_scope_label');
+        const scopeSelect = document.getElementById('global-scope-select');
+        scopeSelect.options[0].text = t('topbar_scope_all');
+        scopeSelect.options[1].text = t('topbar_scope_goal');
+        scopeSelect.options[2].text = t('topbar_scope_playbook');
+        scopeSelect.options[3].text = t('topbar_scope_status');
+      }}
+
+      function setWorkbenchMode(route) {{
+        const visibleIds = new Set(workbenchRouteForms[route] || []);
+        [
+          'goal-form', 'sop-ingest-form', 'playbook-form', 'skill-form', 'mcp-server-form', 'knowledge-form', 'task-form', 'ingest-guidance'
+        ].forEach((id) => {{
+          const node = document.getElementById(id);
+          if (!node) return;
+          const card = node.closest('.form-card') || node;
+          card.hidden = visibleIds.size ? !visibleIds.has(id) : false;
+        }});
+      }}
+
+      function setSettingsMode(route) {{
+        document.querySelectorAll('[data-settings-panel]').forEach((node) => {{
+          node.hidden = route !== 'model-settings' && route !== 'global-settings' && route !== 'session-admin'
+            ? false
+            : node.dataset.settingsPanel !== route;
+        }});
+      }}
+
+      function applyRoute(route, updateHash = false) {{
+        currentRoute = routeConfigs[route] ? route : 'dashboard';
+        if (updateHash) {{
+          window.location.hash = currentRoute;
+          return;
+        }}
+        const visibleSections = new Set(routeSections[currentRoute] || routeSections.dashboard);
+        document.querySelectorAll('[data-route-section]').forEach((section) => {{
+          section.hidden = !visibleSections.has(section.id);
+        }});
+        setWorkbenchMode(currentRoute);
+        setSettingsMode(currentRoute);
+        updatePageHeader();
+        renderSidebarNav();
+      }}
+
       function applyLanguage(language) {{
         currentLanguage = translations[language] ? language : 'zh';
         localStorage.setItem('playbookos-language', currentLanguage);
@@ -1062,6 +1435,8 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         document.getElementById('timeline-3').textContent = t('timeline_3');
         document.getElementById('snapshot-json-title').textContent = t('snapshot_json');
         document.getElementById('snapshot-json-subtitle').textContent = t('snapshot_json_subtitle');
+        document.getElementById('global-flow-title').textContent = t('global_flow_title');
+        document.getElementById('global-flow-subtitle').textContent = t('global_flow_subtitle');
         document.getElementById('footer-text').textContent = t('footer');
         document.getElementById('lang-zh').classList.toggle('active', currentLanguage === 'zh');
         document.getElementById('lang-en').classList.toggle('active', currentLanguage === 'en');
@@ -1079,8 +1454,11 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
           setActionStatus(t('action_status_ready'));
         }}
         renderSummary(currentSnapshot);
+        renderGlobalFlow();
         renderEndpointCards();
         renderWorkbenchOptions();
+        renderSidebarNav();
+        updatePageHeader();
         renderActionCenter();
         renderSkillVersions();
         renderPatchReviews();
@@ -1090,6 +1468,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
           document.getElementById('editor-status').textContent = t('editor_status_ready');
         }}
         refreshEditorResourceOptions();
+        applyRoute(currentRoute);
       }}
 
       function renderSummary(snapshot) {{
@@ -2168,6 +2547,16 @@ ${{t('skill_version_servers')}}: ${{(skill.required_mcp_servers || []).join(', '
         showBootError(event.reason);
       }});
 
+      window.addEventListener('hashchange', () => {{
+        applyRoute((window.location.hash || '#dashboard').replace(/^#/, '') || 'dashboard');
+      }});
+
+      document.getElementById('sidebar-nav').addEventListener('click', (event) => {{
+        const button = event.target.closest('[data-route]');
+        if (!button) return;
+        applyRoute(button.dataset.route, true);
+      }});
+
       document.getElementById('refresh-board').addEventListener('click', async () => {{
         const button = document.getElementById('refresh-board');
         button.textContent = currentLanguage === 'zh' ? '刷新中…' : 'Refreshing…';
@@ -2183,6 +2572,7 @@ ${{t('skill_version_servers')}}: ${{(skill.required_mcp_servers || []).join(', '
       }});
 
       applyLanguage(currentLanguage);
+      applyRoute(currentRoute);
       document.getElementById('resource-rows').innerHTML = `<div class="row"><div><strong>${{escapeHtml(t('loading_resources_title'))}}</strong><small>${{escapeHtml(t('loading_resources_body'))}}</small></div><span class="state">${{escapeHtml(t('booting'))}}</span></div>`;
       refresh().catch((error) => {{
         showBootError(error);
