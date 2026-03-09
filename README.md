@@ -1,307 +1,200 @@
-# PlaybookOS MVP
+# PlaybookOS
 
-PlaybookOS 是一个面向 AI 工作流的“工作操作系统（AI Work Operating System）”。
+- 中文：PlaybookOS 是一个面向 AI 工作流的控制面系统（AI Work Operating System）。它把 `Goal -> SOP -> Skill / MCP -> Task -> Run -> Acceptance / Reflection / Knowledge` 做成可追踪、可审批、可恢复、可迭代的一条主链。
+- English: PlaybookOS is a control plane for AI work. It turns `Goal -> SOP -> Skill / MCP -> Task -> Run -> Acceptance / Reflection / Knowledge` into a trackable, reviewable, recoverable, and continuously improvable operating loop.
 
-它不是单纯的聊天式 Agent 框架，而是把 `Goal -> SOP -> Skill / MCP -> Task -> Run -> Acceptance / Reflection / Knowledge` 做成可追踪、可审批、可恢复、可迭代的控制面系统。
+## 项目简介 / Overview
 
-## 当前真实状态
+- 中文：这个仓库不是“再做一个聊天机器人 UI”，而是在做一套让人类与外部 agent 都能操作的工作系统。它的重点是把目标、SOP、能力、执行、验收、复盘、知识沉淀统一到同一个控制面里。
+- English: This repository is not “just another chat UI.” It is a work operating system that both humans and external agents can use to manage goals, SOPs, capabilities, execution, acceptance, reflection, and knowledge in one control plane.
 
-当前仓库已经实现一条可运行的本地主链：
+- 中文：当前版本是一个可运行的 MVP，强调 `Markdown-first`、本地可跑、对象可追踪、agent 可接入。
+- English: The current version is a runnable MVP focused on `Markdown-first` SOP ingestion, local execution, traceable objects, and external-agent integration.
 
-- 控制面 API：Goal / Playbook / Skill / MCP / Knowledge / Task / Run / Session / Acceptance / Reflection / Event / Object
-- 本地持久化：SQLite + 本地对象存储
-- 执行闭环：Planner、Orchestrator、Supervisor、Executor、Reflection
-- 前端控制台：全局看板 + 左侧导航工作台 + 设置页
-- Markdown SOP ingestion：从 SOP 中提取步骤、识别工具域、生成 Skill 建议、生成 MCP 缺口引导
-- 设置治理：模型运行时设置、provider preset、连接测试、命名环境、全局设置、会话管理
-- Agent 接入面：`/api/agent/manifest`、`/api/agent/context`、`/api/agent/intake`、`/api/agent/apply`、`/api/delegation-profiles` 与 `playbookos-operator` skill
+## 它是什么 / What It Is
 
-当前重点是 **Markdown-first**：
+- 中文：一个把业务目标拆成 Playbook、Task、Run，并把 Skill / MCP / 知识沉淀接进来的控制面系统。
+- English: A control plane that breaks business goals into playbooks, tasks, and runs, while connecting capabilities such as skills, MCP servers, and knowledge updates.
 
-- `playbooks/ingest` 现在只支持 `Markdown SOP`
-- 系统会优先帮你回答：这份 SOP 需要哪些工具、哪些 MCP 已存在、还缺哪些 MCP、建议上传哪些 Skill
-- PDF / Docx / 图片 / 多附件解析还没有做成正式能力
+- 中文：一个支持人类操作台和外部 agent 操作面的系统；Dashboard 给人看，agent-facing API 和 skill 给 OpenClaw 这类 agent 用。
+- English: A system with both a human dashboard and an agent-facing surface; the dashboard serves humans, while APIs and skills serve OpenClaw-like agents.
 
-## 当前还没完成
+- 中文：一个强调“先把链路跑通，再逐步补治理”的 runnable-first 项目。
+- English: A runnable-first project that prioritizes a working end-to-end loop before adding deeper governance.
 
-以下仍然是后续计划，而不是当前已完成能力：
+## 它不是什么 / What It Is Not
 
-- 真正的 Temporal workflow 运行时接入
-- 完整的 MCP runtime / credential / tool execution（当前仅完成 health probe 第一版）
-- 完整的 agent identity / 更细粒度 delegation policy / 托管运营闭环（当前已完成 delegation profile + 最小 apply 第一版）
-- 多格式 SOP 与多附件解析
-- 更细粒度的 SOP diff / patch review / publish gating
-- Skill / MCP 的导入导出、完整治理与审计流
-- Artifact blob 的外部对象存储治理
+- 中文：它不是一个通用大模型框架替代品，也不是完整的 MCP runtime 平台。
+- English: It is not a general-purpose LLM framework replacement, nor a full MCP runtime platform.
 
-## 仓库结构
+- 中文：它当前还不是多格式文档理解平台；现阶段只正式支持 `Markdown SOP`。
+- English: It is not yet a multi-format document understanding platform; the current supported ingestion format is `Markdown SOP` only.
 
-- `docs/prd.md`：产品定义与范围
-- `docs/architecture.md`：系统架构与模块边界
-- `docs/data-model.md`：核心对象与表结构草案
-- `docs/mvp-plan.md`：MVP 模块、接口与里程碑
-- `docs/ui-redesign.md`：前端重构方案与页面设计
-- `docs/agent-operator.md`：外部 agent / OpenClaw 接入方案与 skill 设计
-- `docs/managed-agent-demo.md`：外部 agent 托管示例与演示记录
-- `docs/records/progress.md`：持续进展记录
-- `docs/records/iteration-memory.md`：阶段性结论与缺口排序
-- `data/sql/postgres_schema.sql`：PostgreSQL schema 草案
-- `data/sql/sqlite_schema.sql`：SQLite schema
-- `src/playbookos/api/`：FastAPI 控制面
-- `src/playbookos/ui/`：Dashboard HTML 与 Preview Server
-- `src/playbookos/persistence/`：SQLite store 与装配
-- `src/playbookos/object_store/`：本地对象存储
-- `src/playbookos/ingestion/`：Markdown SOP 解析、Skill/MCP 引导
-- `src/playbookos/planner/`：Playbook -> Task DAG
-- `src/playbookos/orchestrator/`：任务推进与 Temporal-ready 规格输出
-- `src/playbookos/supervisor/`：Supervisor / Worker Session、Acceptance、Event
-- `src/playbookos/executor/`：执行适配层与 autopilot
-- `src/playbookos/reflection/`：反思、知识回写与发布链
-- `src/playbookos/runtime_settings.py`：模型与全局运行时设置
-- `tests/`：单元测试
-- `skills/`：给外部 agent 使用的 skill 包（当前含 `playbookos-operator`）
+- 中文：它也还不是完整的托管运营系统；更细粒度的 agent identity、回滚、巡检、治理仍在后续计划里。
+- English: It is also not yet a fully managed operations system; finer-grained agent identity, rollback, patrol loops, and governance are still planned work.
 
-## 已实现能力
+## 当前真实状态 / Current Status
 
-### 1. 控制面对象
+- 中文：仓库已经实现本地可运行的 API、SQLite 持久化、本地对象存储、任务编排主链、前端预览控制台、Markdown SOP ingestion，以及第一版 agent-facing control plane。
+- English: The repository already includes a runnable API, SQLite persistence, local object storage, execution orchestration, a preview dashboard, Markdown SOP ingestion, and a first agent-facing control plane.
 
-当前已落地的核心对象包括：
+- 中文：当前最稳的主链是：`上传或粘贴 Markdown SOP -> 解析步骤与工具域 -> 识别 Skill / MCP 缺口 -> 生成 Playbook / draft Skill / draft MCP -> 进入 Task / Run / Reflection / Knowledge 链路`。
+- English: The most stable flow today is: `submit Markdown SOP -> parse steps and tool domains -> identify Skill / MCP gaps -> generate Playbook / draft Skill / draft MCP -> continue into Task / Run / Reflection / Knowledge`.
 
-- Goal
-- Playbook
-- Skill
-- MCPServer
-- KnowledgeBase
-- KnowledgeUpdate
-- Task
-- Session
-- Run
-- Acceptance
-- Artifact
-- Reflection
-- Event
-- StoredObject
+- 中文：当前对外 agent 已可通过 `manifest / context / intake / apply / delegation profile` 接口发现能力、同步上下文、规划操作并在授权边界内执行一部分 builder 动作。
+- English: External agents can already use `manifest / context / intake / apply / delegation profile` APIs to discover capabilities, sync context, plan operations, and execute a subset of builder actions within delegation limits.
 
-### 2. SOP ingestion（Markdown）
+## 核心主链 / Core Flow
 
-当前 ingest 主链支持：
+- 中文：`Goal` 定义目标；`Playbook` 承载 SOP 编译结果；`Skill` 与 `MCPServer` 描述能力；`Task` 与 `Run` 描述执行；`Acceptance / Reflection / KnowledgeUpdate` 负责验收、复盘与知识回写。
+- English: `Goal` defines intent; `Playbook` stores compiled SOPs; `Skill` and `MCPServer` describe capabilities; `Task` and `Run` describe execution; `Acceptance / Reflection / KnowledgeUpdate` handle review, learning, and knowledge write-back.
 
-- 上传 / 粘贴 Markdown SOP
-- 启发式提取步骤并生成 `compiled_spec.steps`
-- 识别 GitHub / Slack / Notion / Jira / Email / Sheets / Calendar 等工具域
-- 生成 Skill 建议
-- 生成 MCP 缺口与可复用候选
-- 输出工具发现、Skill 上传、MCP 接入三类 prompt blocks
-- 一键物化 draft Skill
-- 一键物化 draft MCP
-- 原始 SOP 持久化到本地对象存储，并通过 `/api/objects/*` 回看原文
+- 中文：控制面的核心不是“直接调用模型”，而是“让对象、状态、依赖、审批、学习都留痕”。
+- English: The control plane is not primarily about “calling a model,” but about making objects, states, dependencies, approvals, and learning traceable.
 
-### 3. 执行主链
+## 当前已实现能力 / Implemented Today
 
-当前执行链支持：
+- 中文：控制面对象：`Goal`、`Playbook`、`Skill`、`MCPServer`、`KnowledgeBase`、`KnowledgeUpdate`、`Task`、`Session`、`Run`、`Acceptance`、`Artifact`、`Reflection`、`Event`、`StoredObject`、`DelegationProfile`。
+- English: Implemented control-plane objects include `Goal`, `Playbook`, `Skill`, `MCPServer`, `KnowledgeBase`, `KnowledgeUpdate`, `Task`, `Session`, `Run`, `Acceptance`, `Artifact`, `Reflection`, `Event`, `StoredObject`, and `DelegationProfile`.
 
-- `Playbook -> Task DAG` 规划
-- 任务依赖推进与批次派发
-- Supervisor / Worker Session 自动建立
-- Run 执行与 Artifact 元数据生成
-- waiting_human / approve / reject / complete 状态联动
-- Run 反思、KnowledgeUpdate 提案、Reflection 评测 / 批准 / 发布
+- 中文：SOP ingestion：支持 `Markdown SOP` 解析、步骤提取、工具域识别、Skill 建议、MCP 缺口识别、prompt blocks 生成，以及 draft Skill / draft MCP 物化。
+- English: SOP ingestion supports `Markdown SOP` parsing, step extraction, tool-domain detection, Skill suggestions, MCP gap detection, prompt-block generation, and draft Skill / draft MCP materialization.
 
-### 4. Dashboard / 设置页
+- 中文：执行链：支持 `Playbook -> Task DAG` 规划、依赖推进、Run 创建、Supervisor / Worker Session、waiting_human 与审批状态联动、Reflection 与 KnowledgeUpdate 主链。
+- English: The execution chain supports `Playbook -> Task DAG` planning, dependency progression, run creation, Supervisor / Worker sessions, waiting-human/approval transitions, and Reflection / KnowledgeUpdate flows.
 
-当前内置控制台已经不是单页堆叠，而是：
+- 中文：控制台：已具备全局看板、左侧工作台导航、模型设置、全局设置、会话管理、MCP probe、任务/学习摘要等页面骨架与交互。
+- English: The dashboard already includes a global board, left-side workbench navigation, model settings, global settings, session management, MCP probing, and task/learning summaries.
 
-- 默认首页：全局看板
-- 左侧导航：目标、SOP、Skill、MCP、知识库、任务、会话、自动迭代、审批流、提示词
-- 设置页：模型设置、全局设置、会话管理
+- 中文：Agent 接入：已提供 `GET /api/agent/manifest`、`GET /api/agent/context`、`POST /api/agent/intake`、`POST /api/agent/apply`、`GET/POST/PUT /api/delegation-profiles*`，以及 `skills/playbookos-operator/`。
+- English: Agent integration already includes `GET /api/agent/manifest`, `GET /api/agent/context`, `POST /api/agent/intake`, `POST /api/agent/apply`, `GET/POST/PUT /api/delegation-profiles*`, plus the `skills/playbookos-operator/` package.
 
-MCP 工作台当前还支持：
+## 快速启动 / Quick Start
 
-- 对已登记 MCP 发起 `health probe`
-- 展示最近一次探测状态、时间与消息
-- 在 UI 中把“已登记但未探测”和“探测失败”的状态区分开
-
-设置页当前支持：
-
-- 运行时模型设置修改
-- provider preset 应用
-- 模型连通性测试
-- 命名模型环境保存 / 激活
-- 最近成功 probe 展示
-- 全局默认语言 / 路由 / 筛选 / 自动刷新 / 环境标签
-- 会话按 Goal / Run 过滤和基础更新
-
-## API（以代码为准）
-
-`src/playbookos/api/app.py` 是当前 API 的单一事实来源。下面是当前实际已实现的主要接口分组。
-
-### 首页 / 系统
-
-- `GET /`
-- `GET /healthz`
-- `GET /api/board`
-- `GET /api/meta/enums`
-- `GET /api/errors`
-- `GET /api/agent/manifest`
-- `GET /api/agent/context`
-- `POST /api/agent/intake`
-- `POST /api/agent/apply`
-- `GET /api/delegation-profiles`
-- `POST /api/delegation-profiles`
-- `GET /api/delegation-profiles/{delegation_profile_id}`
-- `PUT /api/delegation-profiles/{delegation_profile_id}`
-
-### 运行时设置
-
-- `GET /api/runtime-settings`
-- `PUT /api/runtime-settings`
-- `POST /api/runtime-settings/test`
-- `POST /api/runtime-settings/profiles`
-- `POST /api/runtime-settings/profiles/activate`
-
-### Goals
-
-- `POST /api/goals`
-- `GET /api/goals`
-- `GET /api/goals/{goal_id}`
-- `PUT /api/goals/{goal_id}`
-- `POST /api/goals/{goal_id}/plan`
-- `POST /api/goals/{goal_id}/dispatch`
-- `POST /api/goals/{goal_id}/autopilot`
-- `GET /api/goals/{goal_id}/learning`
-- `POST /api/goals/{goal_id}/start`
-- `POST /api/goals/{goal_id}/complete-review`
-
-### Playbooks / ingestion
-
-- `POST /api/playbooks/import`
-- `POST /api/playbooks/ingest`
-- `GET /api/playbooks`
-- `GET /api/playbooks/{playbook_id}`
-- `PUT /api/playbooks/{playbook_id}`
-- `POST /api/playbooks/{playbook_id}/compile`
-- `POST /api/playbooks/{playbook_id}/skill-drafts`
-- `POST /api/playbooks/{playbook_id}/mcp-drafts`
-
-### Skills
-
-- `POST /api/skills`
-- `GET /api/skills`
-- `GET /api/skills/{skill_id}`
-- `PUT /api/skills/{skill_id}`
-- `GET /api/skills/{skill_id}/authoring-pack`
-- `POST /api/skills/{skill_id}/apply-authoring-pack`
-- `POST /api/skills/{skill_id}/create-version`
-- `POST /api/skills/{skill_id}/activate`
-- `POST /api/skills/{skill_id}/deprecate`
-- `POST /api/skills/{skill_id}/rollback`
-
-### MCP / Knowledge / Session
-
-- `POST /api/mcp-servers`
-- `GET /api/mcp-servers`
-- `GET /api/mcp-servers/{mcp_server_id}`
-- `PUT /api/mcp-servers/{mcp_server_id}`
-- `POST /api/mcp-servers/{mcp_server_id}/probe`
-- `POST /api/knowledge-bases`
-- `GET /api/knowledge-bases`
-- `GET /api/knowledge-bases/{knowledge_id}`
-- `PUT /api/knowledge-bases/{knowledge_id}`
-- `GET /api/knowledge-updates`
-- `GET /api/knowledge-updates/{knowledge_update_id}`
-- `POST /api/knowledge-updates/{knowledge_update_id}/apply`
-- `POST /api/knowledge-updates/{knowledge_update_id}/reject`
-- `GET /api/sessions`
-- `GET /api/sessions/{session_id}`
-- `PUT /api/sessions/{session_id}`
-
-### Tasks / Runs / Artifacts / Objects / Reflections
-
-- `POST /api/tasks`
-- `GET /api/tasks`
-- `GET /api/tasks/{task_id}`
-- `PUT /api/tasks/{task_id}`
-- `POST /api/tasks/{task_id}/accept`
-- `POST /api/tasks/{task_id}/complete`
-- `POST /api/runs`
-- `GET /api/runs`
-- `GET /api/runs/{run_id}`
-- `POST /api/runs/{run_id}/execute`
-- `POST /api/runs/{run_id}/reflect`
-- `POST /api/runs/{run_id}/approve`
-- `POST /api/runs/{run_id}/reject`
-- `POST /api/artifacts`
-- `GET /api/artifacts`
-- `GET /api/artifacts/{artifact_id}`
-- `GET /api/objects`
-- `GET /api/objects/{object_id}`
-- `GET /api/objects/{object_id}/content`
-- `POST /api/reflections`
-- `GET /api/reflections`
-- `POST /api/reflections/{reflection_id}/evaluate`
-- `POST /api/reflections/{reflection_id}/approve`
-- `POST /api/reflections/{reflection_id}/reject`
-- `POST /api/reflections/{reflection_id}/publish`
-- `GET /api/acceptances`
-- `GET /api/acceptances/{acceptance_id}`
-- `GET /api/events`
-
-## 运行方式
-
-### 1. API 服务
+### 1) 安装 / Install
 
 ```bash
+cd /home/greed/playbookos-mvp
+python3 -m venv .venv
+. .venv/bin/activate
 pip install -e .
-playbookos-api
 ```
 
-或者：
+- 中文：要求 Python `3.11+`。
+- English: Python `3.11+` is required.
+
+### 2) 启动 API / Run the API
 
 ```bash
-PYTHONPATH=src uvicorn playbookos.api.app:app --host 0.0.0.0 --port 8000
+cd /home/greed/playbookos-mvp
+PYTHONPATH=src python3 -m playbookos.api.app
 ```
 
-打开：`http://127.0.0.1:8000/`
+- 中文：默认监听 `http://127.0.0.1:8000`。
+- English: The API listens on `http://127.0.0.1:8000` by default.
 
-### 2. Preview Demo
+### 3) 启动预览控制台 / Run the Preview Dashboard
 
 ```bash
+cd /home/greed/playbookos-mvp
 PYTHONPATH=src python3 -m playbookos.ui.preview_server --demo --host 0.0.0.0 --port 8081
 ```
 
-打开：`http://127.0.0.1:8081/`
+- 中文：默认演示地址为 `http://127.0.0.1:8081`；加 `--demo` 会使用内置演示数据。
+- English: The preview dashboard is available at `http://127.0.0.1:8081`; `--demo` serves built-in demo data.
 
-## 存储与环境变量
+## 给 OpenClaw / 外部 Agent 的快速接入 / Quick Integration for OpenClaw-like Agents
 
-默认：
+### 接入原则 / Integration Model
 
-- SQLite：`data/playbookos.db`
-- 错误日志：`data/error_records.jsonl`
-- 对象存储：`data/object_store/`
-- 运行时设置：`data/runtime_settings.json`
+- 中文：PlaybookOS 不是要求外部 agent “看网页点击按钮”，而是提供一套 agent-friendly API 和配套 skill，让 agent 能理解系统对象、操作顺序和授权边界。
+- English: PlaybookOS does not expect external agents to “read the web UI and click buttons.” Instead, it exposes agent-friendly APIs and a companion skill so agents can understand objects, operation order, and delegation boundaries.
 
-常用环境变量：
+### 最短接入步骤 / Shortest Path
 
-- `PLAYBOOKOS_DB_PATH`
-- `DATABASE_URL`
-- `PLAYBOOKOS_ERROR_LOG_PATH`
-- `PLAYBOOKOS_OBJECT_STORE_PATH`
-- `PLAYBOOKOS_RUNTIME_SETTINGS_PATH`
-- `PLAYBOOKOS_OPENAI_API_KEY` / `OPENAI_API_KEY`
-- `PLAYBOOKOS_OPENAI_BASE_URL` / `OPENAI_BASE_URL`
-- `PLAYBOOKOS_OPENAI_MODEL` / `OPENAI_MODEL`
-- `PLAYBOOKOS_OPENAI_API_FORMAT`
-- `PLAYBOOKOS_OPENAI_TIMEOUT`
-- `PLAYBOOKOS_OPENAI_MAX_OUTPUT_TOKENS`
-- `PLAYBOOKOS_OPENAI_TEMPERATURE`
+1. `git clone` 本仓库，并让外部 agent 能读取 `skills/playbookos-operator/SKILL.md`。
+2. 调用 `GET /api/agent/manifest`，获取 PlaybookOS 的对象、接口和推荐操作顺序。
+3. 调用 `GET /api/agent/context`，同步当前 blocked goals、draft skills、MCP 健康状态、等待审批项等上下文。
+4. 如果人类给出的是对话或 Markdown SOP，先调用 `POST /api/agent/intake` 做 dry-run 规划。
+5. 如果系统启用了 delegation profile，再调用 `POST /api/agent/apply` 执行授权范围内的 builder 操作。
 
-## 验证
+### 推荐调用顺序 / Recommended Sequence
 
-常用本地验证命令：
+```text
+manifest -> context -> intake -> delegation profile lookup/create -> apply
+```
+
+### 最小示例 / Minimal Example
 
 ```bash
+curl -s http://127.0.0.1:8000/api/agent/manifest
+curl -s http://127.0.0.1:8000/api/agent/context
+```
+
+- 中文：当人类上传一份 Markdown SOP 时，agent 应优先把原始 SOP 发给 `/api/agent/intake`，让系统先产出结构化操作计划、Skill 建议、MCP 缺口和可复用候选，再决定是否 apply。
+- English: When a human uploads a Markdown SOP, the agent should first send it to `/api/agent/intake` so the system can produce a structured operation plan, Skill suggestions, MCP gaps, and reuse candidates before deciding whether to apply changes.
+
+### 相关文件 / Relevant Files
+
+- `skills/playbookos-operator/SKILL.md`
+- `docs/agent-operator.md`
+- `docs/managed-agent-demo.md`
+
+## 目录与文档 / Repo Map
+
+- `src/playbookos/api/app.py`：FastAPI 控制面单一事实来源 / single source of truth for the API.
+- `src/playbookos/ui/preview_server.py`：无 FastAPI 依赖的预览控制台 / preview dashboard server.
+- `src/playbookos/ingestion/`：Markdown SOP 解析与 Skill / MCP 引导 / Markdown SOP ingestion and capability guidance.
+- `src/playbookos/planner/`：Playbook 到任务图规划 / Playbook-to-task planning.
+- `src/playbookos/orchestrator/`：任务推进与 Temporal-ready 规格输出 / orchestration and Temporal-ready specs.
+- `src/playbookos/supervisor/`：会话、事件、审批联动 / sessions, events, and approvals.
+- `src/playbookos/reflection/`：复盘与知识回写 / reflection and knowledge write-back.
+- `docs/mvp-plan.md`：MVP 技术路线与缺口 / MVP plan and remaining gaps.
+- `docs/ui-redesign.md`：控制台信息架构 / dashboard redesign plan.
+- `docs/records/progress.md`：持续进展记录 / progress log.
+- `docs/records/iteration-memory.md`：阶段结论与 TODO / iteration memory and TODOs.
+
+## 关键接口 / Key APIs
+
+- `GET /api/board`：全局看板快照 / board snapshot.
+- `GET /api/goals`、`POST /api/goals`：目标管理 / goal management.
+- `GET /api/playbooks`、`POST /api/playbooks`：Playbook 管理 / playbook management.
+- `POST /api/playbooks/ingest`：Markdown SOP ingestion.
+- `POST /api/playbooks/{playbook_id}/skill-drafts`：基于 SOP 建 draft Skill / materialize draft skills from SOP guidance.
+- `POST /api/playbooks/{playbook_id}/mcp-drafts`：基于 SOP 建 draft MCP / materialize draft MCP servers from SOP guidance.
+- `POST /api/mcp-servers/{mcp_server_id}/probe`：MCP 健康探测 / MCP health probe.
+- `GET /api/runtime-settings`、`PUT /api/runtime-settings`、`POST /api/runtime-settings/test`：模型运行时配置与连通性测试 / model runtime settings and probe.
+- `GET /api/agent/manifest`、`GET /api/agent/context`、`POST /api/agent/intake`、`POST /api/agent/apply`：外部 agent 控制面 / external-agent control plane.
+
+- 中文：完整接口请以 `src/playbookos/api/app.py` 为准。
+- English: For the complete API surface, use `src/playbookos/api/app.py` as the source of truth.
+
+## 当前限制 / Current Limitations
+
+- 中文：SOP ingestion 当前只正式支持 `Markdown`，不支持 PDF、Docx、图片等正式解析链路。
+- English: SOP ingestion officially supports `Markdown` only for now; PDF, Docx, and image pipelines are not yet implemented.
+
+- 中文：MCP 当前只有登记与 health probe，尚未完成完整 runtime、credential、tool execution 与治理闭环。
+- English: MCP support currently includes registration and health probing, but not a full runtime, credential, tool-execution, or governance stack.
+
+- 中文：agent 托管目前是第一版：可发现、可规划、可按 delegation apply 一部分 builder 动作，但还缺更细粒度 identity、事务回滚、巡检与治理链。
+- English: Managed agent operation is a first version: it supports discovery, planning, and delegated apply for a subset of builder actions, but still lacks finer identity, rollback, patrol, and governance flows.
+
+- 中文：Dashboard 已完成全局看板与工作台信息架构，但部分工作台仍在持续细化中。
+- English: The dashboard already has a global board and workbench information architecture, while some workbenches are still being refined.
+
+## 验证 / Validation
+
+```bash
+cd /home/greed/playbookos-mvp
 python3 -m compileall src tests
 PYTHONPATH=src python3 -m unittest discover -s tests -p 'test*_unittest.py'
 ```
 
-如果要校验 Dashboard 脚本，可从 `build_dashboard_html()` 提取 `<script>` 后执行 `node --check`。
+## 下一步建议 / Recommended Next Steps
+
+- 中文：如果你是人类操作者，建议先跑 `Preview Dashboard`，再用一份真实的 Markdown SOP 走一次 ingestion。
+- English: If you are a human operator, start with the preview dashboard and run one real Markdown SOP through ingestion.
+
+- 中文：如果你是 OpenClaw 这类外部 agent 的维护者，建议先接入 `playbookos-operator` skill，然后按 `manifest -> context -> intake -> apply` 跑通一条托管链。
+- English: If you maintain an OpenClaw-like external agent, start by loading the `playbookos-operator` skill and run the `manifest -> context -> intake -> apply` loop end to end.

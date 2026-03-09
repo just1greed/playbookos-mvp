@@ -267,3 +267,5 @@
 
 - 已新增 `docs/managed-agent-demo.md`，把当前已跑通的 `manifest -> delegation profile -> agent apply -> playbook/skill/mcp draft` 演示链记录为项目示例
 - 已把 agent 治理与错误日志等后续细节统一沉淀进文档 TODO，并明确当前策略是 `runnable-first`：先确保完整主链跑通，再逐步补日志、审计、回滚与托管巡检
+
+- 已重写仓库根 `README.md`，把文档改为中英双语，并补齐项目定位、当前真实能力、快速启动、OpenClaw / 外部 agent 接入方式、关键接口、限制与文档索引
