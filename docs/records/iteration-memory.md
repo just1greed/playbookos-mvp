@@ -44,7 +44,7 @@
 
 - Skill 版本晋级与回滚流水线
 - 专门的 SOP 编辑 / diff / patch 审核界面
-- 知识库检索排序、版本化和页面内 apply/reject 操作
+- 知识库检索排序与版本化能力
 - 真正的多层子会话执行、并行汇总与主进程仲裁
 - 真实 OpenAI Agents SDK + MCP 在线执行
 - Temporal 真正接入
