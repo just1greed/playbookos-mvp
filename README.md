@@ -139,6 +139,7 @@ PLAYBOOKOS_API_BASE=http://127.0.0.1:8000 PLAYBOOKOS_AGENT_ID=openclaw-main bash
 - `src/playbookos/reflection/`：复盘与知识回写。
 - `docs/mvp-plan.md`：MVP 技术路线与缺口。
 - `docs/ui-redesign.md`：控制台信息架构。
+- `docs/articles/how-we-built-playbookos.md`：对外可发布的建设文章。
 - `docs/records/progress.md`：持续进展记录。
 - `docs/records/iteration-memory.md`：阶段结论与 TODO。
 
@@ -176,3 +177,41 @@ bash -n scripts/openclaw_demo.sh
 
 - 如果你是人类操作者，建议先跑 `Preview Dashboard`，再用一份真实的 Markdown SOP 走一次 ingestion。
 - 如果你是 OpenClaw 这类外部 agent 的维护者，建议先接入 `playbookos-operator` skill，然后按 `manifest -> context -> intake -> apply` 跑通一条托管链。
+
+
+## 接下来的工作目标与改进方向
+
+### P0：把现有主链做稳
+
+- 继续强化 `Markdown SOP -> tooling guidance -> draft Skill / draft MCP -> Task / Run / Reflection` 这条主链，优先修正易误导、易中断、易重复创建对象的环节。
+- 把 `manifest / context / intake / apply` 这条 agent 托管链继续收敛成稳定接口，减少外部 agent 接入时的猜测成本。
+- 继续确保文档、页面文案、接口行为和真实实现保持一致，不把 backlog 能力写成已完成。
+
+### P1：把 agent 托管做成更完整的执行面
+
+- 增加更细粒度的 `agent identity`、delegation policy 和审计字段，明确区分 human、operator-agent、delegate-agent。
+- 让 `agent apply` 从 builder 第一版逐步扩展到更完整的计划执行器，补齐失败归因、执行摘要和可回滚边界。
+- 继续完善 `playbookos-operator` skill 与脚本示例，让 OpenClaw 这类 agent 可以更低成本接管系统运营。
+
+### P2：把 MCP 从“登记”推进到“可运营”
+
+- 在现有 `probe` 基础上补 runtime、credential、tool execution 与更完整的健康治理。
+- 把 SOP 里的工具识别结果更稳定地映射到 MCP 复用、缺口提示和接入引导，而不是只停留在提示文案。
+- 为后续 skill 绑定、能力发布、运行时凭证治理预留更明确的对象关系和操作入口。
+
+### P3：把错误处理、自迭代和 issue 闭环补齐
+
+- 完整记录系统错误、工具错误和流程错误，并区分“进入自迭代优化”与“需要提交系统 issue”的两类路径。
+- 增加 issue 快捷整理方式，把系统级错误更容易沉淀成后续可追踪的改进任务。
+- 让 Reflection、KnowledgeUpdate、错误日志和能力修订之间形成更清晰的闭环。
+
+### P4：把控制台补成长期可用的运营界面
+
+- 继续补齐工作台详情页、跨页联动、URL 状态、筛选分享态和对象详情跳转。
+- 让设置页继续承担环境治理能力，例如 profile 生命周期、恢复最近成功配置、导入导出与敏感信息治理。
+- 让首页全局看板不仅展示状态，还能持续给出更可信的“下一步动作建议”。
+
+### 暂缓项
+
+- 多格式 SOP、多附件解析仍然重要，但当前优先级低于 `Markdown-first` 主链稳定化。
+- 完整 Temporal runtime、完整 MCP 平台化、深度治理能力会继续保留在 roadmap 中，但不会抢当前 runnable-first 主线的优先级。

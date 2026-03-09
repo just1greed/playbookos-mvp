@@ -277,3 +277,6 @@
 
 - 已基于 `progress / iteration-memory / git log` 重新整理本轮完整建设脉络，并新增 `docs/records/building-playbookos-story.md`，记录 PlaybookOS 从控制面骨架、Markdown SOP ingestion、执行闭环、前端重构、设置治理到 OpenClaw / agent 接入面的逐步搭建过程
 - 已把本轮参考统计一并记入建设文章：工具 `Codex`、模型 `GPT-5.4`、总耗时约 `24h`、总请求数约 `2235` 次、总 Token 约 `432M`
+
+- 已新增对外可发布版本的建设文章 `docs/articles/how-we-built-playbookos.md`，将本轮 24h 搭建过程整理为更适合外部阅读的叙事文章
+- 已在 `README.md` 与 `README-EN.md` 末尾追加“接下来的工作目标与改进方向”，明确 P0-P4 主线、暂缓项与后续 roadmap 收敛原则

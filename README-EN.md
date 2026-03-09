@@ -139,6 +139,7 @@ PLAYBOOKOS_API_BASE=http://127.0.0.1:8000 PLAYBOOKOS_AGENT_ID=openclaw-main bash
 - `src/playbookos/reflection/`: reflection and knowledge write-back.
 - `docs/mvp-plan.md`: MVP plan and remaining gaps.
 - `docs/ui-redesign.md`: dashboard information architecture.
+- `docs/articles/how-we-built-playbookos.md`: publish-ready build story.
 - `docs/records/progress.md`: ongoing progress log.
 - `docs/records/iteration-memory.md`: iteration conclusions and TODOs.
 
@@ -176,3 +177,41 @@ bash -n scripts/openclaw_demo.sh
 
 - If you are a human operator, start with the preview dashboard and run one real Markdown SOP through ingestion.
 - If you maintain an OpenClaw-like external agent, start by loading the `playbookos-operator` skill and run the `manifest -> context -> intake -> apply` loop end to end.
+
+
+## Next Work Goals and Improvement Directions
+
+### P0: Stabilize the current core loop
+
+- Keep strengthening the `Markdown SOP -> tooling guidance -> draft Skill / draft MCP -> Task / Run / Reflection` loop, especially the parts that are easy to misread, break, or create duplicate objects.
+- Continue hardening the `manifest / context / intake / apply` managed-agent path into a stable public interface so external agents do not need to guess behavior.
+- Keep documentation, UI copy, API behavior, and actual implementation aligned, and avoid presenting backlog items as completed features.
+
+### P1: Turn managed-agent support into a fuller execution surface
+
+- Add finer-grained `agent identity`, delegation policy, and audit fields to distinguish human, operator-agent, and delegate-agent roles.
+- Evolve `agent apply` from the current first builder version toward a more complete plan executor with better failure attribution, execution summaries, and rollback boundaries.
+- Keep improving the `playbookos-operator` skill and runnable examples so OpenClaw-like agents can operate the system with less integration friction.
+
+### P2: Move MCP from “registered” to “operable”
+
+- Build on the current `probe` support with runtime, credential, tool execution, and stronger health governance.
+- Map SOP tooling detection more reliably into MCP reuse, gap guidance, and onboarding actions instead of stopping at advisory copy.
+- Prepare clearer object relationships and action surfaces for future skill binding, capability publishing, and runtime credential governance.
+
+### P3: Complete the error, self-iteration, and issue loop
+
+- Fully capture system errors, tool errors, and process errors, and split them into two routes: self-iteration optimization vs. system issue submission.
+- Add a lightweight issue shortcut so system-level failures can be turned into trackable improvement tasks more easily.
+- Make Reflection, KnowledgeUpdate, error logs, and capability revisions participate in one clearer closed loop.
+
+### P4: Finish the console as a long-term operations surface
+
+- Continue filling in workbench detail pages, cross-page linking, URL state, shareable filters, and object-detail navigation.
+- Let the settings area take on more environment-governance tasks such as profile lifecycle, restore-last-good configuration, import/export, and sensitive-data handling.
+- Keep improving the global board so it not only reports state, but also produces more trustworthy next-action recommendations.
+
+### Deferred Items
+
+- Multi-format SOP and multi-attachment parsing still matter, but they remain lower priority than stabilizing the current `Markdown-first` loop.
+- Full Temporal runtime integration, a full MCP platform layer, and deeper governance features stay on the roadmap, but they should not displace the current runnable-first priorities.
