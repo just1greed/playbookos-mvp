@@ -459,7 +459,7 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
         try:
             payload = self._read_json_body()
             if path == "/api/runtime-settings":
-                result = self.server.runtime_settings.update_model_settings(payload.get("model", payload))
+                result = self.server.runtime_settings.update_settings(payload)
                 self._write_json(result)
                 return
             parts = [part for part in path.split("/") if part]
@@ -549,6 +549,21 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
                 item.assigned_skill_id = assigned_skill_id
                 item.updated_at = datetime.now(UTC)
                 self.server.store.tasks.save(item)
+                self._write_json(_to_jsonable(item))
+                return
+            if resource_name == "sessions":
+                item = self.server.store.sessions.get(item_id)
+                for field_name in ["title", "objective", "summary"]:
+                    if field_name in payload:
+                        setattr(item, field_name, payload[field_name])
+                if "status" in payload:
+                    item.status = item.status.__class__(payload["status"])
+                if "input_context" in payload:
+                    item.input_context = dict(payload.get("input_context") or {})
+                if "output_context" in payload:
+                    item.output_context = dict(payload.get("output_context") or {})
+                item.updated_at = datetime.now(UTC)
+                self.server.store.sessions.save(item)
                 self._write_json(_to_jsonable(item))
                 return
 

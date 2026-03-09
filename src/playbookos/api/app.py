@@ -40,6 +40,7 @@ from playbookos.api.schemas import (
     PlaybookRead,
     ReflectionCreate,
     SessionRead,
+    SessionUpdate,
     SkillAuthoringApplyRead,
     SkillAuthoringPackRead,
     SkillCreate,
@@ -79,6 +80,7 @@ from playbookos.domain.models import (
     Skill,
     Run,
     RunStatus,
+    SessionStatus,
     SkillStatus,
     Task,
     TaskStatus,
@@ -163,7 +165,7 @@ def create_app(store: StoreProtocol | None = None) -> FastAPI:
 
     @api.put("/api/runtime-settings", response_model=dict[str, Any])
     def update_runtime_settings(payload: dict[str, Any]) -> dict[str, Any]:
-        return api.state.runtime_settings.update_model_settings(payload.get("model", payload))
+        return api.state.runtime_settings.update_settings(payload)
 
     @api.post("/api/goals", response_model=GoalRead, status_code=status.HTTP_201_CREATED)
     def create_goal(payload: GoalCreate, store: store_dep) -> GoalRead:
@@ -503,6 +505,26 @@ def create_app(store: StoreProtocol | None = None) -> FastAPI:
     @api.get("/api/sessions/{session_id}", response_model=SessionRead)
     def get_session(session_id: str, store: store_dep) -> SessionRead:
         return SessionRead.model_validate(_fetch(store.sessions, session_id, "Session", operation="get_session", metadata={"session_id": session_id}))
+
+    @api.put("/api/sessions/{session_id}", response_model=SessionRead)
+    def update_session(session_id: str, payload: SessionUpdate, store: store_dep) -> SessionRead:
+        session = _fetch(store.sessions, session_id, "Session", operation="update_session", metadata={"session_id": session_id})
+        data = payload.model_dump(exclude_none=True)
+        if "title" in data:
+            session.title = data["title"]
+        if "status" in data:
+            session.status = SessionStatus(data["status"])
+        if "objective" in data:
+            session.objective = data["objective"]
+        if "summary" in data:
+            session.summary = data["summary"]
+        if "input_context" in data:
+            session.input_context = dict(data["input_context"] or {})
+        if "output_context" in data:
+            session.output_context = dict(data["output_context"] or {})
+        session.updated_at = utc_now()
+        store.sessions.save(session)
+        return SessionRead.model_validate(session)
 
     @api.get("/api/acceptances", response_model=list[AcceptanceRead])
     def list_acceptances(store: store_dep) -> list[AcceptanceRead]:

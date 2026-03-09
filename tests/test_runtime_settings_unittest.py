@@ -38,6 +38,11 @@ class RuntimeSettingsStoreTestCase(unittest.TestCase):
         self.assertTrue(settings["model"]["has_api_key"])
         self.assertEqual(settings["model"]["api_key_preview"], "env-***-key")
         self.assertFalse(settings["model"]["has_overrides"])
+        self.assertEqual(settings["global"]["default_language"], "zh")
+        self.assertEqual(settings["global"]["default_scope_kind"], "all")
+        self.assertEqual(settings["global"]["default_route"], "dashboard")
+        self.assertEqual(settings["global"]["auto_refresh_seconds"], 0)
+        self.assertTrue(settings["global"]["show_system_group"])
 
     def test_store_persists_overrides_and_clears_api_key(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir, patch.dict(
@@ -64,6 +69,7 @@ class RuntimeSettingsStoreTestCase(unittest.TestCase):
                 }
             )
             reloaded = RuntimeSettingsStore(path=Path(tmpdir) / "runtime_settings.json")
+            global_updated = reloaded.update_global_settings({"default_language": "en", "auto_refresh_seconds": 15, "default_scope_kind": "status", "default_route": "tasks", "show_system_group": False})
             cleared = reloaded.update_model_settings({"clear_api_key": True})
 
         self.assertEqual(updated["model"]["base_url"], "https://proxy.example.com/v1")
@@ -76,6 +82,12 @@ class RuntimeSettingsStoreTestCase(unittest.TestCase):
         self.assertEqual(updated["model"]["project"], "proj_456")
         self.assertEqual(updated["model"]["api_key_preview"], "over***-key")
         self.assertTrue(updated["model"]["has_overrides"])
+        self.assertEqual(global_updated["global"]["default_language"], "en")
+        self.assertEqual(global_updated["global"]["auto_refresh_seconds"], 15)
+        self.assertEqual(global_updated["global"]["default_scope_kind"], "status")
+        self.assertEqual(global_updated["global"]["default_route"], "tasks")
+        self.assertFalse(global_updated["global"]["show_system_group"])
+        self.assertTrue(global_updated["global"]["has_overrides"])
         self.assertTrue(cleared["model"]["has_api_key"])
         self.assertEqual(cleared["model"]["api_key_preview"], "env-***-key")
 
@@ -99,6 +111,7 @@ class RuntimeSettingsApiTestCase(unittest.TestCase):
             current = client.get("/api/runtime-settings")
             self.assertEqual(current.status_code, 200)
             self.assertEqual(current.json()["model"]["model"], "gpt-4.1")
+            self.assertEqual(current.json()["global"]["default_language"], "zh")
 
             updated = client.put(
                 "/api/runtime-settings",
@@ -109,6 +122,13 @@ class RuntimeSettingsApiTestCase(unittest.TestCase):
                         "api_format": "chat.completions",
                         "temperature": 0.4,
                         "max_output_tokens": 1200,
+                    },
+                    "global": {
+                        "default_language": "en",
+                        "auto_refresh_seconds": 12,
+                        "default_scope_kind": "status",
+                        "default_route": "tasks",
+                        "show_system_group": False
                     }
                 },
             )
@@ -121,6 +141,11 @@ class RuntimeSettingsApiTestCase(unittest.TestCase):
         self.assertEqual(payload["temperature"], 0.4)
         self.assertEqual(payload["max_output_tokens"], 1200)
         self.assertTrue(payload["has_api_key"])
+        self.assertEqual(updated.json()["global"]["default_language"], "en")
+        self.assertEqual(updated.json()["global"]["auto_refresh_seconds"], 12)
+        self.assertEqual(updated.json()["global"]["default_scope_kind"], "status")
+        self.assertEqual(updated.json()["global"]["default_route"], "tasks")
+        self.assertFalse(updated.json()["global"]["show_system_group"])
 
 
 if __name__ == "__main__":

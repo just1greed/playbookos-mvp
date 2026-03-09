@@ -288,6 +288,28 @@ TRANSLATIONS = {
         "model_settings_status_ready": "模型设置已载入。",
         "model_settings_status_saving": "正在保存模型设置…",
         "model_settings_status_saved": "模型设置已保存并生效。",
+        "global_settings_default_language": "默认语言",
+        "global_settings_auto_refresh_seconds": "自动刷新间隔（秒，0 表示关闭）",
+        "global_settings_default_scope": "默认范围",
+        "global_settings_default_route": "默认页面",
+        "global_settings_show_system_group": "显示系统导航分组",
+        "global_settings_save": "保存全局设置",
+        "global_settings_status_ready": "全局设置已载入。",
+        "global_settings_status_saving": "正在保存全局设置…",
+        "global_settings_status_saved": "全局设置已保存。",
+        "global_settings_default_applies_hint": "这些默认值会在当前浏览器没有本地覆盖时生效。",
+        "session_admin_goal_filter": "按 Goal 过滤",
+        "session_admin_run_filter": "按 Run 过滤",
+        "session_admin_session": "会话",
+        "session_admin_status": "状态",
+        "session_admin_title": "标题",
+        "session_admin_objective": "目标说明",
+        "session_admin_summary": "摘要",
+        "session_admin_save": "保存会话变更",
+        "session_admin_status_ready": "会话管理已载入。",
+        "session_admin_status_saving": "正在保存会话…",
+        "session_admin_status_saved": "会话已更新。",
+        "session_admin_empty": "当前筛选条件下没有会话。",
         "tracked_items": "个跟踪对象",
         "overview_suffix": "概览",
         "last_updated": "最近刷新",
@@ -656,6 +678,28 @@ TRANSLATIONS = {
         "model_settings_status_ready": "Model settings loaded.",
         "model_settings_status_saving": "Saving model settings…",
         "model_settings_status_saved": "Model settings saved and applied.",
+        "global_settings_default_language": "Default Language",
+        "global_settings_auto_refresh_seconds": "Auto Refresh (seconds, 0 to disable)",
+        "global_settings_default_scope": "Default Scope",
+        "global_settings_default_route": "Default Route",
+        "global_settings_show_system_group": "Show system nav group",
+        "global_settings_save": "Save Global Settings",
+        "global_settings_status_ready": "Global settings loaded.",
+        "global_settings_status_saving": "Saving global settings…",
+        "global_settings_status_saved": "Global settings saved.",
+        "global_settings_default_applies_hint": "These defaults apply when this browser has no local override.",
+        "session_admin_goal_filter": "Filter by Goal",
+        "session_admin_run_filter": "Filter by Run",
+        "session_admin_session": "Session",
+        "session_admin_status": "Status",
+        "session_admin_title": "Title",
+        "session_admin_objective": "Objective",
+        "session_admin_summary": "Summary",
+        "session_admin_save": "Save Session Changes",
+        "session_admin_status_ready": "Session admin loaded.",
+        "session_admin_status_saving": "Saving session…",
+        "session_admin_status_saved": "Session updated.",
+        "session_admin_empty": "No sessions match the current filters.",
         "tracked_items": "tracked items",
         "overview_suffix": "overview",
         "last_updated": "Last updated",
@@ -1375,11 +1419,32 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
               <h3 data-i18n="nav_global_settings"></h3>
               <p data-i18n="settings_global_card"></p>
               <div class="rows" id="global-settings-rows"></div>
+              <div class="field-grid" style="margin-top:14px;">
+                <div class="field"><label data-i18n="global_settings_default_language"></label><select id="global-settings-default-language-input"><option value="zh">zh</option><option value="en">en</option></select></div>
+                <div class="field"><label data-i18n="global_settings_auto_refresh_seconds"></label><input id="global-settings-auto-refresh-input" type="number" step="1" min="0" /></div>
+                <div class="field"><label data-i18n="global_settings_default_scope"></label><select id="global-settings-default-scope-input"><option value="all">all</option><option value="goal">goal</option><option value="playbook">playbook</option><option value="status">status</option></select></div>
+                <div class="field"><label data-i18n="global_settings_default_route"></label><select id="global-settings-default-route-input"><option value="dashboard">dashboard</option><option value="goals">goals</option><option value="playbooks">playbooks</option><option value="skills">skills</option><option value="mcp">mcp</option><option value="knowledge">knowledge</option><option value="tasks">tasks</option><option value="sessions">sessions</option><option value="learning">learning</option><option value="approvals">approvals</option><option value="prompts">prompts</option><option value="model-settings">model-settings</option><option value="global-settings">global-settings</option><option value="session-admin">session-admin</option><option value="system">system</option></select></div>
+                <label class="inline-checkbox"><input id="global-settings-show-system-group-input" type="checkbox" /><span data-i18n="global_settings_show_system_group"></span></label>
+              </div>
+              <small data-i18n="global_settings_default_applies_hint"></small>
+              <div class="workbench-status" id="global-settings-status"></div>
+              <div class="form-actions"><button class="button" id="global-settings-save-button" type="button" data-i18n="global_settings_save"></button></div>
             </div>
             <div class="placeholder-card" id="session-admin-panel" data-settings-panel="session-admin">
               <h3 data-i18n="nav_session_admin"></h3>
               <p data-i18n="settings_session_card"></p>
               <div class="rows" id="session-admin-rows"></div>
+              <div class="field-grid" style="margin-top:14px;">
+                <div class="field"><label data-i18n="session_admin_goal_filter"></label><select id="session-admin-goal-filter-input"></select></div>
+                <div class="field"><label data-i18n="session_admin_run_filter"></label><select id="session-admin-run-filter-input"></select></div>
+                <div class="field"><label data-i18n="session_admin_session"></label><select id="session-admin-session-select"></select></div>
+                <div class="field"><label data-i18n="session_admin_status"></label><select id="session-admin-status-input"><option value="planned">planned</option><option value="running">running</option><option value="waiting_human">waiting_human</option><option value="completed">completed</option><option value="failed">failed</option></select></div>
+                <div class="field"><label data-i18n="session_admin_title"></label><input id="session-admin-title-input" /></div>
+                <div class="field"><label data-i18n="session_admin_objective"></label><textarea id="session-admin-objective-input"></textarea></div>
+                <div class="field"><label data-i18n="session_admin_summary"></label><textarea id="session-admin-summary-input"></textarea></div>
+              </div>
+              <div class="workbench-status" id="session-admin-status"></div>
+              <div class="form-actions"><button class="button" id="session-admin-save-button" type="button" data-i18n="session_admin_save"></button></div>
             </div>
           </div>
         </article>
@@ -1401,7 +1466,11 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
       let latestResources = {{}};
       let latestIngestionResult = null;
       let latestAuthoringPacks = {{}};
-      let runtimeSettings = {{ model: {{}} }};
+      let runtimeSettings = {{ model: {{}}, global: {{}} }};
+      let autoRefreshHandle = null;
+      let sessionAdminGoalFilter = '';
+      let sessionAdminRunFilter = '';
+      let sessionAdminSessionId = '';
       const editableSections = ['goals', 'playbooks', 'skills', 'mcp_servers', 'knowledge_bases', 'tasks'];
       let currentLanguage = localStorage.getItem('playbookos-language') || 'zh';
       let currentRoute = (window.location.hash || '#dashboard').replace(/^#/, '') || 'dashboard';
@@ -1556,7 +1625,9 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
 
       function renderSidebarNav() {{
         const nav = document.getElementById('sidebar-nav');
-        nav.innerHTML = navGroups.map((group) => `
+        const global = (runtimeSettings && runtimeSettings.global) || {{}};
+        const visibleGroups = navGroups.filter((group) => group.titleKey !== 'nav_group_system' || global.show_system_group !== false);
+        nav.innerHTML = visibleGroups.map((group) => `
           <div class="sidebar-group">
             <div class="sidebar-group-title">${{escapeHtml(t(group.titleKey))}}</div>
             ${{group.routes.map((route) => {{
@@ -1753,6 +1824,41 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         feedNode.innerHTML = feed.length ? feed.join('') : routeDetailRow(t('route_detail_empty'), [t('route_placeholder_body')], t('idle'));
       }}
 
+      function runtimeGlobalSettings() {{
+        return (runtimeSettings && runtimeSettings.global) || {{}};
+      }}
+
+      function syncAutoRefreshTimer() {{
+        const seconds = Number(runtimeGlobalSettings().auto_refresh_seconds || 0);
+        if (autoRefreshHandle) {{
+          window.clearInterval(autoRefreshHandle);
+          autoRefreshHandle = null;
+        }}
+        if (Number.isFinite(seconds) && seconds > 0) {{
+          autoRefreshHandle = window.setInterval(() => {{
+            refresh().catch((error) => showBootError(error));
+          }}, seconds * 1000);
+        }}
+      }}
+
+      function syncRuntimeDrivenState() {{
+        const global = runtimeGlobalSettings();
+        if (!window.location.hash && global.default_route && routeConfigs[global.default_route] && currentRoute === 'dashboard') {{
+          currentRoute = global.default_route;
+        }}
+        if (!localStorage.getItem('playbookos-scope-kind') && global.default_scope_kind && global.default_scope_kind !== currentScopeKind) {{
+          currentScopeKind = global.default_scope_kind;
+          currentScopeValue = '';
+        }}
+        if (!localStorage.getItem('playbookos-language') && global.default_language && global.default_language !== currentLanguage) {{
+          applyLanguage(global.default_language, false);
+        }}
+        if (global.show_system_group === false && currentRoute === 'system') {{
+          currentRoute = 'dashboard';
+        }}
+        syncAutoRefreshTimer();
+      }}
+
       function renderModelSettingsForm() {{
         const model = (runtimeSettings && runtimeSettings.model) || {{}};
         const statusNode = document.getElementById('model-settings-status');
@@ -1774,6 +1880,90 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         }}
       }}
 
+      function renderGlobalSettingsForm() {{
+        const global = runtimeGlobalSettings();
+        const statusNode = document.getElementById('global-settings-status');
+        if (!document.getElementById('global-settings-default-language-input')) return;
+        document.getElementById('global-settings-default-language-input').value = global.default_language || 'zh';
+        document.getElementById('global-settings-auto-refresh-input').value = global.auto_refresh_seconds ?? 0;
+        document.getElementById('global-settings-default-scope-input').value = global.default_scope_kind || 'all';
+        document.getElementById('global-settings-default-route-input').value = global.default_route || 'dashboard';
+        document.getElementById('global-settings-show-system-group-input').checked = global.show_system_group !== false;
+        if (statusNode && !statusNode.dataset.state) {{
+          statusNode.dataset.state = 'idle';
+          statusNode.textContent = t('global_settings_status_ready');
+        }}
+      }}
+
+      function sessionAdminFilteredSessions() {{
+        return (latestResources.sessions || []).filter((item) => {{
+          if (sessionAdminGoalFilter && item.goal_id !== sessionAdminGoalFilter) return false;
+          if (sessionAdminRunFilter && item.run_id !== sessionAdminRunFilter) return false;
+          return true;
+        }});
+      }}
+
+      function renderSessionAdminForm() {{
+        const goalSelect = document.getElementById('session-admin-goal-filter-input');
+        const runSelect = document.getElementById('session-admin-run-filter-input');
+        const sessionSelect = document.getElementById('session-admin-session-select');
+        const statusInput = document.getElementById('session-admin-status-input');
+        const titleInput = document.getElementById('session-admin-title-input');
+        const objectiveInput = document.getElementById('session-admin-objective-input');
+        const summaryInput = document.getElementById('session-admin-summary-input');
+        const statusNode = document.getElementById('session-admin-status');
+        if (!goalSelect || !runSelect || !sessionSelect || !statusInput || !titleInput || !objectiveInput || !summaryInput) return;
+        const goals = latestResources.goals || [];
+        const runs = latestResources.runs || [];
+        const allSessions = latestResources.sessions || [];
+        goalSelect.innerHTML = [`<option value="">${{escapeHtml(t('topbar_scope_value_all'))}}</option>`]
+          .concat(goals.map((item) => `<option value="${{escapeHtml(item.id)}}">${{escapeHtml(item.title || item.id)}}</option>`)).join('');
+        if ([...goalSelect.options].some((option) => option.value === sessionAdminGoalFilter)) {{
+          goalSelect.value = sessionAdminGoalFilter;
+        }} else {{
+          sessionAdminGoalFilter = '';
+          goalSelect.value = '';
+        }}
+        runSelect.innerHTML = [`<option value="">${{escapeHtml(t('topbar_scope_value_all'))}}</option>`]
+          .concat(runs.map((item) => `<option value="${{escapeHtml(item.id)}}">${{escapeHtml(`${{item.id.slice(0, 8)}} · ${{item.status}}`)}}</option>`)).join('');
+        if ([...runSelect.options].some((option) => option.value === sessionAdminRunFilter)) {{
+          runSelect.value = sessionAdminRunFilter;
+        }} else {{
+          sessionAdminRunFilter = '';
+          runSelect.value = '';
+        }}
+        const filteredSessions = sessionAdminFilteredSessions();
+        if (!filteredSessions.some((item) => item.id === sessionAdminSessionId)) {{
+          sessionAdminSessionId = filteredSessions[0] ? filteredSessions[0].id : '';
+        }}
+        sessionSelect.innerHTML = filteredSessions.length
+          ? filteredSessions.map((item) => `<option value="${{escapeHtml(item.id)}}">${{escapeHtml(`${{item.title || item.id}} · ${{item.kind}} / ${{item.status}}`)}}</option>`).join('')
+          : `<option value="">${{escapeHtml(t('session_admin_empty'))}}</option>`;
+        sessionSelect.value = sessionAdminSessionId || '';
+        const selected = filteredSessions.find((item) => item.id === sessionAdminSessionId) || null;
+        const disabled = !selected;
+        statusInput.disabled = disabled;
+        titleInput.disabled = disabled;
+        objectiveInput.disabled = disabled;
+        summaryInput.disabled = disabled;
+        document.getElementById('session-admin-save-button').disabled = disabled;
+        if (selected) {{
+          statusInput.value = selected.status || 'planned';
+          titleInput.value = selected.title || '';
+          objectiveInput.value = selected.objective || '';
+          summaryInput.value = selected.summary || '';
+        }} else {{
+          statusInput.value = 'planned';
+          titleInput.value = '';
+          objectiveInput.value = '';
+          summaryInput.value = '';
+        }}
+        if (statusNode && !statusNode.dataset.state) {{
+          statusNode.dataset.state = 'idle';
+          statusNode.textContent = t('session_admin_status_ready');
+        }}
+      }}
+
       function renderSettingsPanels() {{
         const modelRows = document.getElementById('model-settings-rows');
         const globalRows = document.getElementById('global-settings-rows');
@@ -1786,6 +1976,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         const metrics = (latestRun && latestRun.metrics) || {{}};
         const config = metrics.openai_config || {{}};
         const runtimeModel = (runtimeSettings && runtimeSettings.model) || {{}};
+        const runtimeGlobal = runtimeGlobalSettings();
         modelRows.innerHTML = [
           routeDetailRow(runtimeModel.model || config.model || 'n/a', [
             `format: ${{runtimeModel.api_format || metrics.openai_request_format || 'n/a'}}`,
@@ -1799,16 +1990,22 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         ].join('');
         renderModelSettingsForm();
         globalRows.innerHTML = [
-          routeDetailRow('ui', [
-            `language: ${{currentLanguage}}`,
-            `route: ${{currentRoute}}`,
-            `api: ${{apiBase}}`,
+          routeDetailRow('ui defaults', [
+            `language: ${{runtimeGlobal.default_language || currentLanguage}}`,
+            `route: ${{runtimeGlobal.default_route || 'dashboard'}}`,
+            `scope: ${{runtimeGlobal.default_scope_kind || 'all'}}`,
           ], 'active'),
+          routeDetailRow('console', [
+            `auto refresh: ${{Number(runtimeGlobal.auto_refresh_seconds || 0)}}s`,
+            `system group: ${{runtimeGlobal.show_system_group === false ? 'hidden' : 'shown'}}`,
+            `api: ${{apiBase}}`,
+          ], Number(runtimeGlobal.auto_refresh_seconds || 0) > 0 ? 'live' : 'idle'),
           routeDetailRow('snapshot', [
             `resources: ${{sectionOrder.reduce((total, section) => total + sumValues(currentSnapshot[section] || {{}}), 0)}}`,
             `blocked: ${{Number((currentSnapshot.goals || {{}}).blocked || 0) + Number((currentSnapshot.runs || {{}}).waiting_human || 0)}}`,
           ], 'live'),
         ].join('');
+        renderGlobalSettingsForm();
         sessionRows.innerHTML = [
           routeDetailRow(t('nav_sessions'), [
             `total: ${{sessions.length}}`,
@@ -1820,7 +2017,13 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
             `children: ${{sessions.filter((item) => item.parent_session_id).length}}`,
             `waiting_human runs: ${{(latestResources.runs || []).filter((item) => item.status === 'waiting_human').length}}`,
           ], events.length ? 'live' : 'idle'),
+          routeDetailRow('filters', [
+            `goal: ${{sessionAdminGoalFilter || 'all'}}`,
+            `run: ${{sessionAdminRunFilter || 'all'}}`,
+            `selected: ${{sessionAdminSessionId ? sessionAdminSessionId.slice(0, 8) : 'n/a'}}`,
+          ], sessionAdminSessionId ? 'active' : 'idle'),
         ].join('');
+        renderSessionAdminForm();
       }}
 
       function statusValueForItem(item, section = '') {{
@@ -2027,9 +2230,9 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         renderRouteDetails();
       }}
 
-      function applyLanguage(language) {{
+      function applyLanguage(language, persist = true) {{
         currentLanguage = translations[language] ? language : 'zh';
-        localStorage.setItem('playbookos-language', currentLanguage);
+        if (persist) localStorage.setItem('playbookos-language', currentLanguage);
         document.documentElement.lang = t('html_lang');
         document.title = t('page_title');
         document.getElementById('boot-error-title').textContent = bootText('boot_error_title', 'Frontend boot failed');
@@ -3275,7 +3478,12 @@ ${{t('skill_version_servers')}}: ${{(skill.required_mcp_servers || []).join(', '
         runtimeSettings = settingsPayload || runtimeSettings;
         rawSnapshot = board;
         allResources = payloads;
+        const previousRoute = currentRoute;
+        syncRuntimeDrivenState();
         applyGlobalScope(currentScopeKind, currentScopeValue, false);
+        if (previousRoute !== currentRoute) {{
+          applyRoute(currentRoute);
+        }}
         if (failures.length) {{
           showBootError(new Error(`Partial API load failure: ${{failures.join('; ')}}`));
         }} else {{
@@ -3545,6 +3753,66 @@ ${{t('skill_version_servers')}}: ${{(skill.required_mcp_servers || []).join(', '
         }}
       }});
 
+      document.getElementById('global-settings-save-button').addEventListener('click', async () => {{
+        const statusNode = document.getElementById('global-settings-status');
+        try {{
+          statusNode.dataset.state = 'saving';
+          statusNode.textContent = t('global_settings_status_saving');
+          await putJson('runtime-settings', {{
+            global: {{
+              default_language: document.getElementById('global-settings-default-language-input').value,
+              auto_refresh_seconds: document.getElementById('global-settings-auto-refresh-input').value.trim(),
+              default_scope_kind: document.getElementById('global-settings-default-scope-input').value,
+              default_route: document.getElementById('global-settings-default-route-input').value,
+              show_system_group: document.getElementById('global-settings-show-system-group-input').checked,
+            }},
+          }});
+          await refresh();
+          statusNode.dataset.state = 'success';
+          statusNode.textContent = t('global_settings_status_saved');
+        }} catch (error) {{
+          statusNode.dataset.state = 'error';
+          statusNode.textContent = `${{t('workbench_status_error')}}: ${{error.message}}`;
+        }}
+      }});
+
+      document.getElementById('session-admin-goal-filter-input').addEventListener('change', (event) => {{
+        sessionAdminGoalFilter = event.target.value || '';
+        renderSettingsPanels();
+      }});
+
+      document.getElementById('session-admin-run-filter-input').addEventListener('change', (event) => {{
+        sessionAdminRunFilter = event.target.value || '';
+        renderSettingsPanels();
+      }});
+
+      document.getElementById('session-admin-session-select').addEventListener('change', (event) => {{
+        sessionAdminSessionId = event.target.value || '';
+        renderSessionAdminForm();
+        renderSettingsPanels();
+      }});
+
+      document.getElementById('session-admin-save-button').addEventListener('click', async () => {{
+        const statusNode = document.getElementById('session-admin-status');
+        if (!sessionAdminSessionId) return;
+        try {{
+          statusNode.dataset.state = 'saving';
+          statusNode.textContent = t('session_admin_status_saving');
+          await putJson(`sessions/${{sessionAdminSessionId}}`, {{
+            status: document.getElementById('session-admin-status-input').value,
+            title: document.getElementById('session-admin-title-input').value.trim(),
+            objective: document.getElementById('session-admin-objective-input').value.trim(),
+            summary: document.getElementById('session-admin-summary-input').value.trim(),
+          }});
+          await refresh();
+          statusNode.dataset.state = 'success';
+          statusNode.textContent = t('session_admin_status_saved');
+        }} catch (error) {{
+          statusNode.dataset.state = 'error';
+          statusNode.textContent = `${{t('workbench_status_error')}}: ${{error.message}}`;
+        }}
+      }});
+
       document.getElementById('refresh-board').addEventListener('click', async () => {{
         const button = document.getElementById('refresh-board');
         button.textContent = currentLanguage === 'zh' ? '刷新中…' : 'Refreshing…';
@@ -3559,7 +3827,7 @@ ${{t('skill_version_servers')}}: ${{(skill.required_mcp_servers || []).join(', '
         }}
       }});
 
-      applyLanguage(currentLanguage);
+      applyLanguage(currentLanguage, localStorage.getItem('playbookos-language') !== null);
       applyRoute(currentRoute);
       document.getElementById('resource-rows').innerHTML = `<div class="row"><div><strong>${{escapeHtml(t('loading_resources_title'))}}</strong><small>${{escapeHtml(t('loading_resources_body'))}}</small></div><span class="state">${{escapeHtml(t('booting'))}}</span></div>`;
       refresh().catch((error) => {{

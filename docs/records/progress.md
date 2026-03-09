@@ -225,3 +225,8 @@
 - 已新增 `tests/test_runtime_settings_unittest.py`，覆盖运行时设置存储的 merge / 持久化 / clear api key；并扩展 `tests/test_dashboard_unittest.py` 校验模型设置入口、读写 API 调用与保存按钮
 - 本轮已再次通过 `python3 -m compileall src tests`、`PYTHONPATH=src python3 -m unittest tests/test_dashboard_unittest.py tests/test_runtime_settings_unittest.py tests/test_preview_server_unittest.py` 与 `node --check /tmp/playbookos_dashboard_runtime.js`
 
+- 已继续把设置页第二块做实：`runtime-settings` 现已从仅包含 `model` 扩展为统一的 `model + global` 运行时配置，支持默认语言、自动刷新、默认范围、默认路由和系统导航显隐
+- Dashboard 的 `全局设置` 页面现已可编辑并真正驱动 UI：无本地覆盖时会应用默认语言 / 默认筛选 / 默认路由，并按配置启动自动刷新定时器
+- 已新增 `PUT /api/sessions/{session_id}`（FastAPI 与 Preview Server 均已接入），`会话管理` 页面现支持按 Goal / Run 过滤 session，并修改 session 的状态、标题、objective 与 summary
+- 已扩展 `tests/test_runtime_settings_unittest.py` 覆盖全局设置字段，并扩展 `tests/test_dashboard_unittest.py` 覆盖 `global-settings` / `session-admin` 新表单与会话保存入口
+

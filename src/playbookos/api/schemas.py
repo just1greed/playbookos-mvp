@@ -122,6 +122,15 @@ class SessionRead(APIModel):
     updated_at: datetime
 
 
+class SessionUpdate(APIModel):
+    title: str | None = None
+    status: SessionStatus | None = None
+    objective: str | None = None
+    summary: str | None = None
+    input_context: dict[str, Any] | None = None
+    output_context: dict[str, Any] | None = None
+
+
 class TaskAcceptanceCreate(APIModel):
     criteria: list[str] = Field(default_factory=list)
     reviewer_id: str | None = None
