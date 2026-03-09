@@ -264,3 +264,6 @@
 
 - 已新增 `DelegationProfile` 第一版及其控制面接口：`GET/POST/PUT /api/delegation-profiles*`，用于为外部 agent 定义允许路由、审批门槛与单次 apply 上限
 - 已新增 `POST /api/agent/apply`：在重新计算 intake 计划后，按 `operation_ids` 执行受 delegation 约束的一组 builder 操作，并把 agent 身份写入事件来源
+
+- 已新增 `docs/managed-agent-demo.md`，把当前已跑通的 `manifest -> delegation profile -> agent apply -> playbook/skill/mcp draft` 演示链记录为项目示例
+- 已把 agent 治理与错误日志等后续细节统一沉淀进文档 TODO，并明确当前策略是 `runnable-first`：先确保完整主链跑通，再逐步补日志、审计、回滚与托管巡检

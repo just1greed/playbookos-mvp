@@ -42,6 +42,7 @@ PlaybookOS 是一个面向 AI 工作流的“工作操作系统（AI Work Operat
 - `docs/mvp-plan.md`：MVP 模块、接口与里程碑
 - `docs/ui-redesign.md`：前端重构方案与页面设计
 - `docs/agent-operator.md`：外部 agent / OpenClaw 接入方案与 skill 设计
+- `docs/managed-agent-demo.md`：外部 agent 托管示例与演示记录
 - `docs/records/progress.md`：持续进展记录
 - `docs/records/iteration-memory.md`：阶段性结论与缺口排序
 - `data/sql/postgres_schema.sql`：PostgreSQL schema 草案

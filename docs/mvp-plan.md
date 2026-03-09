@@ -269,6 +269,18 @@
 2. 真实变更仍走显式控制面 API
 3. 高风险动作继续保留 HITL 和审批边界
 
+## 6.1 Runnable-first Backlog（2026-03-09）
+
+为了保证项目先形成“完整可跑通”的主链，以下细节先明确放入 backlog，而不作为当前阻塞：
+
+- [ ] 全量统一错误日志体系（API / preview / tool / manual）
+- [ ] 流程问题 -> self-iteration 的自动路由
+- [ ] 系统设计问题 -> 独立错误文件夹 + issue 快捷方式
+- [ ] 更细粒度的 agent identity 与 delegation policy
+- [ ] agent apply 的事务回滚与托管巡检循环
+
+当前优先原则：**先确保外部 agent 从对话/SOP 到对象创建/托管执行的完整主链稳定跑通，再逐项补治理细节。**
+
 ## 6. 当前代码落地策略
 
 当前仓库已实现：

@@ -121,3 +121,30 @@ Skill 当前支持四种模式：
 2. `delegation profile` 与 agent 身份/审计
 3. 对外 agent 的 apply/execution plan
 4. 托管模式下的运营循环
+
+
+## 8. Runnable-first TODO
+
+下面这些不是当前主链跑通的阻塞项，先进入 TODO，后续逐步完善：
+
+### P1：先完善但不阻塞当前演示
+
+- [ ] 更细粒度的 `DelegationProfile`：按 Goal / 环境 / 风险等级 / 动作类型授权
+- [ ] 更完整的 `agent identity`：区分 `human / operator-agent / delegate-agent`
+- [ ] `agent apply` 支持更多 builder / operator 动作
+- [ ] `agent apply` 返回更结构化的执行摘要与失败归因
+
+### P2：错误日志与系统优化闭环
+
+- [ ] 为 API、preview、tool execution、manual actions 建立统一错误日志结构
+- [ ] 区分“流程问题”与“系统设计问题”两类错误
+- [ ] 如果是 `SOP / Skill / Playbook` 流程问题，自动进入 reflection / self-iteration 候选
+- [ ] 如果是系统设计问题，落到独立文件夹，供后续研发排查
+- [ ] 增加 issue 快捷方式：快速把系统级错误整理成 issue 草稿
+
+### P3：托管运营增强
+
+- [ ] 托管模式的定时巡检循环
+- [ ] 自动读取 `agent context` 并处理等待审批/学习项
+- [ ] 高风险动作的统一确认门禁
+- [ ] apply 执行的事务化与回滚能力

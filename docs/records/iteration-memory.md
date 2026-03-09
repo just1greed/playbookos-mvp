@@ -121,3 +121,5 @@
 
 - 这轮之后，agent 接入面已经不只是 `manifest/context/intake`，而是扩展成 `manifest/context/intake/apply + delegation profile`；也就是说外部 agent 已能在受限边界内真正开始托管创建对象，而不只是做建议。
 - 但 apply 现在仍是最小 builder 第一版，还不是完整事务执行器；后续真正的重点会变成：更细粒度授权、明确 agent identity、以及可回滚的计划执行。
+
+- 当前关于 agent 托管这条线的优先级已经明确：先守住 `完整可跑通`，后补 `更完备可治理`。因此错误日志体系、issue 快捷方式、agent identity、事务回滚这些都先作为 backlog 保存在文档里，不抢当前主链闭环的优先级。
