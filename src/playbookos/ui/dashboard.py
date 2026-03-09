@@ -58,6 +58,15 @@ TRANSLATIONS = {
         "session_task_label": "任务",
         "session_run_label": "运行",
         "session_summary_label": "摘要",
+        "supervisor_center_title": "主控聚合中心",
+        "supervisor_center_subtitle": "主进程按 Goal 汇总子会话、Run、验收、复盘、知识更新与事件，帮助你看见编排是否闭环",
+        "supervisor_center_empty": "当前还没有主控聚合数据。",
+        "supervisor_center_sessions": "会话链路",
+        "supervisor_center_runs": "运行结果",
+        "supervisor_center_learning": "学习闭环",
+        "supervisor_center_events": "最新事件",
+        "supervisor_center_waiting": "待人工",
+        "supervisor_center_closed_tasks": "已关闭任务",
         "patch_review_title": "SOP 补丁审阅",
         "patch_review_subtitle": "集中查看反思提案、变更操作、评测结果与发布状态，专门服务 SOP 优化闭环",
         "patch_review_empty": "当前还没有 SOP 补丁提案。",
@@ -232,6 +241,15 @@ TRANSLATIONS = {
         "session_task_label": "Task",
         "session_run_label": "Run",
         "session_summary_label": "Summary",
+        "supervisor_center_title": "Supervisor Aggregation Center",
+        "supervisor_center_subtitle": "The main process aggregates child sessions, runs, acceptance, reflection, knowledge updates, and events by goal so orchestration stays visible.",
+        "supervisor_center_empty": "No supervisor aggregation data yet.",
+        "supervisor_center_sessions": "Session Flow",
+        "supervisor_center_runs": "Run Outcomes",
+        "supervisor_center_learning": "Learning Loop",
+        "supervisor_center_events": "Latest Events",
+        "supervisor_center_waiting": "Waiting Human",
+        "supervisor_center_closed_tasks": "Closed Tasks",
         "patch_review_title": "SOP Patch Review",
         "patch_review_subtitle": "Review reflection proposals, structured changes, evaluation results, and publish status in one dedicated SOP optimization surface",
         "patch_review_empty": "No SOP patch proposals yet.",
@@ -732,6 +750,13 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
 
       <section class="section">
         <article class="card workbench-card">
+          <div class="section-title"><h2 data-i18n="supervisor_center_title"></h2><span data-i18n="supervisor_center_subtitle"></span></div>
+          <div class="patch-review-grid" id="supervisor-summary-rows"></div>
+        </article>
+      </section>
+
+      <section class="section">
+        <article class="card workbench-card">
           <div class="section-title"><h2 data-i18n="skill_version_title"></h2><span data-i18n="skill_version_subtitle"></span></div>
           <div class="skill-version-grid" id="skill-version-rows"></div>
         </article>
@@ -1016,6 +1041,89 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         renderGoalActions();
         renderReviewActions();
         renderLearningActions();
+      }}
+
+      function countByStatus(items, field = 'status') {{
+        return (items || []).reduce((acc, item) => {{
+          const key = String(item && item[field] ? item[field] : 'unknown');
+          acc[key] = (acc[key] || 0) + 1;
+          return acc;
+        }}, {{}});
+      }}
+
+      function totalFromCounts(counts) {{
+        return Object.values(counts || {{}}).reduce((sum, value) => sum + Number(value || 0), 0);
+      }}
+
+      function renderAggregateLines(label, entries) {{
+        const rows = entries.map(([key, value]) => `<div class="patch-change"><code>${{escapeHtml(String(key))}}</code><span>${{escapeHtml(String(value))}}</span></div>`).join('');
+        return `<div class="patch-changes"><strong>${{escapeHtml(label)}}</strong>${{rows}}</div>`;
+      }}
+
+      function aggregateForGoal(goal) {{
+        const sessions = (latestResources.sessions || []).filter((item) => item.goal_id === goal.id);
+        const supervisor = sessions.find((item) => item.kind === 'supervisor') || null;
+        const tasks = (latestResources.tasks || []).filter((item) => item.goal_id === goal.id);
+        const taskIds = new Set(tasks.map((item) => item.id));
+        const runs = (latestResources.runs || []).filter((item) => taskIds.has(item.task_id));
+        const runIds = new Set(runs.map((item) => item.id));
+        const reflections = (latestResources.reflections || []).filter((item) => runIds.has(item.run_id));
+        const knowledgeUpdates = (latestResources.knowledge_updates || []).filter((item) => item.goal_id === goal.id || runIds.has(item.run_id));
+        const acceptances = (latestResources.acceptances || []).filter((item) => item.goal_id === goal.id);
+        const fallback = {{
+          goal_status: goal.status || 'draft',
+          tasks: countByStatus(tasks),
+          runs: countByStatus(runs),
+          acceptances: countByStatus(acceptances),
+          reflections: countByStatus(reflections, 'eval_status'),
+          knowledge_updates: countByStatus(knowledgeUpdates),
+          session_total: sessions.length,
+          child_session_total: sessions.filter((item) => item.parent_session_id).length,
+          worker_session_total: sessions.filter((item) => item.kind === 'worker').length,
+          waiting_human_runs: runs.filter((item) => item.status === 'waiting_human').length,
+          review_tasks: tasks.filter((item) => item.status === 'review').length,
+          learned_tasks: tasks.filter((item) => item.status === 'learned').length,
+        }};
+        const aggregate = (supervisor && supervisor.output_context && supervisor.output_context.aggregate) || fallback;
+        const latestEvents = (supervisor && supervisor.output_context && supervisor.output_context.latest_events) || [];
+        return {{ supervisor, aggregate, latestEvents, tasks, runs, reflections, knowledgeUpdates, acceptances, sessions }};
+      }}
+
+      function renderSupervisorCenter() {{
+        const container = document.getElementById('supervisor-summary-rows');
+        const goals = latestResources.goals || [];
+        if (!goals.length) {{
+          container.innerHTML = `<div class="patch-review-card"><strong>${{escapeHtml(t('supervisor_center_title'))}}</strong><small>${{escapeHtml(t('supervisor_center_empty'))}}</small></div>`;
+          return;
+        }}
+        const cards = goals.map((goal) => {{
+          const bundle = aggregateForGoal(goal);
+          const aggregate = bundle.aggregate || {{}};
+          const supervisor = bundle.supervisor;
+          const statusLabel = (supervisor && supervisor.status) || goal.status || 'draft';
+          const headLines = [
+            `${{t('session_goal_summary')}} · ${{aggregate.session_total || 0}} sessions`,
+            `${{t('session_children_count')}} · ${{aggregate.child_session_total || 0}}`,
+            `${{t('supervisor_center_waiting')}} · ${{aggregate.waiting_human_runs || 0}}`,
+            `${{t('supervisor_center_closed_tasks')}} · ${{(aggregate.learned_tasks || 0) + Number((aggregate.tasks || {{}}).done || 0)}}`,
+          ];
+          const eventEntries = (bundle.latestEvents.length ? bundle.latestEvents : ['n/a']).map((item, index) => [`#${{index + 1}}`, item]);
+          const sessionEntries = [
+            ['total', aggregate.session_total || 0],
+            ['child', aggregate.child_session_total || 0],
+            ['worker', aggregate.worker_session_total || 0],
+            ['review_tasks', aggregate.review_tasks || 0],
+          ];
+          const runEntries = Object.entries(aggregate.runs || {{}});
+          const learningEntries = [
+            ['reflections', totalFromCounts(aggregate.reflections || {{}})],
+            ['knowledge_updates', totalFromCounts(aggregate.knowledge_updates || {{}})],
+            ['acceptances', totalFromCounts(aggregate.acceptances || {{}})],
+            ['published_patches', Number((aggregate.reflections || {{}}).published || 0)],
+          ];
+          return `<div class="patch-review-card"><div class="patch-review-head"><div><strong>${{escapeHtml(goal.title || goal.id)}}</strong><small>${{escapeHtml(headLines.join('\\n'))}}</small></div><span class="state">${{escapeHtml(formatStateLabel(statusLabel))}}</span></div>${{renderAggregateLines(t('supervisor_center_sessions'), sessionEntries)}}${{renderAggregateLines(t('supervisor_center_runs'), runEntries.length ? runEntries : [['none', 0]])}}${{renderAggregateLines(t('supervisor_center_learning'), learningEntries)}}${{renderAggregateLines(t('supervisor_center_events'), eventEntries)}}</div>`;
+        }});
+        container.innerHTML = cards.join('');
       }}
 
       function sessionTitleLine(session) {{
@@ -1462,6 +1570,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         renderWorkbenchOptions();
         refreshEditorResourceOptions();
         renderActionCenter();
+        renderSupervisorCenter();
         renderSkillVersions();
         renderPatchReviews();
         renderSessionTree();

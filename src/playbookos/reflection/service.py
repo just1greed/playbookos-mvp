@@ -7,6 +7,7 @@ from typing import Any
 from playbookos.api.store import StoreProtocol
 from playbookos.domain.models import KnowledgeUpdate, Playbook, PlaybookStatus, Reflection, ReflectionStatus, RunStatus, utc_now
 from playbookos.knowledge import sync_knowledge_update_for_run
+from playbookos.supervisor import append_event, ensure_worker_session_for_run, record_child_session, refresh_goal_supervisor_session
 
 
 class ReflectionError(ValueError):
@@ -52,6 +53,7 @@ class SOPReflector:
         existing = next((item for item in store.reflections.list() if item.run_id == run_id), None)
         if existing is not None:
             existing_knowledge_update = next((item for item in store.knowledge_updates.list() if item.run_id == run_id), None)
+            refresh_goal_supervisor_session(store, store.tasks.get(store.runs.get(run_id).task_id).goal_id)
             return RunReflectionResult(
                 reflection=existing,
                 proposal_type=existing.proposal.get("proposal_type", "unknown"),
@@ -75,6 +77,35 @@ class SOPReflector:
         )
         store.reflections.save(reflection)
         knowledge_update = sync_knowledge_update_for_run(store, run.id, source_reflection_id=reflection.id)
+        worker_session = ensure_worker_session_for_run(store, run.id)
+        record_child_session(
+            store,
+            goal_id=task.goal_id,
+            parent_session_id=worker_session.id,
+            title="Subsession · Reflection and learning",
+            task_id=task.id,
+            run_id=run.id,
+            objective="Review execution outcome and produce SOP / knowledge improvements",
+            input_context={
+                "failure_category": failure_category,
+                "proposal_type": proposal["proposal_type"],
+                "target": proposal["target"],
+            },
+            output_context={
+                "reflection_id": reflection.id,
+                "knowledge_update_id": knowledge_update.id,
+                "changes": proposal.get("changes", []),
+            },
+            summary=proposal["summary"],
+        )
+        append_event(
+            store,
+            entity_type="reflection",
+            entity_id=reflection.id,
+            event_type="reflection.created",
+            payload={"goal_id": task.goal_id, "task_id": task.id, "run_id": run.id, "knowledge_update_id": knowledge_update.id},
+        )
+        refresh_goal_supervisor_session(store, task.goal_id)
         return RunReflectionResult(
             reflection=reflection,
             proposal_type=proposal["proposal_type"],
@@ -106,6 +137,15 @@ class SOPReflector:
             "passed": passed,
         }
         store.reflections.save(reflection)
+        append_event(
+            store,
+            entity_type="reflection",
+            entity_id=reflection.id,
+            event_type="reflection.evaluated",
+            payload={"run_id": run.id, "task_id": task.id, "goal_id": task.goal_id, "passed": passed, "score": score},
+            source="system",
+        )
+        refresh_goal_supervisor_session(store, task.goal_id)
         return ReflectionEvaluationResult(
             reflection=reflection,
             passed=passed,
@@ -121,6 +161,17 @@ class SOPReflector:
         reflection.approved_by = approved_by
         reflection.updated_at = utc_now()
         store.reflections.save(reflection)
+        run = store.runs.get(reflection.run_id)
+        task = store.tasks.get(run.task_id)
+        append_event(
+            store,
+            entity_type="reflection",
+            entity_id=reflection.id,
+            event_type="reflection.approved",
+            payload={"goal_id": task.goal_id, "task_id": task.id, "run_id": run.id},
+            source=approved_by,
+        )
+        refresh_goal_supervisor_session(store, task.goal_id)
         return reflection
 
     def reject_reflection(self, store: StoreProtocol, reflection_id: str, *, approved_by: str = "human") -> Reflection:
@@ -129,6 +180,17 @@ class SOPReflector:
         reflection.approved_by = approved_by
         reflection.updated_at = utc_now()
         store.reflections.save(reflection)
+        run = store.runs.get(reflection.run_id)
+        task = store.tasks.get(run.task_id)
+        append_event(
+            store,
+            entity_type="reflection",
+            entity_id=reflection.id,
+            event_type="reflection.rejected",
+            payload={"goal_id": task.goal_id, "task_id": task.id, "run_id": run.id},
+            source=approved_by,
+        )
+        refresh_goal_supervisor_session(store, task.goal_id)
         return reflection
 
     def publish_reflection(self, store: StoreProtocol, reflection_id: str) -> ReflectionPublishResult:
@@ -148,6 +210,15 @@ class SOPReflector:
         reflection.proposal["published_playbook_id"] = published_playbook.id
         reflection.updated_at = utc_now()
         store.reflections.save(reflection)
+        append_event(
+            store,
+            entity_type="reflection",
+            entity_id=reflection.id,
+            event_type="reflection.published",
+            payload={"goal_id": task.goal_id, "task_id": task.id, "run_id": run.id, "playbook_id": published_playbook.id, "version": published_playbook.version},
+            source="human",
+        )
+        refresh_goal_supervisor_session(store, task.goal_id)
         return ReflectionPublishResult(reflection=reflection, playbook=published_playbook)
 
     def analyze_goal(self, store: StoreProtocol, goal_id: str) -> LearningSummary:

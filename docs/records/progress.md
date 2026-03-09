@@ -143,3 +143,6 @@
 - 已新增 Skill 版本服务，支持 `create-version`、`activate`、`deprecate`、`rollback` 四类版本生命周期动作
 - Dashboard 已新增“技能版本中心”，集中展示版本链、当前激活版本、回滚目标与相关动作
 - preview demo 数据已补齐真实 Skill 版本链，便于在 `8081` 直接看到版本演进与回滚入口
+- 已补上主控聚合会话刷新逻辑：supervisor 会按 Goal 自动汇总 task/run/acceptance/reflection/knowledge update/session/event 状态
+- 执行链路现在会在 worker 下生成可见子会话：`Context synthesis`、`AI execution`、`Supervisor verification`、`Reflection and learning`
+- Dashboard 已新增“主控聚合中心”，直接展示主进程收集、检测、学习与事件汇总结果

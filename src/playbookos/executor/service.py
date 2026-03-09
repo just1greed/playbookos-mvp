@@ -7,8 +7,14 @@ from uuid import uuid4
 from playbookos.api.store import StoreProtocol
 from playbookos.domain.models import Artifact, GoalStatus, RunStatus, SessionStatus, TaskStatus, utc_now
 from playbookos.orchestrator.service import complete_task_in_store, dispatch_goal_in_store
-from playbookos.supervisor import append_event, ensure_worker_session_for_run, update_session_for_run
 from playbookos.reflection.service import reflect_run_in_store
+from playbookos.supervisor import (
+    append_event,
+    ensure_worker_session_for_run,
+    record_child_session,
+    refresh_goal_supervisor_session,
+    update_session_for_run,
+)
 
 
 class ExecutionError(ValueError):
@@ -131,6 +137,14 @@ class OpenAIAgentsSDKAdapter:
         )
 
 
+def _session_status_for_result(status: RunStatus) -> SessionStatus:
+    if status == RunStatus.SUCCEEDED:
+        return SessionStatus.COMPLETED
+    if status == RunStatus.WAITING_HUMAN:
+        return SessionStatus.WAITING_HUMAN
+    return SessionStatus.FAILED
+
+
 class RunExecutor:
     def __init__(self, adapter: ExecutorAdapter | None = None) -> None:
         self.adapter = adapter or DeterministicExecutorAdapter()
@@ -183,7 +197,48 @@ class RunExecutor:
             skill_id=task.assigned_skill_id,
             approval_required=task.approval_required,
         )
+        record_child_session(
+            store,
+            goal_id=goal.id,
+            parent_session_id=worker_session.id,
+            title="Subsession · Context synthesis",
+            task_id=task.id,
+            run_id=run.id,
+            objective="Assemble SOP, skill, knowledge, and task context for execution",
+            input_context={
+                "compiled_step_count": len(context.compiled_steps),
+                "mcp_servers": context.mcp_servers,
+                "knowledge_item_ids": [item["id"] for item in linked_knowledge_items],
+                "skill_id": context.skill_id,
+            },
+            output_context={
+                "task_name": task.name,
+                "playbook_name": playbook.name,
+                "approval_required": task.approval_required,
+            },
+            summary=f"Prepared {len(context.compiled_steps)} steps, {len(context.mcp_servers)} MCP servers, and {len(linked_knowledge_items)} knowledge items.",
+            status=SessionStatus.COMPLETED,
+        )
+
         result = self.adapter.execute(context)
+        record_child_session(
+            store,
+            goal_id=goal.id,
+            parent_session_id=worker_session.id,
+            title="Subsession · AI execution",
+            task_id=task.id,
+            run_id=run.id,
+            objective="Run the assigned skill against the compiled SOP",
+            input_context={"task_id": task.id, "run_id": run.id, "playbook_id": playbook.id},
+            output_context={
+                "trace_id": result.trace_id,
+                "tool_calls": result.tool_calls,
+                "metrics": result.metrics,
+                "run_status": result.status.value,
+            },
+            summary=result.output_text,
+            status=_session_status_for_result(result.status),
+        )
 
         run.status = result.status
         run.trace_id = result.trace_id
@@ -222,8 +277,33 @@ class RunExecutor:
         store.artifacts.save(artifact)
         result.artifact_ids.append(artifact.id)
 
-        session_status = SessionStatus.COMPLETED if result.status == RunStatus.SUCCEEDED else SessionStatus.WAITING_HUMAN if result.status == RunStatus.WAITING_HUMAN else SessionStatus.FAILED
-        update_session_for_run(store, run.id, status=session_status, summary=result.output_text, output_context={"trace_id": result.trace_id, "artifact_ids": result.artifact_ids, "run_status": result.status.value, "knowledge_base_ids": task.knowledge_base_ids})
+        record_child_session(
+            store,
+            goal_id=goal.id,
+            parent_session_id=worker_session.id,
+            title="Subsession · Supervisor verification",
+            task_id=task.id,
+            run_id=run.id,
+            objective="Collect artifacts and expose verifiable execution outputs",
+            input_context={"artifact_kind": artifact.kind, "artifact_id": artifact.id},
+            output_context={"trace_id": result.trace_id, "artifact_ids": result.artifact_ids, "run_status": result.status.value},
+            summary="Captured run artifact, trace, and execution metrics for the supervisor.",
+            status=_session_status_for_result(result.status),
+        )
+
+        session_status = _session_status_for_result(result.status)
+        update_session_for_run(
+            store,
+            run.id,
+            status=session_status,
+            summary=result.output_text,
+            output_context={
+                "trace_id": result.trace_id,
+                "artifact_ids": result.artifact_ids,
+                "run_status": result.status.value,
+                "knowledge_base_ids": task.knowledge_base_ids,
+            },
+        )
         append_event(store, entity_type="run", entity_id=run.id, event_type="run.execution_finished", payload={"status": result.status.value, "task_id": task.id, "goal_id": goal.id})
 
         if result.status == RunStatus.SUCCEEDED:
@@ -241,6 +321,7 @@ class RunExecutor:
         store.runs.save(run)
         store.tasks.save(task)
         store.goals.save(goal)
+        refresh_goal_supervisor_session(store, goal.id)
         return result
 
 
@@ -258,7 +339,8 @@ class GoalAutopilot:
 
         while iterations < max_iterations:
             iterations += 1
-            dispatch_result = dispatch_goal_in_store(store, goal_id)
+            dispatch_goal_in_store(store, goal_id)
+            refresh_goal_supervisor_session(store, goal_id)
             tasks = [task for task in store.tasks.list() if task.goal_id == goal_id]
             task_ids = {task.id for task in tasks}
             executable_runs = [
@@ -267,6 +349,7 @@ class GoalAutopilot:
 
             if not executable_runs:
                 goal = store.goals.get(goal_id)
+                refresh_goal_supervisor_session(store, goal_id)
                 return GoalAutopilotResult(
                     goal_id=goal_id,
                     goal_status=goal.status,
@@ -289,22 +372,26 @@ class GoalAutopilot:
                     completed_task_ids.append(completion.task_id)
                     reflection = reflect_run_in_store(store, run.id)
                     reflection_ids.append(reflection.reflection.id)
+                    refresh_goal_supervisor_session(store, goal_id)
                     continue
 
                 if result.status == RunStatus.WAITING_HUMAN:
                     waiting_human_run_ids.append(run.id)
                     reflection = reflect_run_in_store(store, run.id)
                     reflection_ids.append(reflection.reflection.id)
+                    refresh_goal_supervisor_session(store, goal_id)
                     continue
 
                 failed_run_ids.append(run.id)
                 reflection = reflect_run_in_store(store, run.id)
                 reflection_ids.append(reflection.reflection.id)
+                refresh_goal_supervisor_session(store, goal_id)
 
             if not progress_made:
                 break
 
         goal = store.goals.get(goal_id)
+        refresh_goal_supervisor_session(store, goal_id)
         return GoalAutopilotResult(
             goal_id=goal_id,
             goal_status=goal.status,

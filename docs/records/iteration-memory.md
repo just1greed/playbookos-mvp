@@ -46,7 +46,7 @@
 - Skill 版本晋级与回滚：已具备页面内专门版本中心和 create-version / activate / deprecate / rollback 动作，但还缺少更细粒度的评测门禁、审批策略和发布时间线
 - 专门的 SOP 编辑 / diff / patch 审核界面
 - 知识库检索排序与版本化能力
-- 真正的多层子会话执行、并行汇总与主进程仲裁
+- 真正的多层子会话执行、并行汇总与主进程仲裁：已具备多层可见子会话和主控聚合摘要，但仍缺少更强的并行调度策略、跨层结果仲裁与真实在线 agent 执行器
 - 真实 OpenAI Agents SDK + MCP 在线执行
 - Temporal 真正接入
 

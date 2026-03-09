@@ -93,6 +93,35 @@ class ExecutorReflectionTestCase(unittest.TestCase):
         self.assertGreaterEqual(len(learning.knowledge_update_ids), 2)
         self.assertGreaterEqual(len(learning.suggested_knowledge_updates), 2)
 
+    def test_execute_run_builds_nested_sessions_and_supervisor_aggregate(self) -> None:
+        store = InMemoryStore()
+        goal = store.goals.save(Goal(title="Nested session goal", objective="Verify supervisor aggregation"))
+        store.playbooks.save(
+            Playbook(
+                name="Nested playbook",
+                source_kind="markdown",
+                source_uri="file:///tmp/nested.md",
+                goal_id=goal.id,
+                compiled_spec={"steps": ["Collect context", "Execute worker", "Verify output"]},
+            )
+        )
+
+        plan_goal_in_store(store, goal.id)
+        dispatch = dispatch_goal_in_store(store, goal.id)
+        run_id = dispatch.created_run_ids[0]
+        execute_run_in_store(store, run_id, adapter=DeterministicExecutorAdapter())
+
+        sessions = [session for session in store.sessions.list() if session.goal_id == goal.id]
+        supervisor = next(session for session in sessions if session.kind.value == "supervisor")
+        worker = next(session for session in sessions if session.run_id == run_id and session.parent_session_id == supervisor.id)
+        worker_children = [session for session in sessions if session.parent_session_id == worker.id]
+
+        self.assertGreaterEqual(len(worker_children), 3)
+        self.assertIn("aggregate", supervisor.output_context)
+        self.assertGreaterEqual(supervisor.output_context["aggregate"]["session_total"], 5)
+        self.assertEqual(supervisor.output_context["aggregate"]["runs"][RunStatus.SUCCEEDED.value], 1)
+
+
 
 if __name__ == "__main__":
     unittest.main()
