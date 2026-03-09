@@ -11,3 +11,4 @@ venv/
 .env.*
 data/*.db
 data/error_records.jsonl
+data/object_store/
