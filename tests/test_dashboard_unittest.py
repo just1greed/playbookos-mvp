@@ -74,6 +74,8 @@ class DashboardHtmlTestCase(unittest.TestCase):
         self.assertIn('applySkillSuggestion(result.suggested_skills[0])', html)
         self.assertIn("action_create_skill_draft", html)
         self.assertIn('async function putJson(path, payload)', html)
+        self.assertIn('Promise.allSettled', html)
+        self.assertIn('Partial API load failure', html)
         self.assertIn('saveEditorSelection()', html)
         self.assertIn("handleWorkbenchSubmit(handleTaskSubmit, event)", html)
         self.assertIn('const apiBase = "/api";', html)

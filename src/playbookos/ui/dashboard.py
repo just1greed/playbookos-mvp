@@ -1746,9 +1746,24 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
       }}
 
       async function refresh() {{
-        const board = await fetchJson('board');
-        const resourcePairs = await Promise.all(sectionOrder.map(async (section) => [section, await fetchJson(resourcePath(section))]));
-        const payloads = Object.fromEntries(resourcePairs);
+        let board = currentSnapshot || {{}};
+        try {{
+          board = await fetchJson('board');
+        }} catch (error) {{
+          showBootError(new Error(`Failed to load board: ${{error.message}}`));
+        }}
+        const resourceResults = await Promise.allSettled(sectionOrder.map((section) => fetchJson(resourcePath(section))));
+        const payloads = {{ ...latestResources }};
+        const failures = [];
+        resourceResults.forEach((result, index) => {{
+          const section = sectionOrder[index];
+          if (result.status === 'fulfilled') {{
+            payloads[section] = result.value;
+          }} else {{
+            payloads[section] = payloads[section] || [];
+            failures.push(`${{section}}: ${{result.reason && result.reason.message ? result.reason.message : String(result.reason)}}`);
+          }}
+        }});
         renderSummary(board);
         renderResourceRows(payloads);
         renderWorkbenchOptions();
@@ -1759,7 +1774,11 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         renderPatchReviews();
         renderSessionTree();
         renderExecutionInspector();
-        clearBootError();
+        if (failures.length) {{
+          showBootError(new Error(`Partial API load failure: ${{failures.join('; ')}}`));
+        }} else {{
+          clearBootError();
+        }}
       }}
 
       async function handleGoalSubmit(event) {{
