@@ -123,3 +123,6 @@
 - 但 apply 现在仍是最小 builder 第一版，还不是完整事务执行器；后续真正的重点会变成：更细粒度授权、明确 agent identity、以及可回滚的计划执行。
 
 - 当前关于 agent 托管这条线的优先级已经明确：先守住 `完整可跑通`，后补 `更完备可治理`。因此错误日志体系、issue 快捷方式、agent identity、事务回滚这些都先作为 backlog 保存在文档里，不抢当前主链闭环的优先级。
+
+- 这轮阶段总结已经补成一篇完整建设文章：`docs/records/building-playbookos-story.md`。它不是单纯罗列功能，而是把“为什么先做控制面骨架、为什么收敛到 Markdown-first、为什么前端改成全局看板、为什么要做 agent-facing control plane、为什么 README 要服从真实实现”这些关键决策都串了起来。
+- 这也进一步确认了当前项目的主方法论：`runnable-first + markdown-first + agent-first interface + documentation aligned with implementation`。后续新增能力时，应继续按这四条原则判断优先级，而不是为了功能列表而扩散范围。

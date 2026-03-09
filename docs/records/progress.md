@@ -274,3 +274,6 @@
 
 - 已按“中文主 README + 英文独立 README-EN”重构仓库说明文档，去掉同段中英混排，并保持两份文档的结构一致
 - 已新增 `scripts/openclaw_demo.sh`，把 OpenClaw / 外部 agent 的演示升级为可执行脚本：自动完成 `manifest -> context -> intake -> delegation profile -> apply`
+
+- 已基于 `progress / iteration-memory / git log` 重新整理本轮完整建设脉络，并新增 `docs/records/building-playbookos-story.md`，记录 PlaybookOS 从控制面骨架、Markdown SOP ingestion、执行闭环、前端重构、设置治理到 OpenClaw / agent 接入面的逐步搭建过程
+- 已把本轮参考统计一并记入建设文章：工具 `Codex`、模型 `GPT-5.4`、总耗时约 `24h`、总请求数约 `2235` 次、总 Token 约 `432M`
