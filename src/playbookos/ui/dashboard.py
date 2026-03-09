@@ -205,6 +205,10 @@ TRANSLATIONS = {
         "topbar_scope_status": "按状态",
         "global_flow_title": "任务流程总览",
         "global_flow_subtitle": "从 Goal 到 Knowledge 的全局链路状态，一眼看清哪里在推进、哪里在阻塞。",
+        "dashboard_blockers_title": "关键阻塞区",
+        "dashboard_blockers_subtitle": "优先看卡住推进链路的 Goal、Run、Reflection 和工具缺口。",
+        "dashboard_recommendations_title": "推荐动作区",
+        "dashboard_recommendations_subtitle": "根据当前全局状态，给出下一步最值得打开的工作台和处理方向。",
         "route_focus_title": "重点摘要",
         "route_focus_subtitle": "围绕当前工作台节点，先看最重要的对象状态、缺口和待处理项。",
         "focus_total": "总量",
@@ -536,6 +540,10 @@ TRANSLATIONS = {
         "topbar_scope_status": "By Status",
         "global_flow_title": "Flow Overview",
         "global_flow_subtitle": "A global chain from Goal to Knowledge so you can instantly see what is moving and what is blocked.",
+        "dashboard_blockers_title": "Key Blockers",
+        "dashboard_blockers_subtitle": "See the goals, runs, reflections, and tooling gaps that are slowing the system first.",
+        "dashboard_recommendations_title": "Recommended Actions",
+        "dashboard_recommendations_subtitle": "Based on the global state, show the next workbench worth opening and the action worth taking.",
         "route_focus_title": "Key Highlights",
         "route_focus_subtitle": "See the most important states, gaps, and pending work for the current workbench first.",
         "focus_total": "Total",
@@ -784,6 +792,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
       .placeholder-card {{ grid-column: span 4; padding: 18px; border-radius: 20px; background: rgba(15, 23, 42, 0.62); border: 1px solid rgba(148, 163, 184, 0.12); }}
       .placeholder-card h3 {{ margin: 0 0 8px; font-size: 18px; }}
       .placeholder-card p {{ margin: 0; color: var(--muted); line-height: 1.7; }}
+      .dashboard-grid {{ display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }}
       .flow-grid {{ display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }}
       .flow-card {{ grid-column: span 3; padding: 18px; border-radius: 20px; background: rgba(15, 23, 42, 0.62); border: 1px solid rgba(148, 163, 184, 0.12); }}
       .flow-card strong {{ display: block; font-size: 18px; margin-bottom: 6px; }}
@@ -1230,6 +1239,19 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         <div class="flow-grid" id="global-flow-rows"></div>
       </section>
 
+      <section class="section" id="dashboard-alerts-section" data-route-section>
+        <div class="dashboard-grid">
+          <article class="card list-card">
+            <div class="section-title"><h2 id="dashboard-blockers-title"></h2><span id="dashboard-blockers-subtitle"></span></div>
+            <div class="rows" id="dashboard-blocker-rows"></div>
+          </article>
+          <article class="card activity-card">
+            <div class="section-title"><h2 id="dashboard-recommendations-title"></h2><span id="dashboard-recommendations-subtitle"></span></div>
+            <div class="rows" id="dashboard-recommendation-rows"></div>
+          </article>
+        </div>
+      </section>
+
       <section class="section" id="settings-placeholder-section" data-route-section hidden>
         <article class="card workbench-card">
           <div class="section-title"><h2 data-i18n="route_placeholder_title"></h2><span data-i18n="route_placeholder_body"></span></div>
@@ -1291,7 +1313,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         system: {{ navKey: 'nav_versions', titleKey: 'page_system_title', subtitleKey: 'page_system_subtitle' }},
       }};
       const routeSections = {{
-        dashboard: ['dashboard-hero', 'dashboard-summary-section', 'dashboard-flow-section', 'dashboard-api-section', 'action-center-section', 'supervisor-section', 'resource-peek-section', 'snapshot-section'],
+        dashboard: ['dashboard-hero', 'dashboard-summary-section', 'dashboard-flow-section', 'dashboard-alerts-section', 'dashboard-api-section', 'action-center-section', 'supervisor-section', 'resource-peek-section', 'snapshot-section'],
         goals: ['route-focus-section', 'workbench-section', 'editor-section', 'action-center-section'],
         playbooks: ['route-focus-section', 'workbench-section', 'patch-review-section', 'editor-section'],
         skills: ['route-focus-section', 'workbench-section', 'authoring-section', 'skill-version-section', 'editor-section'],
@@ -1460,6 +1482,91 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         `).join('');
       }}
 
+      function renderDashboardAlerts() {{
+        const blockerNode = document.getElementById('dashboard-blocker-rows');
+        const recommendationNode = document.getElementById('dashboard-recommendation-rows');
+        if (!blockerNode || !recommendationNode) return;
+        const goals = latestResources.goals || [];
+        const tasks = latestResources.tasks || [];
+        const runs = latestResources.runs || [];
+        const reflections = latestResources.reflections || [];
+        const skills = latestResources.skills || [];
+        const blockers = [];
+        const recommendations = [];
+        const blockedGoals = goals.filter((item) => item.status === 'blocked');
+        const waitingRuns = runs.filter((item) => item.status === 'waiting_human');
+        const failedRuns = runs.filter((item) => item.status === 'failed');
+        const rejectedReflections = reflections.filter((item) => item.eval_status === 'rejected');
+        const reviewTasks = tasks.filter((item) => item.status === 'review');
+        const draftSkills = skills.filter((item) => item.status === 'draft');
+        const tooling = latestIngestionResult && latestIngestionResult.tooling_guidance ? latestIngestionResult.tooling_guidance : null;
+
+        if (blockedGoals.length) {{
+          blockers.push(routeDetailRow(t('nav_goals'), [
+            blockedGoals.map((item) => item.title || item.id).slice(0, 3).join(', '),
+            `${{t('focus_issues')}}: ${{blockedGoals.length}}`,
+          ], 'blocked'));
+        }}
+        if (waitingRuns.length) {{
+          blockers.push(routeDetailRow(t('nav_approvals'), [
+            `${{t('detail_runs')}}: ${{waitingRuns.length}}`,
+            waitingRuns.map((item) => item.id).slice(0, 2).join(', '),
+          ], 'waiting_human'));
+        }}
+        if (failedRuns.length) {{
+          blockers.push(routeDetailRow(t('action_kind_run'), [
+            `${{t('focus_issues')}}: ${{failedRuns.length}}`,
+            failedRuns.map((item) => item.id).slice(0, 2).join(', '),
+          ], 'failed'));
+        }}
+        if (rejectedReflections.length) {{
+          blockers.push(routeDetailRow(t('patch_review_title'), [
+            `${{t('focus_issues')}}: ${{rejectedReflections.length}}`,
+            rejectedReflections.map((item) => item.summary || item.id).slice(0, 2).join(', '),
+          ], 'rejected'));
+        }}
+        if (tooling && (tooling.missing_mcp_servers || []).length) {{
+          blockers.push(routeDetailRow(t('focus_missing_mcp'), [
+            (tooling.missing_mcp_servers || []).join(', '),
+            `${{t('focus_suggested_skills')}}: ${{(tooling.suggested_skill_names || []).join(', ') || 'n/a'}}`,
+          ], 'gap'));
+        }}
+
+        if (waitingRuns.length || reviewTasks.length) {{
+          recommendations.push(routeDetailRow(t('nav_approvals'), [
+            `${{t('focus_waiting')}}: ${{waitingRuns.length}}`,
+            `${{t('focus_review')}}: ${{reviewTasks.length}}`,
+          ], 'attention'));
+        }}
+        if (tooling && (tooling.missing_mcp_servers || []).length) {{
+          recommendations.push(routeDetailRow(t('nav_mcp'), [
+            (tooling.missing_mcp_servers || []).join(', '),
+            `${{t('focus_suggested_skills')}}: ${{(tooling.suggested_skill_names || []).join(', ') || 'n/a'}}`,
+          ], 'gap'));
+        }}
+        if (draftSkills.length) {{
+          recommendations.push(routeDetailRow(t('nav_skills'), [
+            `${{t('focus_draft')}}: ${{draftSkills.length}}`,
+            draftSkills.map((item) => item.name || item.id).slice(0, 2).join(', '),
+          ], 'draft'));
+        }}
+        if ((latestResources.knowledge_updates || []).filter((item) => item.status === 'proposed').length || (latestResources.reflections || []).filter((item) => item.eval_status === 'proposed').length) {{
+          recommendations.push(routeDetailRow(t('nav_learning'), [
+            `${{t('focus_proposed')}}: ${{(latestResources.knowledge_updates || []).filter((item) => item.status === 'proposed').length}} knowledge`,
+            `${{t('focus_proposed')}}: ${{(latestResources.reflections || []).filter((item) => item.eval_status === 'proposed').length}} reflection`,
+          ], 'proposed'));
+        }}
+        if (tasks.filter((item) => item.status === 'ready' || item.status === 'running').length) {{
+          recommendations.push(routeDetailRow(t('nav_tasks'), [
+            `ready/running: ${{tasks.filter((item) => item.status === 'ready' || item.status === 'running').length}}`,
+            `review: ${{reviewTasks.length}}`,
+          ], 'running'));
+        }}
+
+        blockerNode.innerHTML = blockers.length ? blockers.join('') : routeDetailRow(t('route_detail_empty'), [t('route_placeholder_body')], t('idle'));
+        recommendationNode.innerHTML = recommendations.length ? recommendations.join('') : routeDetailRow(t('route_detail_empty'), [t('route_placeholder_body')], t('idle'));
+      }}
+
       function updatePageHeader() {{
         const config = routeConfigs[currentRoute] || routeConfigs.dashboard;
         document.getElementById('page-title').textContent = t(config.titleKey);
@@ -1544,6 +1651,10 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         document.getElementById('snapshot-json-subtitle').textContent = t('snapshot_json_subtitle');
         document.getElementById('global-flow-title').textContent = t('global_flow_title');
         document.getElementById('global-flow-subtitle').textContent = t('global_flow_subtitle');
+        document.getElementById('dashboard-blockers-title').textContent = t('dashboard_blockers_title');
+        document.getElementById('dashboard-blockers-subtitle').textContent = t('dashboard_blockers_subtitle');
+        document.getElementById('dashboard-recommendations-title').textContent = t('dashboard_recommendations_title');
+        document.getElementById('dashboard-recommendations-subtitle').textContent = t('dashboard_recommendations_subtitle');
         document.getElementById('footer-text').textContent = t('footer');
         document.getElementById('lang-zh').classList.toggle('active', currentLanguage === 'zh');
         document.getElementById('lang-en').classList.toggle('active', currentLanguage === 'en');
@@ -2687,6 +2798,8 @@ ${{t('skill_version_servers')}}: ${{(skill.required_mcp_servers || []).join(', '
           }}
         }});
         renderSummary(board);
+        renderGlobalFlow();
+        renderDashboardAlerts();
         renderResourceRows(payloads);
         renderRouteDetails();
         renderWorkbenchOptions();
