@@ -35,7 +35,7 @@
 
 ### 部分实现
 
-- SOP 手动设置：已具备页面内新建与基础编辑，但还缺少 diff / patch / 版本审批 UI
+- SOP 手动设置：已具备页面内新建、基础编辑，以及专门的 patch review / publish 可视界面，但还缺少更细粒度 diff、逐条审阅和版本审批工作流
 - AI 参与完善：已有 reflection proposal、autopilot 与事件链路，但还没有针对 Skill / Task / SOP / 知识库的专门“AI co-pilot authoring”接口
 - 验收：已有独立的 acceptance 实体、API 和页面内操作入口，但还没有更细的 checklist 模板、评分和批量验收 UI
 - 知识库：已有 `KnowledgeBase` 实体、任务绑定、执行读取，以及 `KnowledgeUpdate` AI 回写提案链路和页面内 apply/reject，但还没有检索排序和版本化能力

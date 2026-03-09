@@ -58,6 +58,16 @@ TRANSLATIONS = {
         "session_task_label": "任务",
         "session_run_label": "运行",
         "session_summary_label": "摘要",
+        "patch_review_title": "SOP 补丁审阅",
+        "patch_review_subtitle": "集中查看反思提案、变更操作、评测结果与发布状态，专门服务 SOP 优化闭环",
+        "patch_review_empty": "当前还没有 SOP 补丁提案。",
+        "patch_review_source_run": "来源 Run",
+        "patch_review_target_playbook": "目标 SOP",
+        "patch_review_target_version": "目标版本",
+        "patch_review_score": "评测分数",
+        "patch_review_replay_count": "回放样本数",
+        "patch_review_changes": "变更清单",
+        "patch_review_no_changes": "当前提案没有结构化变更项。",
         "action_plan": "规划",
         "action_dispatch": "派发",
         "action_autopilot": "自动执行",
@@ -211,6 +221,16 @@ TRANSLATIONS = {
         "session_task_label": "Task",
         "session_run_label": "Run",
         "session_summary_label": "Summary",
+        "patch_review_title": "SOP Patch Review",
+        "patch_review_subtitle": "Review reflection proposals, structured changes, evaluation results, and publish status in one dedicated SOP optimization surface",
+        "patch_review_empty": "No SOP patch proposals yet.",
+        "patch_review_source_run": "Source run",
+        "patch_review_target_playbook": "Target SOP",
+        "patch_review_target_version": "Target version",
+        "patch_review_score": "Evaluation score",
+        "patch_review_replay_count": "Replay samples",
+        "patch_review_changes": "Change list",
+        "patch_review_no_changes": "No structured changes in this proposal yet.",
         "action_plan": "Plan",
         "action_dispatch": "Dispatch",
         "action_autopilot": "Autopilot",
@@ -482,6 +502,16 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
       .session-node-title strong {{ font-size: 14px; }}
       .session-node-meta {{ margin-top: 8px; color: var(--muted); font-size: 13px; line-height: 1.6; white-space: pre-wrap; }}
       .session-node-children {{ display: grid; gap: 10px; margin-top: 10px; padding-left: 18px; border-left: 1px dashed rgba(148, 163, 184, 0.18); }}
+      .patch-review-grid {{ display: grid; gap: 16px; }}
+      .patch-review-card {{ padding: 18px; border-radius: 20px; background: rgba(15, 23, 42, 0.62); border: 1px solid rgba(148, 163, 184, 0.12); }}
+      .patch-review-head {{ display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; flex-wrap: wrap; }}
+      .patch-review-head strong {{ font-size: 16px; display: block; }}
+      .patch-review-head small {{ display: block; color: var(--muted); margin-top: 6px; line-height: 1.6; }}
+      .patch-meta {{ display: grid; gap: 6px; margin-top: 12px; color: var(--muted); font-size: 13px; }}
+      .patch-changes {{ display: grid; gap: 10px; margin-top: 14px; }}
+      .patch-change {{ padding: 12px 14px; border-radius: 14px; background: rgba(2, 6, 23, 0.7); border: 1px solid rgba(148, 163, 184, 0.08); }}
+      .patch-change code {{ color: #c4b5fd; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }}
+      .patch-change span {{ display: block; color: var(--muted); margin-top: 6px; line-height: 1.6; }}
       .list-card {{ grid-column: span 8; }}
       .activity-card {{ grid-column: span 4; }}
       .rows {{ display: grid; gap: 10px; margin-top: 14px; }}
@@ -674,6 +704,13 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
 
       <section class="section">
         <article class="card workbench-card">
+          <div class="section-title"><h2 data-i18n="patch_review_title"></h2><span data-i18n="patch_review_subtitle"></span></div>
+          <div class="patch-review-grid" id="patch-review-rows"></div>
+        </article>
+      </section>
+
+      <section class="section">
+        <article class="card workbench-card">
           <div class="section-title"><h2 data-i18n="session_tree_title"></h2><span data-i18n="session_tree_subtitle"></span></div>
           <div class="session-groups" id="session-groups"></div>
         </article>
@@ -838,6 +875,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         renderEndpointCards();
         renderWorkbenchOptions();
         renderActionCenter();
+        renderPatchReviews();
         renderSessionTree();
         if (!document.getElementById('editor-status').dataset.state) {{
           document.getElementById('editor-status').dataset.state = 'idle';
@@ -993,6 +1031,72 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
           const treeHtml = rootSessions.map((item) => renderSessionNode(item, childrenByParent, 0)).join('');
           return `<div class="session-group"><div class="session-group-header"><div><strong>${{escapeHtml(goal ? goal.title : goalId)}}</strong><span>${{escapeHtml(t('session_goal_summary'))}} · ${{goalSessions.length}} sessions</span></div><span class="pill">${{escapeHtml(t('session_children_count'))}} · ${{childCount}}</span></div><div class="session-tree">${{treeHtml}}</div></div>`;
         }}).join('');
+      }}
+
+      function playbookForReflection(reflection) {{
+        const run = (latestResources.runs || []).find((item) => item.id === reflection.run_id);
+        if (!run) return null;
+        const task = (latestResources.tasks || []).find((item) => item.id === run.task_id);
+        if (!task) return null;
+        return (latestResources.playbooks || []).find((item) => item.id === task.playbook_id) || null;
+      }}
+
+      function taskForReflection(reflection) {{
+        const run = (latestResources.runs || []).find((item) => item.id === reflection.run_id);
+        if (!run) return null;
+        return (latestResources.tasks || []).find((item) => item.id === run.task_id) || null;
+      }}
+
+      function renderPatchChange(change) {{
+        return `<div class="patch-change"><code>${{escapeHtml(change.op || 'change')}}</code><span>${{escapeHtml(change.description || JSON.stringify(change))}}</span></div>`;
+      }}
+
+      function patchReviewButtons(reflection) {{
+        const buttons = [];
+        if (reflection.eval_status === 'proposed') {{
+          buttons.push(actionButton('action_evaluate_reflection', 'reflection', reflection.id, 'evaluate'));
+        }}
+        if (reflection.eval_status === 'approved' && reflection.approval_status !== 'approved') {{
+          buttons.push(actionButton('action_approve_reflection', 'reflection', reflection.id, 'approve'));
+        }}
+        if (reflection.eval_status !== 'published' && reflection.approval_status !== 'rejected') {{
+          buttons.push(actionButton('action_reject_reflection', 'reflection', reflection.id, 'reject', null, true));
+        }}
+        if (reflection.eval_status === 'approved' && reflection.approval_status === 'approved') {{
+          buttons.push(actionButton('action_publish_reflection', 'reflection', reflection.id, 'publish'));
+        }}
+        return buttons;
+      }}
+
+      function renderPatchReviews() {{
+        const reflections = (latestResources.reflections || []).filter((item) => item.proposal && item.proposal.proposal_type === 'sop_patch');
+        const container = document.getElementById('patch-review-rows');
+        if (!reflections.length) {{
+          container.innerHTML = `<div class="patch-review-card"><strong>${{escapeHtml(t('patch_review_title'))}}</strong><small>${{escapeHtml(t('patch_review_empty'))}}</small></div>`;
+          return;
+        }}
+        const cards = reflections.map((reflection) => {{
+          const playbook = playbookForReflection(reflection);
+          const task = taskForReflection(reflection);
+          const evaluation = (reflection.proposal && reflection.proposal.evaluation) || {{}};
+          const changes = Array.isArray(reflection.proposal && reflection.proposal.changes) ? reflection.proposal.changes : [];
+          const changeHtml = changes.length
+            ? changes.map((change) => renderPatchChange(change)).join('')
+            : `<div class="patch-change"><span>${{escapeHtml(t('patch_review_no_changes'))}}</span></div>`;
+          const buttons = patchReviewButtons(reflection);
+          const playbookLabel = playbook ? `${{playbook.name}} (${{playbook.version}})` : 'n/a';
+          const taskLabel = task ? `${{t('session_task_label')}}: ${{task.name || task.id}}` : '';
+          const metaLines = [
+            `${{t('patch_review_target_playbook')}}: ${{playbookLabel}}`,
+            `${{t('patch_review_source_run')}}: ${{reflection.run_id}}`,
+          ];
+          if (taskLabel) metaLines.push(taskLabel);
+          const targetVersion = reflection.published_target_version || (playbook ? playbook.version : 'n/a');
+          const scoreLabel = evaluation.score === undefined || evaluation.score === null ? 'n/a' : String(evaluation.score);
+          const replayCount = Array.isArray(evaluation.replay_run_ids) ? evaluation.replay_run_ids.length : 0;
+          return `<div class="patch-review-card"><div class="patch-review-head"><div><strong>${{escapeHtml(reflection.summary || reflection.id)}}</strong><small>${{escapeHtml(metaLines.join('\\n'))}}</small></div><span class="state">${{escapeHtml(formatStateLabel(reflection.eval_status || 'proposed'))}} / ${{escapeHtml(reflection.approval_status || 'pending')}}</span></div><div class="patch-meta"><div>${{escapeHtml(t('patch_review_target_version'))}}: ${{escapeHtml(String(targetVersion))}}</div><div>${{escapeHtml(t('patch_review_score'))}}: ${{escapeHtml(scoreLabel)}}</div><div>${{escapeHtml(t('patch_review_replay_count'))}}: ${{escapeHtml(String(replayCount))}}</div></div><div class="patch-changes"><strong>${{escapeHtml(t('patch_review_changes'))}}</strong>${{changeHtml}}</div><div class="action-buttons">${{buttons.join('')}}</div></div>`;
+        }});
+        container.innerHTML = cards.join('');
       }}
 
       function renderGoalActions() {{
@@ -1284,6 +1388,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         renderWorkbenchOptions();
         refreshEditorResourceOptions();
         renderActionCenter();
+        renderPatchReviews();
         renderSessionTree();
         clearBootError();
       }}
