@@ -165,11 +165,35 @@ def create_app(store: StoreProtocol | None = None) -> FastAPI:
 
     @api.put("/api/runtime-settings", response_model=dict[str, Any])
     def update_runtime_settings(payload: dict[str, Any]) -> dict[str, Any]:
-        return api.state.runtime_settings.update_settings(payload)
+        try:
+            return api.state.runtime_settings.update_settings(payload)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
     @api.post("/api/runtime-settings/test", response_model=dict[str, Any])
     def test_runtime_settings(payload: dict[str, Any]) -> dict[str, Any]:
-        return api.state.runtime_settings.test_model_settings(payload.get("model", payload))
+        try:
+            return api.state.runtime_settings.test_model_settings(payload.get("model", payload))
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    @api.post("/api/runtime-settings/profiles", response_model=dict[str, Any])
+    def save_runtime_settings_profile(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return api.state.runtime_settings.save_model_profile(
+                str(payload.get("name") or ""),
+                payload.get("model", payload),
+                make_active=bool(payload.get("make_active", False)),
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    @api.post("/api/runtime-settings/profiles/activate", response_model=dict[str, Any])
+    def activate_runtime_settings_profile(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return api.state.runtime_settings.activate_model_profile(str(payload.get("name") or ""))
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
     @api.post("/api/goals", response_model=GoalRead, status_code=status.HTTP_201_CREATED)
     def create_goal(payload: GoalCreate, store: store_dep) -> GoalRead:

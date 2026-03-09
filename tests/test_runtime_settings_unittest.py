@@ -63,6 +63,10 @@ class RuntimeSettingsStoreTestCase(unittest.TestCase):
         self.assertEqual(settings["global"]["auto_refresh_seconds"], 0)
         self.assertTrue(settings["global"]["show_system_group"])
         self.assertEqual(settings["provider_presets"][0]["id"], "openai-responses")
+        self.assertEqual(settings["global"]["environment_label"], "local")
+        self.assertEqual(settings["model_profiles"], [])
+        self.assertIsNone(settings["active_model_profile"])
+        self.assertIsNone(settings["last_successful_model_test"])
 
     def test_model_connectivity_probe_handles_missing_key(self) -> None:
         with patch.dict(os.environ, {"PLAYBOOKOS_OPENAI_API_KEY": ""}, clear=False):
@@ -102,6 +106,8 @@ class RuntimeSettingsStoreTestCase(unittest.TestCase):
         self.assertEqual(result["output_preview"], "PONG")
         self.assertEqual(transport.calls[0]["url"], "https://api.openai.com/v1/responses")
         self.assertEqual(transport.calls[0]["payload"]["model"], "gpt-4.1-mini")
+        self.assertEqual(result["last_successful_model_test"]["response_id"], "resp-123")
+        self.assertEqual(store.get_settings()["last_successful_model_test"]["response_id"], "resp-123")
 
     def test_store_persists_overrides_and_clears_api_key(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir, patch.dict(
@@ -128,7 +134,9 @@ class RuntimeSettingsStoreTestCase(unittest.TestCase):
                 }
             )
             reloaded = RuntimeSettingsStore(path=Path(tmpdir) / "runtime_settings.json")
-            global_updated = reloaded.update_global_settings({"default_language": "en", "auto_refresh_seconds": 15, "default_scope_kind": "status", "default_route": "tasks", "show_system_group": False})
+            global_updated = reloaded.update_global_settings({"default_language": "en", "auto_refresh_seconds": 15, "default_scope_kind": "status", "default_route": "tasks", "show_system_group": False, "environment_label": "staging"})
+            profiled = reloaded.save_model_profile("staging", {"model": "gpt-4.1-mini", "base_url": "https://proxy.example.com/v1", "api_format": "responses"}, make_active=True)
+            activated = reloaded.activate_model_profile("staging")
             cleared = reloaded.update_model_settings({"clear_api_key": True})
 
         self.assertEqual(updated["model"]["base_url"], "https://proxy.example.com/v1")
@@ -146,7 +154,11 @@ class RuntimeSettingsStoreTestCase(unittest.TestCase):
         self.assertEqual(global_updated["global"]["default_scope_kind"], "status")
         self.assertEqual(global_updated["global"]["default_route"], "tasks")
         self.assertFalse(global_updated["global"]["show_system_group"])
+        self.assertEqual(global_updated["global"]["environment_label"], "staging")
         self.assertTrue(global_updated["global"]["has_overrides"])
+        self.assertEqual(profiled["active_model_profile"], "staging")
+        self.assertEqual(profiled["model_profiles"][0]["name"], "staging")
+        self.assertEqual(activated["active_model_profile"], "staging")
         self.assertTrue(cleared["model"]["has_api_key"])
         self.assertEqual(cleared["model"]["api_key_preview"], "env-***-key")
 
@@ -187,7 +199,8 @@ class RuntimeSettingsApiTestCase(unittest.TestCase):
                         "auto_refresh_seconds": 12,
                         "default_scope_kind": "status",
                         "default_route": "tasks",
-                        "show_system_group": False
+                        "show_system_group": False,
+                        "environment_label": "staging",
                     }
                 },
             )
@@ -205,6 +218,42 @@ class RuntimeSettingsApiTestCase(unittest.TestCase):
         self.assertEqual(updated.json()["global"]["default_scope_kind"], "status")
         self.assertEqual(updated.json()["global"]["default_route"], "tasks")
         self.assertFalse(updated.json()["global"]["show_system_group"])
+        self.assertEqual(updated.json()["global"]["environment_label"], "staging")
+
+    def test_runtime_settings_profile_endpoints_validate_input(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir, patch.dict(
+            os.environ,
+            {
+                "PLAYBOOKOS_RUNTIME_SETTINGS_PATH": f"{tmpdir}/runtime_settings.json",
+                "PLAYBOOKOS_OPENAI_BASE_URL": "https://api.openai.com/v1",
+                "PLAYBOOKOS_OPENAI_MODEL": "gpt-4.1",
+                "PLAYBOOKOS_OPENAI_API_KEY": "env-secret-key",
+            },
+            clear=False,
+        ):
+            app = create_app(store=InMemoryStore())
+            client = TestClient(app)
+
+            saved = client.post(
+                "/api/runtime-settings/profiles",
+                json={
+                    "name": "staging",
+                    "model": {
+                        "model": "gpt-4.1-mini",
+                        "base_url": "https://proxy.example.com/v1",
+                        "api_format": "responses",
+                    },
+                },
+            )
+            missing = client.post("/api/runtime-settings/profiles/activate", json={"name": ""})
+            activated = client.post("/api/runtime-settings/profiles/activate", json={"name": "staging"})
+
+        self.assertEqual(saved.status_code, 200)
+        self.assertEqual(saved.json()["model_profiles"][0]["name"], "staging")
+        self.assertEqual(missing.status_code, 400)
+        self.assertEqual(missing.json()["detail"], "Profile name is required")
+        self.assertEqual(activated.status_code, 200)
+        self.assertEqual(activated.json()["active_model_profile"], "staging")
 
 
 if __name__ == "__main__":

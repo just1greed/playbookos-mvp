@@ -135,6 +135,18 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
                 result = self.server.runtime_settings.test_model_settings(payload.get("model", payload))
                 self._write_json(result)
                 return
+            if path == "/api/runtime-settings/profiles":
+                result = self.server.runtime_settings.save_model_profile(
+                    str(payload.get("name") or ""),
+                    payload.get("model", payload),
+                    make_active=bool(payload.get("make_active", False)),
+                )
+                self._write_json(result)
+                return
+            if path == "/api/runtime-settings/profiles/activate":
+                result = self.server.runtime_settings.activate_model_profile(str(payload.get("name") or ""))
+                self._write_json(result)
+                return
             if path == "/api/goals":
                 goal = Goal(
                     title=payload["title"],

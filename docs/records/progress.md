@@ -235,3 +235,14 @@
 - Dashboard 的 `模型设置` 页面已新增 preset 下拉、一键应用 preset 按钮和 `测试连通性` 按钮；测试结果会在设置摘要区和状态栏中直接回显
 - 已扩展 `tests/test_runtime_settings_unittest.py` 覆盖 preset 列表、missing key probe、transport probe；并扩展 `tests/test_dashboard_unittest.py` 覆盖 preset/test 控件与 `runtime-settings/test` 调用入口
 
+- 已继续补齐 `模型设置` 的环境化能力：运行时设置现已支持 `model_profiles`、`active_model_profile` 与 `last_successful_model_test`，可以保存命名模型环境并切换当前生效配置
+- 已新增 `POST /api/runtime-settings/profiles`、`POST /api/runtime-settings/profiles/activate`（FastAPI / Preview Server 均已接入），Dashboard 现支持“保存为环境”与“切换环境”
+- 最近一次成功的模型连通性测试现在会被持久化保存，不再只是前端临时状态；页面会直接显示最近成功配置摘要
+- 已顺手增强 `全局设置`：新增 `environment_label`，并在设置摘要里展示当前环境标签，方便后续扩展多环境治理视角
+
+- 已完成设置页这一轮增强：`模型设置` 现支持命名环境（profile）保存/切换、最近成功 probe 状态展示，以及从已保存环境回填表单做检查
+- `全局设置` 已补充 `environment_label`，可在 UI 中保存并回读，作为当前实例/环境的显式标识
+- `runtime settings` API 现已补齐 profile 保存/激活接口，并对非法输入返回 `400`，避免前端设置页因空名称或错误载荷触发 `500`
+- 已将 `data/runtime_settings.json` 纳入 `.gitignore`，避免 demo 运行时生成的本地配置污染仓库状态
+- 已再次通过 `python3 -m compileall src tests`、`PYTHONPATH=src python3 -m unittest discover -s tests -p 'test*_unittest.py'` 与 Dashboard JS `node --check`
+- 已重启公网预览 `http://20.200.217.83:8081/` 并确认 `GET /api/runtime-settings`、`POST /api/runtime-settings/profiles/activate` 以及首页设置页脚本均返回最新实现

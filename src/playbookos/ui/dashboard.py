@@ -289,6 +289,14 @@ TRANSLATIONS = {
         "model_settings_status_saving": "正在保存模型设置…",
         "model_settings_status_saved": "模型设置已保存并生效。",
         "model_settings_provider_preset": "Provider 预设",
+        "model_settings_profile": "模型环境",
+        "model_settings_profile_name": "新环境名称",
+        "model_settings_profile_manual": "当前未命名配置",
+        "model_settings_save_profile": "保存为环境",
+        "model_settings_activate_profile": "切换环境",
+        "model_settings_status_profile_saved": "模型环境已保存。",
+        "model_settings_status_profile_activated": "模型环境已切换。",
+        "model_settings_last_success": "最近成功配置",
         "model_settings_provider_manual": "手动填写",
         "model_settings_apply_preset": "应用预设",
         "model_settings_test_connection": "测试连通性",
@@ -296,6 +304,7 @@ TRANSLATIONS = {
         "model_settings_status_test_ok": "模型接口连通性测试成功。",
         "model_settings_status_test_failed": "模型接口连通性测试失败。",
         "global_settings_default_language": "默认语言",
+        "global_settings_environment_label": "环境标签",
         "global_settings_auto_refresh_seconds": "自动刷新间隔（秒，0 表示关闭）",
         "global_settings_default_scope": "默认范围",
         "global_settings_default_route": "默认页面",
@@ -686,6 +695,14 @@ TRANSLATIONS = {
         "model_settings_status_saving": "Saving model settings…",
         "model_settings_status_saved": "Model settings saved and applied.",
         "model_settings_provider_preset": "Provider Preset",
+        "model_settings_profile": "Model Environment",
+        "model_settings_profile_name": "New Environment Name",
+        "model_settings_profile_manual": "Current Unnamed Config",
+        "model_settings_save_profile": "Save as Environment",
+        "model_settings_activate_profile": "Switch Environment",
+        "model_settings_status_profile_saved": "Model environment saved.",
+        "model_settings_status_profile_activated": "Model environment activated.",
+        "model_settings_last_success": "Last Successful Config",
         "model_settings_provider_manual": "Manual",
         "model_settings_apply_preset": "Apply Preset",
         "model_settings_test_connection": "Test Connection",
@@ -693,6 +710,7 @@ TRANSLATIONS = {
         "model_settings_status_test_ok": "Model connectivity test succeeded.",
         "model_settings_status_test_failed": "Model connectivity test failed.",
         "global_settings_default_language": "Default Language",
+        "global_settings_environment_label": "Environment Label",
         "global_settings_auto_refresh_seconds": "Auto Refresh (seconds, 0 to disable)",
         "global_settings_default_scope": "Default Scope",
         "global_settings_default_route": "Default Route",
@@ -1415,6 +1433,8 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
               <p data-i18n="settings_model_card"></p>
               <div class="rows" id="model-settings-rows"></div>
               <div class="field-grid" style="margin-top:14px;">
+                <div class="field"><label data-i18n="model_settings_profile"></label><select id="model-settings-profile-select"></select></div>
+                <div class="field"><label data-i18n="model_settings_profile_name"></label><input id="model-settings-profile-name-input" /></div>
                 <div class="field"><label data-i18n="model_settings_provider_preset"></label><select id="model-settings-provider-preset-input"></select></div>
                 <div class="field"><label data-i18n="model_settings_base_url"></label><input id="model-settings-base-url-input" /></div>
                 <div class="field"><label data-i18n="model_settings_model"></label><input id="model-settings-model-input" /></div>
@@ -1428,7 +1448,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
                 <label class="inline-checkbox"><input id="model-settings-clear-api-key-input" type="checkbox" /><span data-i18n="model_settings_clear_api_key"></span></label>
               </div>
               <div class="workbench-status" id="model-settings-status"></div>
-              <div class="form-actions"><button class="button secondary" id="model-settings-apply-preset-button" type="button" data-i18n="model_settings_apply_preset"></button><button class="button secondary" id="model-settings-test-button" type="button" data-i18n="model_settings_test_connection"></button><button class="button" id="model-settings-save-button" type="button" data-i18n="model_settings_save"></button></div>
+              <div class="form-actions"><button class="button secondary" id="model-settings-save-profile-button" type="button" data-i18n="model_settings_save_profile"></button><button class="button secondary" id="model-settings-activate-profile-button" type="button" data-i18n="model_settings_activate_profile"></button><button class="button secondary" id="model-settings-apply-preset-button" type="button" data-i18n="model_settings_apply_preset"></button><button class="button secondary" id="model-settings-test-button" type="button" data-i18n="model_settings_test_connection"></button><button class="button" id="model-settings-save-button" type="button" data-i18n="model_settings_save"></button></div>
             </div>
             <div class="placeholder-card" id="global-settings-panel" data-settings-panel="global-settings">
               <h3 data-i18n="nav_global_settings"></h3>
@@ -1436,6 +1456,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
               <div class="rows" id="global-settings-rows"></div>
               <div class="field-grid" style="margin-top:14px;">
                 <div class="field"><label data-i18n="global_settings_default_language"></label><select id="global-settings-default-language-input"><option value="zh">zh</option><option value="en">en</option></select></div>
+                <div class="field"><label data-i18n="global_settings_environment_label"></label><input id="global-settings-environment-label-input" /></div>
                 <div class="field"><label data-i18n="global_settings_auto_refresh_seconds"></label><input id="global-settings-auto-refresh-input" type="number" step="1" min="0" /></div>
                 <div class="field"><label data-i18n="global_settings_default_scope"></label><select id="global-settings-default-scope-input"><option value="all">all</option><option value="goal">goal</option><option value="playbook">playbook</option><option value="status">status</option></select></div>
                 <div class="field"><label data-i18n="global_settings_default_route"></label><select id="global-settings-default-route-input"><option value="dashboard">dashboard</option><option value="goals">goals</option><option value="playbooks">playbooks</option><option value="skills">skills</option><option value="mcp">mcp</option><option value="knowledge">knowledge</option><option value="tasks">tasks</option><option value="sessions">sessions</option><option value="learning">learning</option><option value="approvals">approvals</option><option value="prompts">prompts</option><option value="model-settings">model-settings</option><option value="global-settings">global-settings</option><option value="session-admin">session-admin</option><option value="system">system</option></select></div>
@@ -1878,6 +1899,77 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         return (runtimeSettings && runtimeSettings.provider_presets) || [];
       }}
 
+      function modelProfiles() {{
+        return (runtimeSettings && runtimeSettings.model_profiles) || [];
+      }}
+
+      function activeModelProfileName() {{
+        return (runtimeSettings && runtimeSettings.active_model_profile) || "";
+      }}
+
+      function lastSuccessfulModelTest() {{
+        return (runtimeSettings && runtimeSettings.last_successful_model_test) || null;
+      }}
+
+      function collectModelSettingsPayload() {{
+        return {{
+          provider_preset: document.getElementById('model-settings-provider-preset-input').value || '',
+          base_url: document.getElementById('model-settings-base-url-input').value.trim(),
+          model: document.getElementById('model-settings-model-input').value.trim(),
+          api_format: document.getElementById('model-settings-api-format-input').value,
+          timeout_seconds: document.getElementById('model-settings-timeout-input').value.trim(),
+          temperature: document.getElementById('model-settings-temperature-input').value.trim(),
+          max_output_tokens: document.getElementById('model-settings-max-output-input').value.trim(),
+          organization: document.getElementById('model-settings-organization-input').value.trim(),
+          project: document.getElementById('model-settings-project-input').value.trim(),
+          api_key: document.getElementById('model-settings-api-key-input').value,
+          clear_api_key: document.getElementById('model-settings-clear-api-key-input').checked,
+        }};
+      }}
+
+      function renderModelProfileOptions() {{
+        const profileSelect = document.getElementById('model-settings-profile-select');
+        const profileNameInput = document.getElementById('model-settings-profile-name-input');
+        if (!profileSelect || !profileNameInput) return;
+        const entries = [`<option value="">${{escapeHtml(t('model_settings_profile_manual'))}}</option>`]
+          .concat(modelProfiles().map((item) => `<option value="${{escapeHtml(item.name)}}">${{escapeHtml(`${{item.name}} · ${{item.model || 'n/a'}}`)}}</option>`));
+        profileSelect.innerHTML = entries.join('');
+        profileSelect.value = activeModelProfileName() || '';
+        profileNameInput.value = activeModelProfileName() || '';
+      }}
+
+      function applyModelProfileSelection(profileName) {{
+        const profile = modelProfiles().find((item) => item.name === profileName) || null;
+        const statusNode = document.getElementById('model-settings-status');
+        const profileNameInput = document.getElementById('model-settings-profile-name-input');
+        if (profileNameInput) {{
+          profileNameInput.value = profileName || '';
+        }}
+        if (!profile) {{
+          if (statusNode) {{
+            statusNode.dataset.state = 'idle';
+            statusNode.textContent = t('model_settings_status_ready');
+          }}
+          return false;
+        }}
+        document.getElementById('model-settings-base-url-input').value = profile.base_url || '';
+        document.getElementById('model-settings-model-input').value = profile.model || '';
+        document.getElementById('model-settings-api-format-input').value = profile.api_format || 'responses';
+        document.getElementById('model-settings-timeout-input').value = profile.timeout_seconds ?? '';
+        document.getElementById('model-settings-temperature-input').value = profile.temperature ?? '';
+        document.getElementById('model-settings-max-output-input').value = profile.max_output_tokens ?? '';
+        document.getElementById('model-settings-organization-input').value = profile.organization || '';
+        document.getElementById('model-settings-project-input').value = profile.project || '';
+        document.getElementById('model-settings-api-key-input').value = '';
+        document.getElementById('model-settings-api-key-input').placeholder = profile.api_key_preview || '';
+        document.getElementById('model-settings-clear-api-key-input').checked = false;
+        if (statusNode) {{
+          statusNode.dataset.state = 'idle';
+          statusNode.textContent = `${{t('model_settings_activate_profile')}}: ${{profile.name}}`;
+        }}
+        return true;
+      }}
+
       function renderModelPresetOptions() {{
         const presetSelect = document.getElementById('model-settings-provider-preset-input');
         if (!presetSelect) return;
@@ -1905,6 +1997,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         const model = (runtimeSettings && runtimeSettings.model) || {{}};
         const statusNode = document.getElementById('model-settings-status');
         if (!document.getElementById('model-settings-base-url-input')) return;
+        renderModelProfileOptions();
         renderModelPresetOptions();
         document.getElementById('model-settings-base-url-input').value = model.base_url || '';
         document.getElementById('model-settings-model-input').value = model.model || '';
@@ -1928,6 +2021,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         const statusNode = document.getElementById('global-settings-status');
         if (!document.getElementById('global-settings-default-language-input')) return;
         document.getElementById('global-settings-default-language-input').value = global.default_language || 'zh';
+        document.getElementById('global-settings-environment-label-input').value = global.environment_label || 'local';
         document.getElementById('global-settings-auto-refresh-input').value = global.auto_refresh_seconds ?? 0;
         document.getElementById('global-settings-default-scope-input').value = global.default_scope_kind || 'all';
         document.getElementById('global-settings-default-route-input').value = global.default_route || 'dashboard';
@@ -2020,6 +2114,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         const config = metrics.openai_config || {{}};
         const runtimeModel = (runtimeSettings && runtimeSettings.model) || {{}};
         const runtimeGlobal = runtimeGlobalSettings();
+        const lastSuccess = lastSuccessfulModelTest();
         const testLines = latestModelConnectionTest ? [routeDetailRow('connection test', [`status: ${{latestModelConnectionTest.status || (latestModelConnectionTest.ok ? 'ok' : 'error')}}`, `message: ${{latestModelConnectionTest.message || 'n/a'}}`, `response: ${{latestModelConnectionTest.response_model || latestModelConnectionTest.response_id || latestModelConnectionTest.request_url || 'n/a'}}`], latestModelConnectionTest.ok ? 'active' : 'blocked')] : [];
         modelRows.innerHTML = [
           routeDetailRow(runtimeModel.model || config.model || 'n/a', [
@@ -2027,11 +2122,21 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
             `url: ${{runtimeModel.base_url || config.base_url || 'n/a'}}`,
             `api key: ${{runtimeModel.api_key_preview || (runtimeModel.has_api_key ? 'configured' : 'not set')}}`,
           ], latestRun ? (latestRun.status || 'idle') : 'idle'),
+          routeDetailRow(t('model_settings_profile'), [
+            `active: ${{activeModelProfileName() || t('model_settings_profile_manual')}}`,
+            `profiles: ${{modelProfiles().length}}`,
+            `last probe: ${{lastSuccess ? (lastSuccess.tested_at || 'ok') : 'n/a'}}`,
+          ], activeModelProfileName() ? 'live' : 'idle'),
+          routeDetailRow(t('model_settings_last_success'), [
+            `model: ${{lastSuccess ? (lastSuccess.model || 'n/a') : 'n/a'}}`,
+            `url: ${{lastSuccess ? (lastSuccess.base_url || 'n/a') : 'n/a'}}`,
+            `response: ${{lastSuccess ? (lastSuccess.response_model || lastSuccess.response_id || 'n/a') : 'n/a'}}`,
+          ], lastSuccess ? 'active' : 'idle'),
           routeDetailRow('tool calls', [
             `${{t('execution_inspector_calls')}}: ${{((metrics.tool_calls || []).length)}}`,
             `response: ${{metrics.openai_response_id || 'n/a'}}`,
           ], ((metrics.tool_calls || []).length) ? 'active' : 'idle'),
-        ].join('');
+        ].concat(testLines).join('');
         renderModelSettingsForm();
         globalRows.innerHTML = [
           routeDetailRow('ui defaults', [
@@ -2042,6 +2147,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
           routeDetailRow('console', [
             `auto refresh: ${{Number(runtimeGlobal.auto_refresh_seconds || 0)}}s`,
             `system group: ${{runtimeGlobal.show_system_group === false ? 'hidden' : 'shown'}}`,
+            `env: ${{runtimeGlobal.environment_label || 'local'}}`,
             `api: ${{apiBase}}`,
           ], Number(runtimeGlobal.auto_refresh_seconds || 0) > 0 ? 'live' : 'idle'),
           routeDetailRow('snapshot', [
@@ -3769,6 +3875,52 @@ ${{t('skill_version_servers')}}: ${{(skill.required_mcp_servers || []).join(', '
         applyGlobalScope(currentScopeKind, event.target.value || '', true);
       }});
 
+      document.getElementById('model-settings-profile-select').addEventListener('change', (event) => {{
+        applyModelProfileSelection(event.target.value || '');
+      }});
+
+      document.getElementById('model-settings-save-profile-button').addEventListener('click', async () => {{
+        const statusNode = document.getElementById('model-settings-status');
+        const name = document.getElementById('model-settings-profile-name-input').value.trim();
+        if (!name) {{
+          statusNode.dataset.state = 'error';
+          statusNode.textContent = `${{t('workbench_status_error')}}: profile name required`;
+          return;
+        }}
+        try {{
+          statusNode.dataset.state = 'saving';
+          statusNode.textContent = t('model_settings_status_saving');
+          await postJson('runtime-settings/profiles', {{ name, model: collectModelSettingsPayload() }});
+          await refresh();
+          statusNode.dataset.state = 'success';
+          statusNode.textContent = t('model_settings_status_profile_saved');
+        }} catch (error) {{
+          statusNode.dataset.state = 'error';
+          statusNode.textContent = `${{t('workbench_status_error')}}: ${{error.message}}`;
+        }}
+      }});
+
+      document.getElementById('model-settings-activate-profile-button').addEventListener('click', async () => {{
+        const statusNode = document.getElementById('model-settings-status');
+        const name = document.getElementById('model-settings-profile-select').value || '';
+        if (!name) {{
+          statusNode.dataset.state = 'error';
+          statusNode.textContent = `${{t('workbench_status_error')}}: profile name required`;
+          return;
+        }}
+        try {{
+          statusNode.dataset.state = 'saving';
+          statusNode.textContent = t('model_settings_status_saving');
+          await postJson('runtime-settings/profiles/activate', {{ name }});
+          await refresh();
+          statusNode.dataset.state = 'success';
+          statusNode.textContent = t('model_settings_status_profile_activated');
+        }} catch (error) {{
+          statusNode.dataset.state = 'error';
+          statusNode.textContent = `${{t('workbench_status_error')}}: ${{error.message}}`;
+        }}
+      }});
+
       document.getElementById('model-settings-apply-preset-button').addEventListener('click', () => {{
         applyModelPreset(document.getElementById('model-settings-provider-preset-input').value || '');
       }});
@@ -3778,22 +3930,8 @@ ${{t('skill_version_servers')}}: ${{(skill.required_mcp_servers || []).join(', '
         try {{
           statusNode.dataset.state = 'saving';
           statusNode.textContent = t('model_settings_status_testing');
-          latestModelConnectionTest = await postJson('runtime-settings/test', {{
-            model: {{
-              provider_preset: document.getElementById('model-settings-provider-preset-input').value || '',
-              base_url: document.getElementById('model-settings-base-url-input').value.trim(),
-              model: document.getElementById('model-settings-model-input').value.trim(),
-              api_format: document.getElementById('model-settings-api-format-input').value,
-              timeout_seconds: document.getElementById('model-settings-timeout-input').value.trim(),
-              temperature: document.getElementById('model-settings-temperature-input').value.trim(),
-              max_output_tokens: document.getElementById('model-settings-max-output-input').value.trim(),
-              organization: document.getElementById('model-settings-organization-input').value.trim(),
-              project: document.getElementById('model-settings-project-input').value.trim(),
-              api_key: document.getElementById('model-settings-api-key-input').value,
-              clear_api_key: document.getElementById('model-settings-clear-api-key-input').checked,
-            }},
-          }});
-          renderSettingsPanels();
+          latestModelConnectionTest = await postJson('runtime-settings/test', {{ model: collectModelSettingsPayload() }});
+          await refresh();
           statusNode.dataset.state = latestModelConnectionTest.ok ? 'success' : 'error';
           statusNode.textContent = latestModelConnectionTest.ok
             ? `${{t('model_settings_status_test_ok')}} ${{latestModelConnectionTest.output_preview || ''}}`.trim()
@@ -3809,21 +3947,7 @@ ${{t('skill_version_servers')}}: ${{(skill.required_mcp_servers || []).join(', '
         try {{
           statusNode.dataset.state = 'saving';
           statusNode.textContent = t('model_settings_status_saving');
-          await putJson('runtime-settings', {{
-            model: {{
-              provider_preset: document.getElementById('model-settings-provider-preset-input').value || '',
-              base_url: document.getElementById('model-settings-base-url-input').value.trim(),
-              model: document.getElementById('model-settings-model-input').value.trim(),
-              api_format: document.getElementById('model-settings-api-format-input').value,
-              timeout_seconds: document.getElementById('model-settings-timeout-input').value.trim(),
-              temperature: document.getElementById('model-settings-temperature-input').value.trim(),
-              max_output_tokens: document.getElementById('model-settings-max-output-input').value.trim(),
-              organization: document.getElementById('model-settings-organization-input').value.trim(),
-              project: document.getElementById('model-settings-project-input').value.trim(),
-              api_key: document.getElementById('model-settings-api-key-input').value,
-              clear_api_key: document.getElementById('model-settings-clear-api-key-input').checked,
-            }},
-          }});
+          await putJson('runtime-settings', {{ model: collectModelSettingsPayload() }});
           await refresh();
           statusNode.dataset.state = 'success';
           statusNode.textContent = t('model_settings_status_saved');
@@ -3845,6 +3969,7 @@ ${{t('skill_version_servers')}}: ${{(skill.required_mcp_servers || []).join(', '
               default_scope_kind: document.getElementById('global-settings-default-scope-input').value,
               default_route: document.getElementById('global-settings-default-route-input').value,
               show_system_group: document.getElementById('global-settings-show-system-group-input').checked,
+              environment_label: document.getElementById('global-settings-environment-label-input').value.trim(),
             }},
           }});
           await refresh();
