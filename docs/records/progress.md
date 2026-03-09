@@ -194,3 +194,7 @@
 - 左侧导航已接入一级节点：`全局看板 / 目标 / SOP / Skill / MCP / 知识库 / 任务 / 会话 / 自动迭代 / 审批流 / 提示词 / 模型设置 / 全局设置 / 会话管理`，并按当前快照展示数量徽标
 - 首页已新增 `任务流程总览` 区块，把 `Goal -> SOP -> Skill/MCP -> Task -> Run -> Acceptance/Reflection -> Knowledge` 做成可点击的全局链路摘要
 - 本轮先重组前端壳层与信息架构，不改后端 API；后续继续把现有 Workbench / Action Center / Session Tree / Patch Review 分别迁移到对应页面
+
+- 已继续完成前端重构第二阶段：`SOP / Skill / 审批流 / 提示词` 路由新增页面级 focus 卡片，进入对应工作台后会先看到该节点自己的状态摘要与待处理线索
+- `Quick Resource Peek` 已改为按当前路由过滤资源样本，减少全局长列表噪音，让不同工作台只暴露最相关的对象
+- 已修复本轮 Dashboard 重构过程中丢失的资源区 / 编辑器 / 提交处理函数，重新通过 `python3 -m compileall src tests`、`PYTHONPATH=src python3 -m unittest discover -s tests -p 'test*_unittest.py'` 与 `node --check /tmp/playbookos_dashboard_check.js`

@@ -205,6 +205,20 @@ TRANSLATIONS = {
         "topbar_scope_status": "按状态",
         "global_flow_title": "任务流程总览",
         "global_flow_subtitle": "从 Goal 到 Knowledge 的全局链路状态，一眼看清哪里在推进、哪里在阻塞。",
+        "route_focus_title": "重点摘要",
+        "route_focus_subtitle": "围绕当前工作台节点，先看最重要的对象状态、缺口和待处理项。",
+        "focus_total": "总量",
+        "focus_pending": "待处理",
+        "focus_issues": "问题",
+        "focus_latest": "最新",
+        "focus_missing_mcp": "缺失 MCP",
+        "focus_suggested_skills": "建议 Skill",
+        "focus_draft": "草稿",
+        "focus_active": "激活",
+        "focus_dependencies": "依赖",
+        "focus_waiting": "等待人工",
+        "focus_proposed": "待批准",
+        "focus_review": "待复核",
         "route_placeholder_title": "该页面正在迁移",
         "route_placeholder_body": "这一页的导航壳和信息架构已经就位，下一阶段会把现有模块逐步迁移到这里。",
         "settings_model_card": "模型配置会集中展示 provider、model、base url、timeout 和输出参数。",
@@ -495,6 +509,20 @@ TRANSLATIONS = {
         "topbar_scope_status": "By Status",
         "global_flow_title": "Flow Overview",
         "global_flow_subtitle": "A global chain from Goal to Knowledge so you can instantly see what is moving and what is blocked.",
+        "route_focus_title": "Key Highlights",
+        "route_focus_subtitle": "See the most important states, gaps, and pending work for the current workbench first.",
+        "focus_total": "Total",
+        "focus_pending": "Pending",
+        "focus_issues": "Issues",
+        "focus_latest": "Latest",
+        "focus_missing_mcp": "Missing MCP",
+        "focus_suggested_skills": "Suggested Skills",
+        "focus_draft": "Draft",
+        "focus_active": "Active",
+        "focus_dependencies": "Dependencies",
+        "focus_waiting": "Waiting Human",
+        "focus_proposed": "Proposed",
+        "focus_review": "In Review",
         "route_placeholder_title": "This page is being migrated",
         "route_placeholder_body": "The navigation shell and information architecture are ready; existing modules will move here step by step in the next phase.",
         "settings_model_card": "Model settings will surface provider, model, base URL, timeout, and output parameters.",
@@ -709,6 +737,11 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
       .flow-card .pill-row {{ display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }}
       .flow-link {{ display: inline-flex; margin-top: 14px; color: #c4b5fd; cursor: pointer; text-decoration: none; }}
       .flow-link:hover {{ color: #ddd6fe; }}
+      .focus-grid {{ display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }}
+      .focus-card {{ grid-column: span 3; padding: 18px; border-radius: 20px; background: rgba(15, 23, 42, 0.62); border: 1px solid rgba(148, 163, 184, 0.12); }}
+      .focus-card strong {{ display: block; font-size: 18px; margin-bottom: 8px; }}
+      .focus-card small {{ display: block; color: var(--muted); line-height: 1.7; }}
+      .focus-meta {{ display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }}
       .shell {{ width: min(1180px, calc(100vw - 32px)); margin: 24px auto 48px; }}
       .hero {{
         padding: 32px;
@@ -830,7 +863,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         .sidebar {{ position: static; }}
         .topbar {{ flex-direction: column; align-items: stretch; }}
         .hero-meta {{ grid-template-columns: 1fr; }}
-        .endpoint-card, .list-card, .activity-card, .form-card, .action-card, .placeholder-card, .flow-card {{ grid-column: span 12; }}
+        .endpoint-card, .list-card, .activity-card, .form-card, .action-card, .placeholder-card, .flow-card, .focus-card {{ grid-column: span 12; }}
       }}
     </style>
   </head>
@@ -860,6 +893,11 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
               </select>
             </div>
           </div>
+        </section>
+
+        <section class="section" id="route-focus-section" data-route-section hidden>
+          <div class="section-title"><h2 id="route-focus-title"></h2><span id="route-focus-subtitle"></span></div>
+          <div class="focus-grid" id="route-focus-rows"></div>
         </section>
 
         <section class="hero" id="dashboard-hero" data-route-section>
@@ -1187,20 +1225,20 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
       }};
       const routeSections = {{
         dashboard: ['dashboard-hero', 'dashboard-summary-section', 'dashboard-flow-section', 'dashboard-api-section', 'action-center-section', 'supervisor-section', 'resource-peek-section', 'snapshot-section'],
-        goals: ['workbench-section', 'editor-section', 'action-center-section'],
-        playbooks: ['workbench-section', 'patch-review-section', 'editor-section'],
-        skills: ['workbench-section', 'authoring-section', 'skill-version-section', 'editor-section'],
-        mcp: ['workbench-section', 'editor-section'],
-        knowledge: ['workbench-section', 'editor-section'],
-        tasks: ['workbench-section', 'editor-section', 'action-center-section'],
-        sessions: ['session-tree-section', 'execution-inspector-section', 'supervisor-section'],
-        learning: ['patch-review-section', 'skill-version-section', 'supervisor-section'],
-        approvals: ['action-center-section'],
-        prompts: ['workbench-section'],
+        goals: ['route-focus-section', 'workbench-section', 'editor-section', 'action-center-section'],
+        playbooks: ['route-focus-section', 'workbench-section', 'patch-review-section', 'editor-section'],
+        skills: ['route-focus-section', 'workbench-section', 'authoring-section', 'skill-version-section', 'editor-section'],
+        mcp: ['route-focus-section', 'workbench-section', 'editor-section'],
+        knowledge: ['route-focus-section', 'workbench-section', 'editor-section'],
+        tasks: ['route-focus-section', 'workbench-section', 'editor-section', 'action-center-section'],
+        sessions: ['route-focus-section', 'session-tree-section', 'execution-inspector-section', 'supervisor-section'],
+        learning: ['route-focus-section', 'patch-review-section', 'skill-version-section', 'supervisor-section'],
+        approvals: ['route-focus-section', 'action-center-section'],
+        prompts: ['route-focus-section', 'workbench-section'],
         'model-settings': ['settings-placeholder-section'],
         'global-settings': ['settings-placeholder-section'],
         'session-admin': ['settings-placeholder-section', 'session-tree-section'],
-        system: ['dashboard-api-section', 'snapshot-section'],
+        system: ['route-focus-section', 'dashboard-api-section', 'snapshot-section'],
       }};
       const workbenchRouteForms = {{
         goals: ['goal-form'],
@@ -1401,6 +1439,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         setSettingsMode(currentRoute);
         updatePageHeader();
         renderSidebarNav();
+        renderRouteFocus();
       }}
 
       function applyLanguage(language) {{
@@ -1454,6 +1493,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
           setActionStatus(t('action_status_ready'));
         }}
         renderSummary(currentSnapshot);
+        renderRouteFocus();
         renderGlobalFlow();
         renderEndpointCards();
         renderWorkbenchOptions();
@@ -2123,13 +2163,140 @@ ${{t('skill_version_servers')}}: ${{(skill.required_mcp_servers || []).join(', '
         container.innerHTML = cards.join('');
       }}
 
+      function focusCard(title, lines, pills = []) {{
+        return `<article class="focus-card"><strong>${{escapeHtml(title)}}</strong><small>${{escapeHtml(lines.join('\\n'))}}</small><div class="focus-meta">${{pills.map((item) => `<span class="pill">${{escapeHtml(item)}}</span>`).join('')}}</div></article>`;
+      }}
+
+      function routeResourceSections(route) {{
+        if (route === 'playbooks') return ['playbooks', 'skills', 'mcp_servers', 'reflections'];
+        if (route === 'skills') return ['skills', 'mcp_servers', 'playbooks'];
+        if (route === 'mcp') return ['mcp_servers', 'skills', 'playbooks'];
+        if (route === 'knowledge') return ['knowledge_bases', 'knowledge_updates'];
+        if (route === 'tasks') return ['tasks', 'runs', 'acceptances'];
+        if (route === 'sessions') return ['sessions', 'runs', 'events'];
+        if (route === 'learning') return ['reflections', 'knowledge_updates', 'skills'];
+        if (route === 'approvals') return ['runs', 'knowledge_updates', 'reflections', 'tasks'];
+        if (route === 'prompts') return ['playbooks', 'skills', 'mcp_servers'];
+        if (route === 'goals') return ['goals', 'tasks', 'sessions'];
+        return sectionOrder;
+      }}
+
+      function renderRouteFocus() {{
+        const titleNode = document.getElementById('route-focus-title');
+        const subtitleNode = document.getElementById('route-focus-subtitle');
+        const container = document.getElementById('route-focus-rows');
+        if (!titleNode || !subtitleNode || !container) return;
+        titleNode.textContent = t('route_focus_title');
+        subtitleNode.textContent = t('route_focus_subtitle');
+        const cards = [];
+        if (currentRoute === 'playbooks') {{
+          const playbooks = latestResources.playbooks || [];
+          const latest = latestIngestionResult || null;
+          const reflections = (latestResources.reflections || []).filter((item) => item.proposal && item.proposal.proposal_type === 'sop_patch');
+          const tooling = latest && latest.tooling_guidance ? latest.tooling_guidance : null;
+          cards.push(focusCard(t('nav_playbooks'), [
+            `${{t('focus_total')}}: ${{playbooks.length}}`,
+            `${{t('focus_draft')}}: ${{playbooks.filter((item) => item.status === 'draft').length}}`,
+            `${{t('focus_active')}}: ${{playbooks.filter((item) => item.status === 'compiled' || item.status === 'active').length}}`,
+          ], [
+            `compiled · ${{playbooks.filter((item) => item.status === 'compiled').length}}`,
+            `active · ${{playbooks.filter((item) => item.status === 'active').length}}`,
+          ]));
+          cards.push(focusCard(t('focus_latest'), latest ? [
+            `${{latest.playbook && latest.playbook.name ? latest.playbook.name : 'n/a'}}`,
+            `steps: ${{latest.step_count || 0}}`,
+            `mcp: ${{(latest.detected_mcp_servers || []).join(', ') || 'n/a'}}`,
+          ] : [t('route_placeholder_body')], latest ? [
+            `${{t('focus_suggested_skills')}} · ${{(latest.suggested_skills || []).length}}`,
+          ] : []));
+          cards.push(focusCard(t('focus_missing_mcp'), tooling ? [
+            `${{(tooling.missing_mcp_servers || []).join(', ') || 'n/a'}}`,
+            `${{t('focus_suggested_skills')}}: ${{(tooling.suggested_skill_names || []).join(', ') || 'n/a'}}`,
+          ] : ['n/a'], tooling ? [
+            `${{t('focus_missing_mcp')}} · ${{(tooling.missing_mcp_servers || []).length}}`,
+          ] : []));
+          cards.push(focusCard(t('patch_review_title'), [
+            `${{t('focus_proposed')}}: ${{reflections.filter((item) => item.eval_status === 'proposed').length}}`,
+            `${{t('focus_issues')}}: ${{reflections.filter((item) => item.eval_status === 'rejected').length}}`,
+          ], [
+            `published · ${{reflections.filter((item) => item.eval_status === 'published').length}}`,
+          ]));
+        }} else if (currentRoute === 'skills') {{
+          const skills = latestResources.skills || [];
+          const draftSkills = skills.filter((item) => item.status === 'draft');
+          const activeSkills = skills.filter((item) => item.status === 'active');
+          const dependencyCount = new Set(skills.flatMap((item) => item.required_mcp_servers || [])).size;
+          cards.push(focusCard(t('nav_skills'), [
+            `${{t('focus_total')}}: ${{skills.length}}`,
+            `${{t('focus_draft')}}: ${{draftSkills.length}}`,
+            `${{t('focus_active')}}: ${{activeSkills.length}}`,
+          ], [
+            `${{t('focus_dependencies')}} · ${{dependencyCount}}`,
+          ]));
+          cards.push(focusCard(t('authoring_wizard_title'), [
+            `${{t('focus_pending')}}: ${{draftSkills.length}}`,
+            `${{t('focus_review')}}: ${{Object.keys(latestAuthoringPacks || {{}}).length}}`,
+          ], [
+            `packs · ${{Object.keys(latestAuthoringPacks || {{}}).length}}`,
+          ]));
+          cards.push(focusCard(t('skill_version_title'), [
+            `${{t('focus_active')}}: ${{activeSkills.length}}`,
+            `${{t('focus_issues')}}: ${{skills.filter((item) => item.status === 'deprecated').length}}`,
+          ], [
+            `families · ${{new Set(skills.map((item) => item.name)).size}}`,
+          ]));
+          cards.push(focusCard(t('nav_mcp'), [
+            `${{t('focus_dependencies')}}: ${{dependencyCount}}`,
+            `${{t('focus_missing_mcp')}}: ${{skills.filter((item) => (item.required_mcp_servers || []).length === 0).length}}`,
+          ]));
+        }} else if (currentRoute === 'approvals') {{
+          const runs = latestResources.runs || [];
+          const reflections = latestResources.reflections || [];
+          const updates = latestResources.knowledge_updates || [];
+          const tasks = latestResources.tasks || [];
+          cards.push(focusCard(t('nav_approvals'), [
+            `${{t('focus_waiting')}}: ${{runs.filter((item) => item.status === 'waiting_human').length}}`,
+            `${{t('focus_review')}}: ${{tasks.filter((item) => item.status === 'review').length}}`,
+          ]));
+          cards.push(focusCard(t('review_ops_title'), [
+            `${{t('focus_waiting')}}: ${{runs.filter((item) => item.status === 'waiting_human').length}}`,
+            `${{t('focus_issues')}}: ${{runs.filter((item) => item.status === 'failed').length}}`,
+          ]));
+          cards.push(focusCard(t('patch_review_title'), [
+            `${{t('focus_proposed')}}: ${{reflections.filter((item) => item.eval_status === 'proposed').length}}`,
+            `${{t('focus_review')}}: ${{reflections.filter((item) => item.eval_status === 'approved' && item.approval_status !== 'approved').length}}`,
+          ]));
+          cards.push(focusCard(t('learning_ops_title'), [
+            `${{t('focus_proposed')}}: ${{updates.filter((item) => item.status === 'proposed').length}}`,
+            `${{t('focus_issues')}}: ${{updates.filter((item) => item.status === 'rejected').length}}`,
+          ]));
+        }} else if (currentRoute === 'prompts') {{
+          const blocks = (latestIngestionResult && latestIngestionResult.tooling_guidance && latestIngestionResult.tooling_guidance.prompt_blocks) || [];
+          cards.push(focusCard(t('nav_prompts'), [
+            `${{t('focus_total')}}: ${{blocks.length}}`,
+            `${{t('focus_latest')}}: ${{latestIngestionResult && latestIngestionResult.playbook ? latestIngestionResult.playbook.name : 'n/a'}}`,
+          ]));
+        }} else {{
+          const sectionMap = routeResourceSections(currentRoute);
+          cards.push(...sectionMap.slice(0, 4).map((section) => focusCard(sectionLabel(section), [
+            `${{t('focus_total')}}: ${{sumValues(currentSnapshot[section] || {{}})}}`,
+            `${{t('focus_issues')}}: ${{Object.entries(currentSnapshot[section] || {{}}).filter(([key]) => ['blocked', 'failed', 'error', 'rejected'].includes(String(key))).reduce((sum, [, value]) => sum + Number(value || 0), 0)}}`,
+          ], Object.entries(currentSnapshot[section] || {{}}).slice(0, 2).map(([key, value]) => `${{key}} · ${{value}}`))));
+        }}
+        container.innerHTML = cards.join('');
+      }}
+
+
       function renderResourceRows(payloads) {{
         latestResources = payloads;
         const rows = [];
-        for (const resourceName of sectionOrder) {{
+        const sectionNames = currentRoute === 'dashboard'
+          ? sectionOrder
+          : routeResourceSections(currentRoute).filter((section, index, list) => list.indexOf(section) === index);
+        for (const resourceName of sectionNames) {{
           const label = sectionLabel(resourceName);
           const singular = resourceSingular[resourceName] || label;
-          const items = Array.isArray(payloads[resourceName]) ? payloads[resourceName].slice(0, 2) : [];
+          const items = Array.isArray(payloads[resourceName]) ? payloads[resourceName].slice(0, 3) : [];
           if (!items.length) {{
             rows.push(`<div class="row"><div><strong>${{escapeHtml(label)}} · ${{escapeHtml(t('resource_empty_suffix'))}}</strong><small>${{escapeHtml(resourceName)}} ${{escapeHtml(t('resource_empty_body'))}}</small></div><span class="state">${{escapeHtml(t('idle'))}}</span></div>`);
             continue;

@@ -589,8 +589,8 @@
 ## Phase 3：基础工作台
 
 - [ ] 目标工作台
-- [ ] SOP 工作台
-- [ ] Skill 工作台
+- [~] SOP 工作台（已补页面级 focus 卡片、SOP 导入引导与资源过滤）
+- [~] Skill 工作台（已补页面级 focus 卡片、authoring/版本入口与资源过滤）
 - [ ] MCP 工作台
 - [ ] 知识库工作台
 - [ ] 任务工作台
@@ -599,8 +599,8 @@
 
 - [ ] 会话工作台
 - [ ] 自动迭代工作台
-- [ ] 审批流工作台
-- [ ] 提示词工作台（先只读）
+- [~] 审批流工作台（已补待审批/待评审 focus 卡片）
+- [~] 提示词工作台（已补 SOP prompt blocks 的 route focus，只读）
 
 ## Phase 5：设置页
 
@@ -658,3 +658,7 @@
 
 - 2026-03-09：已完成第一阶段壳层改造，前端现在具备左侧导航、顶部页面上下文栏、hash 路由切换、页面标题联动，以及默认进入 `全局看板` 的行为。
 - 2026-03-09：已在首页补上 `任务流程总览` 区块，用 `Goal -> SOP -> Skill/MCP -> Task -> Run -> Acceptance/Reflection -> Knowledge` 的摘要链路展示系统推进状态。
+
+- 2026-03-09：已完成第二轮页面级重构，`SOP / Skill / 审批流 / 提示词` 路由新增 focus 卡片，首页之外的工作台开始具备自己的状态摘要，不再只是共享一套长页面。
+- 2026-03-09：`Quick Resource Peek` 已改为按当前路由过滤，只展示当前工作台最相关的对象（例如 SOP 页看 `playbooks / skills / mcp / reflections`，审批页看 `runs / reflections / knowledge updates / tasks`）。
+- 2026-03-09：修复了本轮重构中丢失的 `renderResourceRows / renderWorkbenchOptions / editor helpers / submit handlers`，重新保证 Dashboard 在 8081 预览环境可正常启动与刷新。
