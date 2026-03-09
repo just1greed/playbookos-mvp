@@ -35,6 +35,8 @@ from playbookos.api.schemas import (
     PlaybookRead,
     ReflectionCreate,
     SessionRead,
+    SkillAuthoringApplyRead,
+    SkillAuthoringPackRead,
     SkillCreate,
     SkillRead,
     SkillSuggestionRead,
@@ -74,6 +76,7 @@ from playbookos.domain.models import (
     Task,
     TaskStatus,
 )
+from playbookos.authoring import apply_skill_authoring_pack_in_store, build_skill_authoring_pack_in_store
 from playbookos.executor import ExecutionError, OpenAIAgentsSDKAdapter, autopilot_goal_in_store, execute_run_in_store
 from playbookos.ingestion import SOPIngestionError, ingest_sop_in_store, materialize_suggested_skill_in_store
 from playbookos.observability import record_error
@@ -310,6 +313,20 @@ def create_app(store: StoreProtocol | None = None) -> FastAPI:
         skill = Skill(**payload.model_dump())
         store.skills.save(skill)
         return SkillRead.model_validate(skill)
+
+    @api.get("/api/skills/{skill_id}/authoring-pack", response_model=SkillAuthoringPackRead)
+    def get_skill_authoring_pack(skill_id: str, store: store_dep) -> SkillAuthoringPackRead:
+        pack = build_skill_authoring_pack_in_store(store, skill_id)
+        return SkillAuthoringPackRead.model_validate(pack)
+
+    @api.post("/api/skills/{skill_id}/apply-authoring-pack", response_model=SkillAuthoringApplyRead)
+    def apply_skill_authoring_pack(skill_id: str, store: store_dep) -> SkillAuthoringApplyRead:
+        result = apply_skill_authoring_pack_in_store(store, skill_id)
+        return SkillAuthoringApplyRead(
+            skill=SkillRead.model_validate(result.skill),
+            authoring_pack=SkillAuthoringPackRead.model_validate(result.authoring_pack),
+            applied_fields=result.applied_fields,
+        )
 
     @api.get("/api/skills", response_model=list[SkillRead])
     def list_skills(store: store_dep) -> list[SkillRead]:

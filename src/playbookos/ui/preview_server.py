@@ -14,6 +14,7 @@ from urllib.parse import urlparse
 
 from playbookos.api.store import InMemoryStore, StoreProtocol
 from playbookos.domain.models import Goal, KnowledgeBase, Playbook, PlaybookStatus, ReflectionStatus, RunStatus, Skill, Task, TaskStatus, utc_now
+from playbookos.authoring import apply_skill_authoring_pack_in_store, build_skill_authoring_pack_in_store
 from playbookos.executor.service import DeterministicExecutorAdapter, OpenAIAgentsSDKAdapter, autopilot_goal_in_store, execute_run_in_store
 from playbookos.ingestion import SOPIngestionError, ingest_sop_in_store, materialize_suggested_skill_in_store
 from playbookos.observability import get_error_log_path, list_recorded_errors, record_error
@@ -51,6 +52,10 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
                 return
             if path == "/api/skills":
                 self._write_json(_serialize_items(self.server.store.skills.list()))
+                return
+            if path.startswith("/api/skills/") and path.endswith("/authoring-pack"):
+                skill_id = path.split("/")[-2]
+                self._write_json(_to_jsonable(build_skill_authoring_pack_in_store(self.server.store, skill_id)))
                 return
             if path == "/api/knowledge-bases":
                 self._write_json(_serialize_items(self.server.store.knowledge_bases.list()))
@@ -172,6 +177,11 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
                 )
                 self.server.store.skills.save(skill)
                 self._write_json(_to_jsonable(skill), status=HTTPStatus.CREATED)
+                return
+            if path.startswith("/api/skills/") and path.endswith("/apply-authoring-pack"):
+                skill_id = path.split("/")[-2]
+                result = apply_skill_authoring_pack_in_store(self.server.store, skill_id)
+                self._write_json(_to_jsonable(result), status=HTTPStatus.OK)
                 return
             if path == "/api/knowledge-bases":
                 goal_id = payload.get("goal_id") or None

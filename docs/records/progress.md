@@ -163,3 +163,7 @@
 - Dashboard 的 Skill 建议卡已支持“一键创建 Draft Skill”与“创建并绑定步骤”，并会在页面内回显已创建结果
 - 若选择“创建并绑定步骤”，会把未绑定的 `compiled_spec.steps[].assigned_skill_id` 自动回填，供后续 planner 直接产出带 Skill 的任务
 - 当前全量单测已更新为 `38` 个并全部通过
+- 已新增 `src/playbookos/authoring/service.py`，为 draft Skill 生成 authoring pack，补齐 input/output schema、approval policy、evaluation policy 的推荐默认值
+- 已新增 `GET /api/skills/{skill_id}/authoring-pack` 与 `POST /api/skills/{skill_id}/apply-authoring-pack`
+- Dashboard 已新增 `Skill Authoring Wizard` 区块，可对 draft Skill 一键应用推荐配置，并跳转到编辑器继续细修
+- 已新增 `tests/test_authoring_unittest.py`，当前全量单测已更新为 `40` 个并全部通过

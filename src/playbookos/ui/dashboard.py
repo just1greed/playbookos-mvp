@@ -89,6 +89,8 @@ TRANSLATIONS = {
         "skill_version_rollback": "回滚目标",
         "skill_version_servers": "依赖 MCP",
         "action_create_skill_version": "创建新版本",
+        "action_apply_authoring_pack": "应用配置建议",
+        "action_open_editor": "打开编辑器",
         "action_activate_skill": "激活版本",
         "action_deprecate_skill": "废弃版本",
         "action_rollback_skill": "回滚版本",
@@ -119,6 +121,13 @@ TRANSLATIONS = {
         "workbench_status_ready": "工作台就绪，可直接提交。",
         "workbench_status_success": "创建成功，已刷新资源。",
         "workbench_status_error": "提交失败",
+        "authoring_wizard_title": "Skill Authoring Wizard",
+        "authoring_wizard_subtitle": "为 draft Skill 快速补齐 schema、审批策略与评测策略。",
+        "authoring_wizard_empty": "当前没有待完善的 draft Skill。",
+        "authoring_wizard_checklist": "推荐检查清单",
+        "authoring_wizard_signals": "风险信号",
+        "authoring_wizard_notes": "建议说明",
+        "authoring_wizard_playbook": "关联 SOP",
         "execution_inspector_title": "执行检查器",
         "execution_inspector_subtitle": "展示 Run 的真实 API 请求格式、工具调用记录、配置摘要与返回结果，方便你审计 AI 执行细节",
         "execution_inspector_empty": "当前还没有可检查的执行记录。",
@@ -292,6 +301,8 @@ TRANSLATIONS = {
         "skill_version_rollback": "Rollback target",
         "skill_version_servers": "Required MCP",
         "action_create_skill_version": "Create Version",
+        "action_apply_authoring_pack": "Apply Pack",
+        "action_open_editor": "Open Editor",
         "action_activate_skill": "Activate",
         "action_deprecate_skill": "Deprecate",
         "action_rollback_skill": "Rollback",
@@ -322,6 +333,13 @@ TRANSLATIONS = {
         "workbench_status_ready": "Workbench is ready for input.",
         "workbench_status_success": "Created successfully and refreshed.",
         "workbench_status_error": "Submit failed",
+        "authoring_wizard_title": "Skill Authoring Wizard",
+        "authoring_wizard_subtitle": "Fill draft skills with schemas, approval defaults, and evaluation guidance in one step.",
+        "authoring_wizard_empty": "There are no draft skills waiting for authoring guidance.",
+        "authoring_wizard_checklist": "Recommended Checklist",
+        "authoring_wizard_signals": "Risk Signals",
+        "authoring_wizard_notes": "Guidance Notes",
+        "authoring_wizard_playbook": "Linked SOP",
         "execution_inspector_title": "Execution Inspector",
         "execution_inspector_subtitle": "Show real API request formats, tool call records, config summaries, and response payloads for each run.",
         "execution_inspector_empty": "No execution records to inspect yet.",
@@ -759,6 +777,13 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
 
       <section class="section">
         <article class="card workbench-card">
+          <div class="section-title"><h2 data-i18n="authoring_wizard_title"></h2><span data-i18n="authoring_wizard_subtitle"></span></div>
+          <div class="patch-review-grid" id="authoring-wizard-rows"></div>
+        </article>
+      </section>
+
+      <section class="section">
+        <article class="card workbench-card">
           <div class="section-title"><h2 data-i18n="editor_title"></h2><span data-i18n="editor_subtitle"></span></div>
           <div class="workbench-status" id="editor-status"></div>
           <div class="workbench-grid">
@@ -875,6 +900,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
       let currentSnapshot = {snapshot_json};
       let latestResources = {{}};
       let latestIngestionResult = null;
+      let latestAuthoringPacks = {{}};
       const editableSections = ['goals', 'playbooks', 'skills', 'knowledge_bases', 'tasks'];
       let currentLanguage = localStorage.getItem('playbookos-language') || 'zh';
 
@@ -1167,6 +1193,10 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         return `<button class="button${{secondary ? ' secondary' : ''}}" type="button" data-action-kind="${{escapeHtml(actionKind)}}" data-action-target="${{escapeHtml(actionTarget)}}" data-action-name="${{escapeHtml(actionName)}}"${{payloadAttr}}>${{escapeHtml(t(labelKey))}}</button>`;
       }}
 
+      function editorActionButton(section, targetId, labelKey) {{
+        return `<button class="button secondary" type="button" data-editor-section="${{escapeHtml(section)}}" data-editor-target="${{escapeHtml(targetId)}}">${{escapeHtml(t(labelKey))}}</button>`;
+      }}
+
       function renderActionCenter() {{
         renderGoalActions();
         renderReviewActions();
@@ -1373,6 +1403,36 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
           return `<div class="patch-review-card"><div class="patch-review-head"><div><strong>${{escapeHtml(reflection.summary || reflection.id)}}</strong><small>${{escapeHtml(metaLines.join('\\n'))}}</small></div><span class="state">${{escapeHtml(formatStateLabel(reflection.eval_status || 'proposed'))}} / ${{escapeHtml(reflection.approval_status || 'pending')}}</span></div><div class="patch-meta"><div>${{escapeHtml(t('patch_review_target_version'))}}: ${{escapeHtml(String(targetVersion))}}</div><div>${{escapeHtml(t('patch_review_score'))}}: ${{escapeHtml(scoreLabel)}}</div><div>${{escapeHtml(t('patch_review_replay_count'))}}: ${{escapeHtml(String(replayCount))}}</div></div><div class="patch-changes"><strong>${{escapeHtml(t('patch_review_changes'))}}</strong>${{changeHtml}}</div><div class="action-buttons">${{buttons.join('')}}</div></div>`;
         }});
         container.innerHTML = cards.join('');
+      }}
+
+      async function refreshAuthoringPacks(skills) {{
+        const draftSkills = (skills || []).filter((item) => item.status === 'draft');
+        const results = await Promise.allSettled(draftSkills.map((item) => fetchJson(`skills/${{item.id}}/authoring-pack`)));
+        latestAuthoringPacks = {{}};
+        results.forEach((result, index) => {{
+          if (result.status === 'fulfilled') {{
+            latestAuthoringPacks[draftSkills[index].id] = result.value;
+          }}
+        }});
+      }}
+
+      function renderSkillAuthoringWizard() {{
+        const container = document.getElementById('authoring-wizard-rows');
+        if (!container) return;
+        const draftSkills = (latestResources.skills || []).filter((item) => item.status === 'draft');
+        if (!draftSkills.length) {{
+          container.innerHTML = `<div class="patch-review-card"><strong>${{escapeHtml(t('authoring_wizard_title'))}}</strong><small>${{escapeHtml(t('authoring_wizard_empty'))}}</small></div>`;
+          return;
+        }}
+        container.innerHTML = draftSkills.map((skill) => {{
+          const pack = latestAuthoringPacks[skill.id] || null;
+          const playbookName = pack && pack.playbook_name ? pack.playbook_name : ((latestResources.playbooks || []).find((item) => item.id === (skill.evaluation_policy || {{}}).playbook_id) || {{}}).name || 'n/a';
+          const checklist = pack && pack.checklist && pack.checklist.length ? pack.checklist : (((skill.evaluation_policy || {{}}).sample_task_names) || []);
+          const signals = pack && pack.risk_signals && pack.risk_signals.length ? pack.risk_signals : [((skill.approval_policy || {{}}).hint) || 'n/a'];
+          const notes = pack && pack.notes && pack.notes.length ? pack.notes : [skill.description || 'n/a'];
+          return `<div class="patch-review-card"><div class="patch-review-head"><div><strong>${{escapeHtml(skill.name || skill.id)}}</strong><small>${{escapeHtml(`${{t('authoring_wizard_playbook')}}: ${{playbookName}}
+${{t('skill_version_servers')}}: ${{(skill.required_mcp_servers || []).join(', ') || 'n/a'}}`)}}</small></div><span class="state">${{escapeHtml(formatStateLabel(skill.status || 'draft'))}}</span></div>${{renderAggregateLines(t('authoring_wizard_checklist'), checklist.length ? checklist.map((item) => [item, 'step']) : [['none', 'n/a']])}}${{renderAggregateLines(t('authoring_wizard_signals'), signals.length ? signals.map((item) => [item, 'risk']) : [['none', 'n/a']])}}${{renderAggregateLines(t('authoring_wizard_notes'), notes.length ? notes.map((item) => [item, 'note']) : [['none', 'n/a']])}}<div class="action-buttons">${{actionButton('action_apply_authoring_pack', 'skill', skill.id, 'apply-authoring-pack')}}${{editorActionButton('skills', skill.id, 'action_open_editor')}}</div></div>`;
+        }}).join('');
       }}
 
       function renderSkillVersions() {{
@@ -1773,6 +1833,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         renderSkillVersions();
         renderPatchReviews();
         renderSessionTree();
+        renderSkillAuthoringWizard();
         renderExecutionInspector();
         if (failures.length) {{
           showBootError(new Error(`Partial API load failure: ${{failures.join('; ')}}`));
@@ -1925,6 +1986,15 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         }}
       }});
       document.addEventListener('click', async (event) => {{
+        const editorButton = event.target.closest('[data-editor-section]');
+        if (editorButton) {{
+          document.getElementById('editor-resource-type').value = editorButton.dataset.editorSection;
+          refreshEditorResourceOptions();
+          document.getElementById('editor-resource-id').value = editorButton.dataset.editorTarget;
+          loadEditorSelection();
+          document.getElementById('editor-status').textContent = currentLanguage === 'zh' ? '已载入编辑器。' : 'Loaded into editor.';
+          return;
+        }}
         const button = event.target.closest('[data-action-kind]');
         if (!button) return;
         try {{
@@ -1940,6 +2010,11 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
                 ? `已创建 Skill draft：${{result.skill.name}}`
                 : `Created draft skill: ${{result.skill.name}}`, 'success');
             }}
+          }}
+          if (button.dataset.actionKind === 'skill' && button.dataset.actionName === 'apply-authoring-pack' && result && result.skill) {{
+            setWorkbenchStatus(currentLanguage === 'zh'
+              ? `已应用 Skill 配置建议：${{result.skill.name}}`
+              : `Applied authoring pack for: ${{result.skill.name}}`, 'success');
           }}
           await refresh();
           setActionStatus(t('action_status_success'), 'success');

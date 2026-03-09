@@ -269,6 +269,27 @@ class PlaybookSkillDraftRead(APIModel):
     skill: "SkillRead"
 
 
+class SkillAuthoringPackRead(APIModel):
+    skill_id: str
+    skill_name: str
+    playbook_id: str | None = None
+    playbook_name: str | None = None
+    recommended_input_schema: dict[str, Any] = Field(default_factory=dict)
+    recommended_output_schema: dict[str, Any] = Field(default_factory=dict)
+    recommended_approval_policy: dict[str, Any] = Field(default_factory=dict)
+    recommended_evaluation_policy: dict[str, Any] = Field(default_factory=dict)
+    checklist: list[str] = Field(default_factory=list)
+    risk_signals: list[str] = Field(default_factory=list)
+    notes: list[str] = Field(default_factory=list)
+    linked_step_names: list[str] = Field(default_factory=list)
+
+
+class SkillAuthoringApplyRead(APIModel):
+    skill: "SkillRead"
+    authoring_pack: SkillAuthoringPackRead
+    applied_fields: list[str] = Field(default_factory=list)
+
+
 
 
 class SkillCreate(APIModel):

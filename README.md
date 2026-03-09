@@ -73,6 +73,8 @@ PlaybookOS 用来把目标、SOP、技能、工具权限、执行记录和反思
 - `POST /api/goals/{goal_id}/complete-review`
 - `POST /api/playbooks/import`
 - `POST /api/playbooks/ingest`
+- `GET /api/skills/{skill_id}/authoring-pack`
+- `POST /api/skills/{skill_id}/apply-authoring-pack`
 - `GET /api/playbooks`
 - `GET /api/playbooks/{playbook_id}`
 - `POST /api/playbooks/{playbook_id}/compile`
