@@ -4,21 +4,32 @@ import html
 import json
 
 
-SECTION_ORDER = ["goals", "skills", "tasks", "sessions", "runs", "acceptances", "artifacts", "reflections", "events"]
+SECTION_ORDER = [
+    "goals",
+    "playbooks",
+    "skills",
+    "knowledge_bases",
+    "tasks",
+    "sessions",
+    "runs",
+    "acceptances",
+    "artifacts",
+    "reflections",
+    "events",
+]
 
 TRANSLATIONS = {
     "zh": {
         "html_lang": "zh-CN",
         "page_title": "PlaybookOS 控制台",
         "badge": "✦ PlaybookOS · AI 工作操作系统",
-        "hero_title": "用一个可视化控制台，追踪 SOP / Skill / Task / Session / Acceptance / Reflection 的闭环。",
-        "hero_body": "这个页面直接消费 PlaybookOS 控制面 API，展示 SOP、技能、任务、子会话、验收、反思与事件流，让用户看见 AI 工作系统的完整主链路。",
+        "hero_title": "用一个可视化控制台，追踪 SOP / Skill / Knowledge / Task / Session / Acceptance / Reflection 的闭环。",
+        "hero_body": "这个页面直接消费 PlaybookOS 控制面 API，展示 SOP、技能、知识库、任务、子会话、验收、反思与事件流，让用户看见 AI 工作系统的完整主链路。",
         "refresh_board": "刷新看板",
         "view_board_json": "查看原始 Board JSON",
         "live_data_source": "实时数据源",
-        "waiting_refresh": "等待刷新…",
         "total_resources": "总资源数",
-        "total_resources_desc": "Goals、Skills、Tasks、Sessions、Runs、Acceptances、Artifacts、Reflections、Events 总量",
+        "total_resources_desc": "Goals、Playbooks、Skills、Knowledge、Tasks、Sessions、Runs、Acceptances、Artifacts、Reflections、Events 总量",
         "blocked_signals": "阻塞信号",
         "blocked_signals_desc": "Blocked goals + waiting human runs",
         "learning_signals": "学习信号",
@@ -27,13 +38,18 @@ TRANSLATIONS = {
         "control_board_subtitle": "来自 /api/board 的实时状态分布",
         "api_entry_points": "API 入口",
         "api_entry_subtitle": "适合手动巡检，也适合自动化编排接入",
+        "workbench_title": "配置工作台",
+        "workbench_subtitle": "直接在页面中手动配置 Goal、SOP、Skill、Knowledge 和 Task。",
+        "workbench_status_ready": "工作台就绪，可直接提交。",
+        "workbench_status_success": "创建成功，已刷新资源。",
+        "workbench_status_error": "提交失败",
         "quick_resource_peek": "资源速览",
         "quick_resource_peek_subtitle": "从 API 抓取最近的实体样本",
         "loading_resources_title": "等待加载资源",
-        "loading_resources_body": "页面会自动抓取 goals / skills / tasks / sessions / runs / acceptances / reflections / artifacts / events。",
+        "loading_resources_body": "页面会自动抓取 goals / playbooks / skills / knowledge_bases / tasks / sessions / runs / acceptances / reflections / artifacts / events。",
         "operating_rhythm": "运行节奏",
         "operating_rhythm_subtitle": "当前 MVP 推荐的执行循环",
-        "timeline_1": "用户先配置 SOP / Skill / Task，系统再把 SOP 规划成可执行任务图。",
+        "timeline_1": "用户先配置 Goal / SOP / Skill / Knowledge / Task，系统再把 SOP 规划成可执行任务图。",
         "timeline_2": "主控会话调度子会话执行任务，沉淀 run、artifact 与 event 事件轨迹。",
         "timeline_3": "结果经过人工验收与 AI 复盘，再回写 SOP、技能与知识沉淀。",
         "snapshot_json": "快照 JSON",
@@ -48,15 +64,50 @@ TRANSLATIONS = {
         "booting": "启动中",
         "error": "错误",
         "offline": "离线",
-        "route_not_found": "未找到路由",
         "loading_failed_title": "加载失败",
         "api_unavailable_title": "API 暂不可达",
         "resource_empty_suffix": "暂无记录",
         "resource_empty_body": "接口当前返回空列表。",
         "resource_id_fallback": "无 ID",
+        "create_goal": "新建 Goal",
+        "create_playbook": "新建 SOP",
+        "create_skill": "新建 Skill",
+        "create_knowledge": "新建 Knowledge",
+        "create_task": "新建 Task",
+        "goal_title": "目标标题",
+        "goal_objective": "目标说明",
+        "goal_constraints": "约束（每行一条）",
+        "goal_definition_of_done": "完成定义（每行一条）",
+        "playbook_name": "SOP 名称",
+        "playbook_goal": "关联 Goal",
+        "playbook_source_uri": "来源 URI（可选）",
+        "playbook_steps": "步骤（每行一步）",
+        "playbook_mcp_servers": "MCP 服务器（每行一条）",
+        "skill_name": "Skill 名称",
+        "skill_description": "Skill 说明",
+        "skill_required_mcp_servers": "依赖 MCP（每行一条）",
+        "knowledge_name": "知识条目名称",
+        "knowledge_description": "知识摘要",
+        "knowledge_content": "知识正文",
+        "knowledge_tags": "标签（每行一条）",
+        "knowledge_goal": "关联 Goal",
+        "task_name": "任务名称",
+        "task_description": "任务说明",
+        "task_goal": "所属 Goal",
+        "task_playbook": "所属 SOP",
+        "task_skill": "执行 Skill（可选）",
+        "task_queue": "队列名",
+        "task_priority": "优先级",
+        "task_approval_required": "需要人工审批",
+        "task_depends_on_ids": "依赖 Task ID（每行一条，可选）",
+        "submit_create": "创建",
+        "optional_none": "无",
+        "input_placeholder_uri": "例如 file:///workspace/sop.md",
         "section_labels": {
             "goals": "目标",
+            "playbooks": "SOP",
             "skills": "技能",
+            "knowledge_bases": "知识库",
             "tasks": "任务",
             "sessions": "会话",
             "runs": "运行",
@@ -70,14 +121,13 @@ TRANSLATIONS = {
         "html_lang": "en",
         "page_title": "PlaybookOS Console",
         "badge": "✦ PlaybookOS · AI Work Operating System",
-        "hero_title": "Track the full SOP / Skill / Task / Session / Acceptance / Reflection loop in one visual console.",
-        "hero_body": "This page reads directly from the PlaybookOS control-plane API and exposes SOPs, skills, tasks, child sessions, acceptances, reflections, and event streams so the full AI work system stays visible to the user.",
+        "hero_title": "Track the full SOP / Skill / Knowledge / Task / Session / Acceptance / Reflection loop in one visual console.",
+        "hero_body": "This page reads directly from the PlaybookOS control-plane API and exposes SOPs, skills, knowledge bases, tasks, child sessions, acceptances, reflections, and event streams so the full AI work system stays visible to the user.",
         "refresh_board": "Refresh Board",
         "view_board_json": "Open Raw Board JSON",
         "live_data_source": "Live Data Source",
-        "waiting_refresh": "Waiting for refresh…",
         "total_resources": "Total Resources",
-        "total_resources_desc": "Total goals, skills, tasks, sessions, runs, acceptances, artifacts, reflections, and events",
+        "total_resources_desc": "Total goals, playbooks, skills, knowledge bases, tasks, sessions, runs, acceptances, artifacts, reflections, and events",
         "blocked_signals": "Blocked Signals",
         "blocked_signals_desc": "Blocked goals + waiting human runs",
         "learning_signals": "Learning Signals",
@@ -86,13 +136,18 @@ TRANSLATIONS = {
         "control_board_subtitle": "Live status distribution from /api/board",
         "api_entry_points": "API Entry Points",
         "api_entry_subtitle": "Useful for manual inspection and automation workflows",
+        "workbench_title": "Workbench",
+        "workbench_subtitle": "Configure goals, SOPs, skills, knowledge, and tasks directly in the page.",
+        "workbench_status_ready": "Workbench is ready for input.",
+        "workbench_status_success": "Created successfully and refreshed.",
+        "workbench_status_error": "Submit failed",
         "quick_resource_peek": "Quick Resource Peek",
         "quick_resource_peek_subtitle": "Recent entity samples fetched from the API",
         "loading_resources_title": "Waiting for resources",
-        "loading_resources_body": "The page will automatically fetch goals / skills / tasks / sessions / runs / acceptances / reflections / artifacts / events.",
+        "loading_resources_body": "The page will automatically fetch goals / playbooks / skills / knowledge_bases / tasks / sessions / runs / acceptances / reflections / artifacts / events.",
         "operating_rhythm": "Operating Rhythm",
         "operating_rhythm_subtitle": "Recommended workflow loop for the current MVP",
-        "timeline_1": "Users configure SOPs, skills, and tasks first; the system turns SOPs into executable task graphs.",
+        "timeline_1": "Users configure goals, SOPs, skills, knowledge, and tasks first; the system turns SOPs into executable task graphs.",
         "timeline_2": "A supervisor session spawns worker sessions, executes runs, and records artifacts plus event traces.",
         "timeline_3": "Results go through human acceptance and AI postmortems before SOP, skill, and knowledge updates are published.",
         "snapshot_json": "Snapshot JSON",
@@ -102,20 +157,55 @@ TRANSLATIONS = {
         "overview_suffix": "overview",
         "last_updated": "Last updated",
         "api_prefix": "API",
-        "api_card_body": "Open this resource directly, or plug it into your automation tools and operating flows.",
-        "idle": "idle",
-        "booting": "booting",
-        "error": "error",
-        "offline": "offline",
-        "route_not_found": "Route not found",
+        "api_card_body": "Open the resource endpoint directly or connect it to your automation workflow.",
+        "idle": "Idle",
+        "booting": "Booting",
+        "error": "Error",
+        "offline": "Offline",
         "loading_failed_title": "Loading failed",
         "api_unavailable_title": "API unavailable",
-        "resource_empty_suffix": "not found yet",
-        "resource_empty_body": "This endpoint currently returns an empty list.",
+        "resource_empty_suffix": "no records",
+        "resource_empty_body": "The endpoint currently returns an empty list.",
         "resource_id_fallback": "No ID",
+        "create_goal": "Create Goal",
+        "create_playbook": "Create SOP",
+        "create_skill": "Create Skill",
+        "create_knowledge": "Create Knowledge",
+        "create_task": "Create Task",
+        "goal_title": "Goal title",
+        "goal_objective": "Goal objective",
+        "goal_constraints": "Constraints (one per line)",
+        "goal_definition_of_done": "Definition of done (one per line)",
+        "playbook_name": "SOP name",
+        "playbook_goal": "Linked goal",
+        "playbook_source_uri": "Source URI (optional)",
+        "playbook_steps": "Steps (one per line)",
+        "playbook_mcp_servers": "MCP servers (one per line)",
+        "skill_name": "Skill name",
+        "skill_description": "Skill description",
+        "skill_required_mcp_servers": "Required MCP servers (one per line)",
+        "knowledge_name": "Knowledge item name",
+        "knowledge_description": "Knowledge summary",
+        "knowledge_content": "Knowledge content",
+        "knowledge_tags": "Tags (one per line)",
+        "knowledge_goal": "Linked goal",
+        "task_name": "Task name",
+        "task_description": "Task description",
+        "task_goal": "Goal",
+        "task_playbook": "SOP",
+        "task_skill": "Skill (optional)",
+        "task_queue": "Queue name",
+        "task_priority": "Priority",
+        "task_approval_required": "Requires human approval",
+        "task_depends_on_ids": "Depends on task IDs (one per line, optional)",
+        "submit_create": "Create",
+        "optional_none": "None",
+        "input_placeholder_uri": "For example file:///workspace/sop.md",
         "section_labels": {
             "goals": "Goals",
+            "playbooks": "SOPs",
             "skills": "Skills",
+            "knowledge_bases": "Knowledge",
             "tasks": "Tasks",
             "sessions": "Sessions",
             "runs": "Runs",
@@ -129,7 +219,9 @@ TRANSLATIONS = {
 
 RESOURCE_SINGULAR = {
     "goals": "Goal",
+    "playbooks": "SOP",
     "skills": "Skill",
+    "knowledge_bases": "Knowledge",
     "tasks": "Task",
     "sessions": "Session",
     "runs": "Run",
@@ -139,14 +231,29 @@ RESOURCE_SINGULAR = {
     "events": "Event",
 }
 
+RESOURCE_PATHS = {
+    "goals": "goals",
+    "playbooks": "playbooks",
+    "skills": "skills",
+    "knowledge_bases": "knowledge-bases",
+    "tasks": "tasks",
+    "sessions": "sessions",
+    "runs": "runs",
+    "acceptances": "acceptances",
+    "artifacts": "artifacts",
+    "reflections": "reflections",
+    "events": "events",
+}
+
 
 def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None, *, api_base: str = "/api") -> str:
     snapshot = board_snapshot or {section: {} for section in SECTION_ORDER}
     snapshot_json = json.dumps(snapshot, ensure_ascii=False, sort_keys=True)
     api_base_json = json.dumps(api_base)
-    translations_json = json.dumps(TRANSLATIONS, ensure_ascii=False)
     section_order_json = json.dumps(SECTION_ORDER)
     resource_singular_json = json.dumps(RESOURCE_SINGULAR, ensure_ascii=False)
+    resource_paths_json = json.dumps(RESOURCE_PATHS, ensure_ascii=False)
+    translations_json = json.dumps(TRANSLATIONS, ensure_ascii=False)
     default_lang = "zh"
 
     return f"""<!DOCTYPE html>
@@ -182,9 +289,12 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
       }}
       .shell {{ width: min(1180px, calc(100vw - 32px)); margin: 24px auto 48px; }}
       .hero {{
-        padding: 32px; border: 1px solid var(--border); border-radius: 28px;
+        padding: 32px;
+        border: 1px solid var(--border);
+        border-radius: 28px;
         background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(17, 24, 39, 0.78));
-        box-shadow: var(--shadow); backdrop-filter: blur(18px);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(18px);
       }}
       .hero-top {{ display: flex; justify-content: space-between; gap: 20px; align-items: flex-start; flex-wrap: wrap; }}
       .badge {{
@@ -193,9 +303,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
       }}
       .hero-controls {{ display: flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }}
       .lang-toggle {{ display: inline-flex; gap: 6px; padding: 6px; background: rgba(15, 23, 42, 0.65); border: 1px solid var(--border); border-radius: 999px; }}
-      .lang-toggle button {{
-        border: 0; background: transparent; color: var(--muted); border-radius: 999px; padding: 8px 12px; cursor: pointer; font-weight: 700;
-      }}
+      .lang-toggle button {{ border: 0; background: transparent; color: var(--muted); border-radius: 999px; padding: 8px 12px; cursor: pointer; font-weight: 700; }}
       .lang-toggle button.active {{ background: linear-gradient(135deg, var(--accent), #4f46e5); color: var(--text); }}
       h1 {{ margin: 14px 0 10px; font-size: clamp(32px, 5vw, 54px); line-height: 1.04; }}
       .hero p {{ margin: 0; max-width: 760px; color: var(--muted); font-size: 16px; line-height: 1.7; }}
@@ -213,7 +321,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
       .card {{ grid-column: span 12; padding: 22px; border-radius: 24px; border: 1px solid var(--border); background: var(--panel); box-shadow: var(--shadow); backdrop-filter: blur(14px); }}
       .summary-card {{ grid-column: span 12; position: relative; overflow: hidden; }}
       .summary-card::after {{ content: ""; position: absolute; inset: auto -30px -40px auto; width: 140px; height: 140px; border-radius: 999px; background: radial-gradient(circle, rgba(6, 182, 212, 0.22), transparent 70%); }}
-      .summary-card h3, .endpoint-card h3 {{ margin: 0 0 8px; font-size: 18px; }}
+      .summary-card h3, .endpoint-card h3, .form-card h3 {{ margin: 0 0 8px; font-size: 18px; }}
       .eyebrow {{ color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; }}
       .metric {{ display: flex; align-items: baseline; gap: 10px; margin-top: 10px; }}
       .metric strong {{ font-size: 38px; line-height: 1; }}
@@ -225,6 +333,18 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
       .endpoint-card {{ grid-column: span 4; background: var(--panel-strong); }}
       .endpoint-link {{ display: inline-flex; margin-top: 14px; color: #c4b5fd; text-decoration: none; }}
       .endpoint-link:hover {{ color: #ddd6fe; }}
+      .workbench-card {{ grid-column: span 12; }}
+      .workbench-status {{ margin-top: 12px; padding: 12px 14px; border-radius: 14px; background: rgba(15, 23, 42, 0.65); border: 1px solid var(--border); color: var(--muted); }}
+      .workbench-grid {{ display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; margin-top: 16px; }}
+      .form-card {{ grid-column: span 6; padding: 18px; border-radius: 20px; background: rgba(15, 23, 42, 0.62); border: 1px solid rgba(148, 163, 184, 0.12); }}
+      .field-grid {{ display: grid; gap: 12px; }}
+      .field {{ display: grid; gap: 6px; }}
+      .field label {{ font-size: 13px; color: var(--muted); }}
+      .field input, .field textarea, .field select {{ width: 100%; border-radius: 14px; border: 1px solid rgba(148, 163, 184, 0.16); background: rgba(2, 6, 23, 0.74); color: var(--text); padding: 11px 12px; font: inherit; }}
+      .field textarea {{ min-height: 96px; resize: vertical; }}
+      .inline-checkbox {{ display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 14px; }}
+      .inline-checkbox input {{ width: auto; }}
+      .form-actions {{ margin-top: 14px; display: flex; justify-content: flex-end; }}
       .list-card {{ grid-column: span 8; }}
       .activity-card {{ grid-column: span 4; }}
       .rows {{ display: grid; gap: 10px; margin-top: 14px; }}
@@ -237,7 +357,10 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
       .timeline-item::before {{ content: ""; position: absolute; left: 0; top: 10px; width: 8px; height: 8px; border-radius: 999px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); box-shadow: 0 0 18px rgba(99, 102, 241, 0.55); }}
       pre {{ margin: 0; padding: 18px; border-radius: 18px; overflow: auto; font-size: 13px; color: #cbd5e1; background: rgba(2, 6, 23, 0.74); border: 1px solid rgba(148, 163, 184, 0.08); }}
       .footer {{ margin-top: 20px; color: var(--muted); font-size: 13px; text-align: center; }}
-      @media (max-width: 980px) {{ .hero-meta {{ grid-template-columns: 1fr; }} .endpoint-card, .list-card, .activity-card {{ grid-column: span 12; }} }}
+      @media (max-width: 980px) {{
+        .hero-meta {{ grid-template-columns: 1fr; }}
+        .endpoint-card, .list-card, .activity-card, .form-card {{ grid-column: span 12; }}
+      }}
     </style>
   </head>
   <body>
@@ -260,7 +383,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
             </div>
             <div class="meta-card" style="min-width: 240px;">
               <div class="eyebrow" id="live-data-source-label"></div>
-              <strong id="api-base-label">{html.escape(api_base)}</strong>
+              <strong>{html.escape(api_base)}</strong>
               <span id="last-updated" style="display:block;margin-top:10px;color:var(--muted);"></span>
             </div>
           </div>
@@ -280,6 +403,75 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
       <section class="section">
         <div class="section-title"><h2 id="api-entry-title"></h2><span id="api-entry-subtitle"></span></div>
         <div class="grid" id="endpoint-grid"></div>
+      </section>
+
+      <section class="section">
+        <article class="card workbench-card">
+          <div class="section-title"><h2 data-i18n="workbench_title"></h2><span data-i18n="workbench_subtitle"></span></div>
+          <div class="workbench-status" id="workbench-status"></div>
+          <div class="workbench-grid">
+            <form class="form-card" id="goal-form">
+              <h3 data-i18n="create_goal"></h3>
+              <div class="field-grid">
+                <div class="field"><label data-i18n="goal_title"></label><input id="goal-title-input" required /></div>
+                <div class="field"><label data-i18n="goal_objective"></label><textarea id="goal-objective-input" required></textarea></div>
+                <div class="field"><label data-i18n="goal_constraints"></label><textarea id="goal-constraints-input"></textarea></div>
+                <div class="field"><label data-i18n="goal_definition_of_done"></label><textarea id="goal-dod-input"></textarea></div>
+              </div>
+              <div class="form-actions"><button class="button" type="submit" data-i18n="submit_create"></button></div>
+            </form>
+
+            <form class="form-card" id="playbook-form">
+              <h3 data-i18n="create_playbook"></h3>
+              <div class="field-grid">
+                <div class="field"><label data-i18n="playbook_name"></label><input id="playbook-name-input" required /></div>
+                <div class="field"><label data-i18n="playbook_goal"></label><select id="playbook-goal-input"></select></div>
+                <div class="field"><label data-i18n="playbook_source_uri"></label><input id="playbook-source-uri-input" data-i18n-placeholder="input_placeholder_uri" /></div>
+                <div class="field"><label data-i18n="playbook_steps"></label><textarea id="playbook-steps-input" required></textarea></div>
+                <div class="field"><label data-i18n="playbook_mcp_servers"></label><textarea id="playbook-mcp-input"></textarea></div>
+              </div>
+              <div class="form-actions"><button class="button" type="submit" data-i18n="submit_create"></button></div>
+            </form>
+
+            <form class="form-card" id="skill-form">
+              <h3 data-i18n="create_skill"></h3>
+              <div class="field-grid">
+                <div class="field"><label data-i18n="skill_name"></label><input id="skill-name-input" required /></div>
+                <div class="field"><label data-i18n="skill_description"></label><textarea id="skill-description-input" required></textarea></div>
+                <div class="field"><label data-i18n="skill_required_mcp_servers"></label><textarea id="skill-mcp-input"></textarea></div>
+              </div>
+              <div class="form-actions"><button class="button" type="submit" data-i18n="submit_create"></button></div>
+            </form>
+
+            <form class="form-card" id="knowledge-form">
+              <h3 data-i18n="create_knowledge"></h3>
+              <div class="field-grid">
+                <div class="field"><label data-i18n="knowledge_name"></label><input id="knowledge-name-input" required /></div>
+                <div class="field"><label data-i18n="knowledge_goal"></label><select id="knowledge-goal-input"></select></div>
+                <div class="field"><label data-i18n="knowledge_description"></label><textarea id="knowledge-description-input"></textarea></div>
+                <div class="field"><label data-i18n="knowledge_content"></label><textarea id="knowledge-content-input" required></textarea></div>
+                <div class="field"><label data-i18n="knowledge_tags"></label><textarea id="knowledge-tags-input"></textarea></div>
+              </div>
+              <div class="form-actions"><button class="button" type="submit" data-i18n="submit_create"></button></div>
+            </form>
+
+            <form class="form-card" id="task-form">
+              <h3 data-i18n="create_task"></h3>
+              <div class="field-grid">
+                <div class="field"><label data-i18n="task_name"></label><input id="task-name-input" required /></div>
+                <div class="field"><label data-i18n="task_description"></label><textarea id="task-description-input" required></textarea></div>
+                <div class="field"><label data-i18n="task_goal"></label><select id="task-goal-input" required></select></div>
+                <div class="field"><label data-i18n="task_playbook"></label><select id="task-playbook-input" required></select></div>
+                <div class="field"><label data-i18n="task_skill"></label><select id="task-skill-input"></select></div>
+                <div class="field"><label data-i18n="task_queue"></label><input id="task-queue-input" value="default" /></div>
+                <div class="field"><label data-i18n="task_priority"></label><input id="task-priority-input" type="number" value="0" /></div>
+                <div class="field"><label data-i18n="task_depends_on_ids"></label><textarea id="task-depends-on-input"></textarea></div>
+                <label class="inline-checkbox"><input id="task-approval-input" type="checkbox" /><span data-i18n="task_approval_required"></span></label>
+              </div>
+              <div class="form-actions"><button class="button" type="submit" data-i18n="submit_create"></button></div>
+            </form>
+          </div>
+        </article>
       </section>
 
       <section class="section">
@@ -311,12 +503,18 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
       const apiBase = {api_base_json};
       const sectionOrder = {section_order_json};
       const resourceSingular = {resource_singular_json};
+      const resourcePaths = {resource_paths_json};
       const translations = {translations_json};
       let currentSnapshot = {snapshot_json};
+      let latestResources = {{}};
       let currentLanguage = localStorage.getItem('playbookos-language') || 'zh';
 
       function t(key) {{
         return translations[currentLanguage][key];
+      }}
+
+      function resourcePath(section) {{
+        return resourcePaths[section] || section;
       }}
 
       function sectionLabel(section) {{
@@ -338,6 +536,22 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
           .replaceAll('>', '&gt;')
           .replaceAll('"', '&quot;')
           .replaceAll("'", '&#39;');
+      }}
+
+      function splitLines(value) {{
+        return String(value || '').split(/\n|,/).map((item) => item.trim()).filter(Boolean);
+      }}
+
+      function buildManualUri(kind, name) {{
+        const slug = String(name || 'manual').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'manual';
+        return `playbookos://manual/${{kind}}/${{slug}}-${{Date.now()}}`;
+      }}
+
+      function setWorkbenchStatus(message, state = 'idle') {{
+        const node = document.getElementById('workbench-status');
+        node.dataset.state = state;
+        node.textContent = message;
+        node.style.color = state === 'error' ? '#fca5a5' : state === 'success' ? '#86efac' : 'var(--muted)';
       }}
 
       function applyLanguage(language) {{
@@ -373,17 +587,22 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         document.getElementById('footer-text').textContent = t('footer');
         document.getElementById('lang-zh').classList.toggle('active', currentLanguage === 'zh');
         document.getElementById('lang-en').classList.toggle('active', currentLanguage === 'en');
+        document.querySelectorAll('[data-i18n]').forEach((node) => {{ node.textContent = t(node.dataset.i18n); }});
+        document.querySelectorAll('[data-i18n-placeholder]').forEach((node) => {{ node.placeholder = t(node.dataset.i18nPlaceholder); }});
+        if (!document.getElementById('workbench-status').dataset.state) {{
+          setWorkbenchStatus(t('workbench_status_ready'));
+        }}
         renderSummary(currentSnapshot);
         renderEndpointCards();
+        renderWorkbenchOptions();
       }}
 
       function renderSummary(snapshot) {{
         currentSnapshot = snapshot || {{}};
-        const summaryGrid = document.getElementById('summary-grid');
-        summaryGrid.innerHTML = sectionOrder.map((section) => createSummaryCard(section, snapshot[section] || {{}})).join('');
+        document.getElementById('summary-grid').innerHTML = sectionOrder.map((section) => createSummaryCard(section, snapshot[section] || {{}})).join('');
         const resourceTotal = sectionOrder.reduce((total, section) => total + sumValues(snapshot[section] || {{}}), 0);
         const blockedTotal = Number((snapshot.goals || {{}}).blocked || 0) + Number((snapshot.runs || {{}}).waiting_human || 0);
-        const learningTotal = Number(sumValues(snapshot.reflections || {{}})) + Number((snapshot.goals || {{}}).review || 0);
+        const learningTotal = Number(sumValues(snapshot.reflections || {{}})) + Number(sumValues(snapshot.acceptances || {{}}));
         document.getElementById('resource-total').textContent = String(resourceTotal);
         document.getElementById('blocked-total').textContent = String(blockedTotal);
         document.getElementById('learning-total').textContent = String(learningTotal);
@@ -416,7 +635,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
       }}
 
       function createEndpointCard(section) {{
-        const endpoint = `${{apiBase}}/${{section}}`;
+        const endpoint = `${{apiBase}}/${{resourcePath(section)}}`;
         return `
           <article class="card endpoint-card">
             <div class="eyebrow">${{escapeHtml(t('api_prefix'))}}</div>
@@ -435,7 +654,21 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         return await response.json();
       }}
 
+      async function postJson(path, payload) {{
+        const response = await fetch(`${{apiBase}}/${{path}}`, {{
+          method: 'POST',
+          headers: {{ 'Content-Type': 'application/json' }},
+          body: JSON.stringify(payload),
+        }});
+        const data = await response.json().catch(() => ({{}}));
+        if (!response.ok) {{
+          throw new Error(data.detail || `Failed to submit ${{path}}: ${{response.status}}`);
+        }}
+        return data;
+      }}
+
       function renderResourceRows(payloads) {{
+        latestResources = payloads;
         const rows = [];
         for (const resourceName of sectionOrder) {{
           const label = sectionLabel(resourceName);
@@ -454,25 +687,133 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         document.getElementById('resource-rows').innerHTML = rows.join('');
       }}
 
+      function populateSelect(elementId, items, labelBuilder, options = {{}}) {{
+        const element = document.getElementById(elementId);
+        if (!element) return;
+        const includeBlank = options.includeBlank !== false;
+        const blankLabel = options.blankLabel || t('optional_none');
+        const current = element.value;
+        const values = [];
+        if (includeBlank) {{
+          values.push(`<option value="">${{escapeHtml(blankLabel)}}</option>`);
+        }}
+        for (const item of items || []) {{
+          values.push(`<option value="${{escapeHtml(item.id)}}">${{escapeHtml(labelBuilder(item))}}</option>`);
+        }}
+        element.innerHTML = values.join('');
+        if ([...element.options].some((option) => option.value === current)) {{
+          element.value = current;
+        }}
+      }}
+
+      function renderWorkbenchOptions() {{
+        populateSelect('playbook-goal-input', latestResources.goals || [], (item) => `${{item.title}} · ${{item.id.slice(0, 8)}}`);
+        populateSelect('knowledge-goal-input', latestResources.goals || [], (item) => `${{item.title}} · ${{item.id.slice(0, 8)}}`);
+        populateSelect('task-goal-input', latestResources.goals || [], (item) => `${{item.title}} · ${{item.id.slice(0, 8)}}`, {{ includeBlank: false }});
+        populateSelect('task-playbook-input', latestResources.playbooks || [], (item) => `${{item.name}} · ${{item.id.slice(0, 8)}}`, {{ includeBlank: false }});
+        populateSelect('task-skill-input', latestResources.skills || [], (item) => `${{item.name}} · ${{item.id.slice(0, 8)}}`);
+      }}
+
       async function refresh() {{
-        const [board, goals, skills, tasks, sessions, runs, acceptances, artifacts, reflections, events] = await Promise.all([
-          fetchJson('board'),
-          fetchJson('goals'),
-          fetchJson('skills'),
-          fetchJson('tasks'),
-          fetchJson('sessions'),
-          fetchJson('runs'),
-          fetchJson('acceptances'),
-          fetchJson('artifacts'),
-          fetchJson('reflections'),
-          fetchJson('events'),
-        ]);
+        const board = await fetchJson('board');
+        const resourcePairs = await Promise.all(sectionOrder.map(async (section) => [section, await fetchJson(resourcePath(section))]));
+        const payloads = Object.fromEntries(resourcePairs);
         renderSummary(board);
-        renderResourceRows({{ goals, skills, tasks, sessions, runs, acceptances, artifacts, reflections, events }});
+        renderResourceRows(payloads);
+        renderWorkbenchOptions();
+      }}
+
+      async function handleGoalSubmit(event) {{
+        event.preventDefault();
+        await postJson('goals', {{
+          title: document.getElementById('goal-title-input').value.trim(),
+          objective: document.getElementById('goal-objective-input').value.trim(),
+          constraints: splitLines(document.getElementById('goal-constraints-input').value),
+          definition_of_done: splitLines(document.getElementById('goal-dod-input').value),
+        }});
+        event.target.reset();
+      }}
+
+      async function handlePlaybookSubmit(event) {{
+        event.preventDefault();
+        const name = document.getElementById('playbook-name-input').value.trim();
+        await postJson('playbooks/import', {{
+          name,
+          source_kind: 'markdown',
+          source_uri: document.getElementById('playbook-source-uri-input').value.trim() || buildManualUri('playbook', name),
+          goal_id: document.getElementById('playbook-goal-input').value || null,
+          compiled_spec: {{
+            steps: splitLines(document.getElementById('playbook-steps-input').value),
+            mcp_servers: splitLines(document.getElementById('playbook-mcp-input').value),
+          }},
+        }});
+        event.target.reset();
+      }}
+
+      async function handleSkillSubmit(event) {{
+        event.preventDefault();
+        await postJson('skills', {{
+          name: document.getElementById('skill-name-input').value.trim(),
+          description: document.getElementById('skill-description-input').value.trim(),
+          required_mcp_servers: splitLines(document.getElementById('skill-mcp-input').value),
+          input_schema: {{}},
+          output_schema: {{}},
+          approval_policy: {{}},
+          evaluation_policy: {{}},
+        }});
+        event.target.reset();
+      }}
+
+      async function handleKnowledgeSubmit(event) {{
+        event.preventDefault();
+        const name = document.getElementById('knowledge-name-input').value.trim();
+        await postJson('knowledge-bases', {{
+          name,
+          description: document.getElementById('knowledge-description-input').value.trim(),
+          content: document.getElementById('knowledge-content-input').value.trim(),
+          tags: splitLines(document.getElementById('knowledge-tags-input').value),
+          goal_id: document.getElementById('knowledge-goal-input').value || null,
+          source_uri: buildManualUri('knowledge', name),
+        }});
+        event.target.reset();
+      }}
+
+      async function handleTaskSubmit(event) {{
+        event.preventDefault();
+        await postJson('tasks', {{
+          goal_id: document.getElementById('task-goal-input').value,
+          playbook_id: document.getElementById('task-playbook-input').value,
+          assigned_skill_id: document.getElementById('task-skill-input').value || null,
+          name: document.getElementById('task-name-input').value.trim(),
+          description: document.getElementById('task-description-input').value.trim(),
+          queue_name: document.getElementById('task-queue-input').value.trim() || 'default',
+          priority: Number(document.getElementById('task-priority-input').value || 0),
+          approval_required: document.getElementById('task-approval-input').checked,
+          depends_on: splitLines(document.getElementById('task-depends-on-input').value),
+        }});
+        event.target.reset();
+        document.getElementById('task-queue-input').value = 'default';
+        document.getElementById('task-priority-input').value = '0';
+      }}
+
+      async function handleWorkbenchSubmit(handler, event) {{
+        try {{
+          setWorkbenchStatus(currentLanguage === 'zh' ? '提交中…' : 'Submitting…');
+          await handler(event);
+          await refresh();
+          setWorkbenchStatus(t('workbench_status_success'), 'success');
+        }} catch (error) {{
+          setWorkbenchStatus(`${{t('workbench_status_error')}}: ${{error.message}}`, 'error');
+        }}
       }}
 
       document.getElementById('lang-zh').addEventListener('click', () => applyLanguage('zh'));
       document.getElementById('lang-en').addEventListener('click', () => applyLanguage('en'));
+      document.getElementById('goal-form').addEventListener('submit', (event) => handleWorkbenchSubmit(handleGoalSubmit, event));
+      document.getElementById('playbook-form').addEventListener('submit', (event) => handleWorkbenchSubmit(handlePlaybookSubmit, event));
+      document.getElementById('skill-form').addEventListener('submit', (event) => handleWorkbenchSubmit(handleSkillSubmit, event));
+      document.getElementById('knowledge-form').addEventListener('submit', (event) => handleWorkbenchSubmit(handleKnowledgeSubmit, event));
+      document.getElementById('task-form').addEventListener('submit', (event) => handleWorkbenchSubmit(handleTaskSubmit, event));
 
       document.getElementById('refresh-board').addEventListener('click', async () => {{
         const button = document.getElementById('refresh-board');

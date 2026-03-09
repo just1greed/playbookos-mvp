@@ -17,7 +17,7 @@
 
 ### 已实现
 
-- Goal / Playbook / Skill / Task / Session / Run / Acceptance / Artifact / Reflection / Event 的领域模型与持久化主链
+- Goal / Playbook / Skill / Knowledge / Task / Session / Run / Acceptance / Artifact / Reflection / Event 的领域模型与持久化主链
 - 手动导入 Playbook（SOP 的第一版承载）
 - 手动创建 Task
 - 手动创建 Skill，并可把 Skill 绑定到 Task
@@ -27,28 +27,30 @@
 - Executor: run 执行、trace、artifact metadata
 - Reflection: reflect / evaluate / approve / publish
 - 错误文件记录：`data/error_records.jsonl`
-- 内置 Dashboard：首页可中英文切换，并可看到 sessions / acceptances / events
+- 内置 Dashboard：首页可中英文切换，并可看到 playbooks / knowledge / sessions / acceptances / events
+- 页面工作台已支持直接新建 Goal / SOP / Skill / Knowledge / Task
 
 ### 部分实现
 
-- SOP 手动设置：当前以 `Playbook import + compile` 表达，缺少真正可编辑的 SOP 工作台
+- SOP 手动设置：已具备页面内新建工作台，但还缺少对既有 SOP 的编辑 / diff / patch UI
 - AI 参与完善：已有 reflection proposal、autopilot 与事件链路，但还没有针对 Skill / Task / SOP / 知识库的专门“AI co-pilot authoring”接口
 - 验收：已有独立的 acceptance 实体与 API，但还没有更细的 checklist 模板、评分和批量验收 UI
+- 知识库：已有 `KnowledgeBase` 实体与手动录入工作台，但还没有 AI 回写、检索和版本化链路
 - 子会话：当前已有 supervisor / worker session，可见且可追踪，但还没有更深层的 session tree / parallel sub-session orchestration
 
 ### 尚未完成
 
 - Skill 版本晋级与回滚流水线
 - 专门的 SOP 编辑 / diff / patch 审核界面
-- 知识库实体、知识更新和可见的知识回写链路
+- 知识库 AI 回写、检索和可见的知识更新链路
 - 真正的多层子会话执行、并行汇总与主进程仲裁
 - 真实 OpenAI Agents SDK + MCP 在线执行
 - Temporal 真正接入
 
 ## 推荐下一优先级
 
-1. 前端可编辑 SOP / Skill / Task 工作台
-2. 知识库模型 + AI 回写链路
+1. 既有 SOP / Skill / Task / Knowledge 的页面内编辑与详情页
+2. 知识库检索 + AI 回写链路
 3. 多层子会话 / session tree / 并行汇总
 4. SOP patch review / diff / publish UI
 5. Skill versioning / rollback

@@ -106,3 +106,11 @@
 - Dashboard 与 preview server 已展示 `skills / sessions / acceptances / events`，并继续支持中英文切换
 - 已新增 `tests/test_supervisor_unittest.py`，覆盖会话生成、验收与事件链路
 - 已完成 `PYTHONPATH=src python3 -m unittest discover -s tests -p 'test*_unittest.py'`，共 21 项测试通过
+
+- 已新增 `KnowledgeBase` 模型，并接入 in-memory / SQLite store、board snapshot 与 demo 数据
+- 已新增 `POST /api/knowledge-bases`、`GET /api/knowledge-bases`、`GET /api/knowledge-bases/{knowledge_id}`
+- `Playbook import` 现支持直接提交 `compiled_spec`，可从前端表单手动录入 SOP 步骤与 MCP 列表
+- Dashboard 已升级为可写工作台，支持在页面中直接创建 Goal、SOP、Skill、Knowledge、Task
+- preview server 已支持 `POST /api/goals`、`POST /api/playbooks/import`、`POST /api/skills`、`POST /api/knowledge-bases`、`POST /api/tasks`
+- 已新增 `tests/test_knowledge_store_unittest.py`，并更新 dashboard / preview / store 相关测试
+- 已完成 `PYTHONPATH=src python3 -m unittest discover -s tests -p 'test*_unittest.py'`，共 23 项测试通过

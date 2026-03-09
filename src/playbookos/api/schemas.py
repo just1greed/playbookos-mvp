@@ -11,6 +11,7 @@ from playbookos.domain.models import (
     MCPServerStatus,
     PlaybookStatus,
     AcceptanceStatus,
+    KnowledgeStatus,
     ReflectionStatus,
     RiskLevel,
     RunStatus,
@@ -216,6 +217,7 @@ class PlaybookImport(APIModel):
     source_kind: str
     source_uri: str
     goal_id: str | None = None
+    compiled_spec: dict[str, Any] = Field(default_factory=dict)
 
 
 class PlaybookRead(PlaybookImport):
@@ -246,6 +248,23 @@ class SkillRead(SkillCreate):
     id: str
     created_at: datetime
     updated_at: datetime
+
+
+class KnowledgeBaseCreate(APIModel):
+    name: str
+    content: str
+    description: str = ""
+    tags: list[str] = Field(default_factory=list)
+    source_uri: str | None = None
+    goal_id: str | None = None
+    status: KnowledgeStatus = KnowledgeStatus.DRAFT
+
+
+class KnowledgeBaseRead(KnowledgeBaseCreate):
+    id: str
+    created_at: datetime
+    updated_at: datetime
+
 
 class TaskCreate(APIModel):
     goal_id: str
@@ -309,7 +328,9 @@ class ReflectionPublish(APIModel):
 
 class BoardSnapshot(APIModel):
     goals: dict[str, int] = Field(default_factory=dict)
+    playbooks: dict[str, int] = Field(default_factory=dict)
     skills: dict[str, int] = Field(default_factory=dict)
+    knowledge_bases: dict[str, int] = Field(default_factory=dict)
     tasks: dict[str, int] = Field(default_factory=dict)
     sessions: dict[str, int] = Field(default_factory=dict)
     runs: dict[str, int] = Field(default_factory=dict)
@@ -323,6 +344,7 @@ class EnumCatalog(APIModel):
     goal_statuses: list[GoalStatus]
     playbook_statuses: list[PlaybookStatus]
     skill_statuses: list[SkillStatus]
+    knowledge_statuses: list[KnowledgeStatus]
     mcp_server_statuses: list[MCPServerStatus]
     task_statuses: list[TaskStatus]
     run_statuses: list[RunStatus]

@@ -13,7 +13,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 from playbookos.api.store import InMemoryStore, StoreProtocol
-from playbookos.domain.models import Goal, Playbook, ReflectionStatus, Skill
+from playbookos.domain.models import Goal, KnowledgeBase, Playbook, PlaybookStatus, ReflectionStatus, Skill, Task
 from playbookos.executor.service import DeterministicExecutorAdapter, autopilot_goal_in_store
 from playbookos.observability import get_error_log_path, list_recorded_errors, record_error
 from playbookos.persistence import create_store_from_env
@@ -49,6 +49,9 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
             if path == "/api/skills":
                 self._write_json(_serialize_items(self.server.store.skills.list()))
                 return
+            if path == "/api/knowledge-bases":
+                self._write_json(_serialize_items(self.server.store.knowledge_bases.list()))
+                return
             if path == "/api/tasks":
                 self._write_json(_serialize_items(self.server.store.tasks.list()))
                 return
@@ -80,8 +83,107 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
             record_error(exc, component="preview_server", operation="do_GET", metadata={"path": path}, path=self.server.error_log_path)
             self._write_json({"detail": "Internal server error"}, status=HTTPStatus.INTERNAL_SERVER_ERROR)
 
+
+    def do_POST(self) -> None:
+        parsed = urlparse(self.path)
+        path = parsed.path
+
+        try:
+            payload = self._read_json_body()
+            if path == "/api/goals":
+                goal = Goal(
+                    title=payload["title"],
+                    objective=payload["objective"],
+                    constraints=list(payload.get("constraints", [])),
+                    definition_of_done=list(payload.get("definition_of_done", [])),
+                )
+                self.server.store.goals.save(goal)
+                self._write_json(_to_jsonable(goal), status=HTTPStatus.CREATED)
+                return
+            if path == "/api/playbooks/import":
+                goal_id = payload.get("goal_id") or None
+                if goal_id is not None:
+                    self.server.store.goals.get(goal_id)
+                playbook = Playbook(
+                    name=payload["name"],
+                    source_kind=payload.get("source_kind", "markdown"),
+                    source_uri=payload["source_uri"],
+                    goal_id=goal_id,
+                    compiled_spec=dict(payload.get("compiled_spec", {})),
+                )
+                if playbook.compiled_spec.get("steps"):
+                    playbook.status = PlaybookStatus.COMPILED
+                self.server.store.playbooks.save(playbook)
+                self._write_json(_to_jsonable(playbook), status=HTTPStatus.CREATED)
+                return
+            if path == "/api/skills":
+                skill = Skill(
+                    name=payload["name"],
+                    description=payload["description"],
+                    input_schema=dict(payload.get("input_schema", {})),
+                    output_schema=dict(payload.get("output_schema", {})),
+                    required_mcp_servers=list(payload.get("required_mcp_servers", [])),
+                    approval_policy=dict(payload.get("approval_policy", {})),
+                    evaluation_policy=dict(payload.get("evaluation_policy", {})),
+                )
+                self.server.store.skills.save(skill)
+                self._write_json(_to_jsonable(skill), status=HTTPStatus.CREATED)
+                return
+            if path == "/api/knowledge-bases":
+                goal_id = payload.get("goal_id") or None
+                if goal_id is not None:
+                    self.server.store.goals.get(goal_id)
+                item = KnowledgeBase(
+                    name=payload["name"],
+                    description=payload.get("description", ""),
+                    content=payload["content"],
+                    tags=list(payload.get("tags", [])),
+                    source_uri=payload.get("source_uri") or None,
+                    goal_id=goal_id,
+                )
+                self.server.store.knowledge_bases.save(item)
+                self._write_json(_to_jsonable(item), status=HTTPStatus.CREATED)
+                return
+            if path == "/api/tasks":
+                self.server.store.goals.get(payload["goal_id"])
+                self.server.store.playbooks.get(payload["playbook_id"])
+                assigned_skill_id = payload.get("assigned_skill_id") or None
+                if assigned_skill_id is not None:
+                    self.server.store.skills.get(assigned_skill_id)
+                task = Task(
+                    goal_id=payload["goal_id"],
+                    playbook_id=payload["playbook_id"],
+                    name=payload["name"],
+                    description=payload["description"],
+                    depends_on=list(payload.get("depends_on", [])),
+                    assigned_skill_id=assigned_skill_id,
+                    approval_required=bool(payload.get("approval_required", False)),
+                    queue_name=payload.get("queue_name", "default"),
+                    priority=int(payload.get("priority", 0)),
+                    parent_task_id=payload.get("parent_task_id") or None,
+                )
+                self.server.store.tasks.save(task)
+                self._write_json(_to_jsonable(task), status=HTTPStatus.CREATED)
+                return
+
+            record_error("Route not found", component="preview_server", operation="do_POST", metadata={"path": path, "status_code": 404}, path=self.server.error_log_path)
+            self._write_json({"detail": "Not found"}, status=HTTPStatus.NOT_FOUND)
+        except KeyError as exc:
+            record_error(exc, component="preview_server", operation="do_POST", metadata={"path": path}, path=self.server.error_log_path)
+            self._write_json({"detail": f"Missing field: {exc.args[0]}"}, status=HTTPStatus.BAD_REQUEST)
+        except Exception as exc:
+            record_error(exc, component="preview_server", operation="do_POST", metadata={"path": path}, path=self.server.error_log_path)
+            self._write_json({"detail": str(exc)}, status=HTTPStatus.BAD_REQUEST)
+
     def log_message(self, format: str, *args: Any) -> None:
         return
+
+    def _read_json_body(self) -> dict[str, Any]:
+        length = int(self.headers.get("Content-Length", "0") or "0")
+        raw = self.rfile.read(length) if length > 0 else b"{}"
+        if not raw:
+            return {}
+        return json.loads(raw.decode("utf-8"))
 
     def _write_html(self, payload: str, *, status: HTTPStatus = HTTPStatus.OK) -> None:
         encoded = payload.encode("utf-8")
@@ -121,6 +223,16 @@ def build_demo_store() -> StoreProtocol:
     launch_skill = store.skills.save(
         Skill(name="Launch operator", description="Coordinate rollout tasks", input_schema={}, output_schema={}, required_mcp_servers=["plane", "github", "slack"])
     )
+    store.knowledge_bases.save(
+        KnowledgeBase(
+            name="Launch context pack",
+            description="Reusable operational notes for product launch.",
+            content="Stakeholder list, launch risks, escalation path, and release checklist.",
+            tags=["launch", "ops", "sop"],
+            goal_id=goal.id,
+            source_uri="file:///demo/launch-context.md",
+        )
+    )
     store.playbooks.save(
         Playbook(
             name="Ops launch playbook",
@@ -146,6 +258,16 @@ def build_demo_store() -> StoreProtocol:
     )
     reflection_skill = store.skills.save(
         Skill(name="Reflection analyst", description="Review traces and improve SOPs", input_schema={}, output_schema={}, required_mcp_servers=["plane"])
+    )
+    store.knowledge_bases.save(
+        KnowledgeBase(
+            name="Reflection evidence base",
+            description="Lessons learned used for postmortem synthesis.",
+            content="Previous incidents, patch notes, acceptance criteria, and replay evidence.",
+            tags=["reflection", "knowledge", "postmortem"],
+            goal_id=second_goal.id,
+            source_uri="file:///demo/reflection-evidence.md",
+        )
     )
     store.playbooks.save(
         Playbook(

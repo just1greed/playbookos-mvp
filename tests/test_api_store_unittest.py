@@ -1,7 +1,7 @@
 import unittest
 
 from playbookos.api.store import InMemoryStore, NotFoundError
-from playbookos.domain.models import Artifact, Goal, Playbook, Reflection, Run, Skill, Task
+from playbookos.domain.models import Artifact, Goal, KnowledgeBase, Playbook, Reflection, Run, Skill, Task
 
 
 class InMemoryStoreTestCase(unittest.TestCase):
@@ -13,6 +13,9 @@ class InMemoryStoreTestCase(unittest.TestCase):
         )
         store.skills.save(
             Skill(name="Writer", description="Draft and edit SOP content", input_schema={}, output_schema={})
+        )
+        store.knowledge_bases.save(
+            KnowledgeBase(name="Context pack", description="Reusable notes", content="Important context for execution")
         )
         task = store.tasks.save(
             Task(
@@ -44,7 +47,9 @@ class InMemoryStoreTestCase(unittest.TestCase):
         snapshot = store.board_snapshot()
 
         self.assertEqual(snapshot["goals"]["draft"], 1)
+        self.assertEqual(snapshot["playbooks"]["draft"], 1)
         self.assertEqual(snapshot["skills"]["draft"], 1)
+        self.assertEqual(snapshot["knowledge_bases"]["draft"], 1)
         self.assertEqual(snapshot["tasks"]["inbox"], 1)
         self.assertEqual(snapshot["runs"]["queued"], 1)
         self.assertEqual(snapshot["artifacts"]["run_report"], 1)

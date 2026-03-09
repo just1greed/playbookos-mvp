@@ -21,6 +21,8 @@ from playbookos.domain.models import (
     Event,
     Goal,
     GoalStatus,
+    KnowledgeBase,
+    KnowledgeStatus,
     Skill,
     SkillStatus,
     Playbook,
@@ -89,6 +91,22 @@ CREATE TABLE IF NOT EXISTS skills (
     updated_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_skills_status ON skills(status);
+
+CREATE TABLE IF NOT EXISTS knowledge_bases (
+    id TEXT PRIMARY KEY,
+    goal_id TEXT,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL,
+    content TEXT NOT NULL,
+    tags_json TEXT NOT NULL,
+    source_uri TEXT,
+    status TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(goal_id) REFERENCES goals(id)
+);
+CREATE INDEX IF NOT EXISTS idx_knowledge_bases_goal_id ON knowledge_bases(goal_id);
+CREATE INDEX IF NOT EXISTS idx_knowledge_bases_status ON knowledge_bases(status);
 
 CREATE TABLE IF NOT EXISTS tasks (
     id TEXT PRIMARY KEY,
@@ -331,6 +349,12 @@ class SQLiteStore:
             to_record=_skill_to_record,
             from_row=_skill_from_row,
         )
+        self.knowledge_bases = SQLiteRepository[KnowledgeBase](
+            db_path=self.db_path,
+            table_name="knowledge_bases",
+            to_record=_knowledge_base_to_record,
+            from_row=_knowledge_base_from_row,
+        )
         self.tasks = SQLiteRepository[Task](
             db_path=self.db_path,
             table_name="tasks",
@@ -377,7 +401,9 @@ class SQLiteStore:
     def board_snapshot(self) -> dict[str, dict[str, int]]:
         return {
             "goals": self._status_counts("goals", "status"),
+            "playbooks": self._status_counts("playbooks", "status"),
             "skills": self._status_counts("skills", "status"),
+            "knowledge_bases": self._status_counts("knowledge_bases", "status"),
             "tasks": self._status_counts("tasks", "status"),
             "sessions": self._status_counts("sessions", "status"),
             "runs": self._status_counts("runs", "status"),
@@ -538,6 +564,35 @@ def _skill_from_row(row: sqlite3.Row) -> Skill:
         rollback_version=row["rollback_version"],
         version=row["version"],
         status=SkillStatus(row["status"]),
+        created_at=datetime.fromisoformat(row["created_at"]),
+        updated_at=datetime.fromisoformat(row["updated_at"]),
+    )
+
+def _knowledge_base_to_record(item: KnowledgeBase) -> dict[str, Any]:
+    return {
+        "id": item.id,
+        "goal_id": item.goal_id,
+        "name": item.name,
+        "description": item.description,
+        "content": item.content,
+        "tags_json": _dump_json(item.tags),
+        "source_uri": item.source_uri,
+        "status": item.status.value,
+        "created_at": item.created_at.isoformat(),
+        "updated_at": item.updated_at.isoformat(),
+    }
+
+
+def _knowledge_base_from_row(row: sqlite3.Row) -> KnowledgeBase:
+    return KnowledgeBase(
+        id=row["id"],
+        goal_id=row["goal_id"],
+        name=row["name"],
+        description=row["description"],
+        content=row["content"],
+        tags=_load_json(row["tags_json"], []),
+        source_uri=row["source_uri"],
+        status=KnowledgeStatus(row["status"]),
         created_at=datetime.fromisoformat(row["created_at"]),
         updated_at=datetime.fromisoformat(row["updated_at"]),
     )

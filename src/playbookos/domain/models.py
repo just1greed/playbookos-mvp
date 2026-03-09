@@ -42,6 +42,12 @@ class MCPServerStatus(StrEnum):
     ERROR = "error"
 
 
+class KnowledgeStatus(StrEnum):
+    DRAFT = "draft"
+    ACTIVE = "active"
+    ARCHIVED = "archived"
+
+
 class TaskStatus(StrEnum):
     INBOX = "inbox"
     READY = "ready"
@@ -147,6 +153,26 @@ class Skill:
             raise ValueError("Skill.name is required")
         if not self.description.strip():
             raise ValueError("Skill.description is required")
+
+
+@dataclass(slots=True)
+class KnowledgeBase:
+    name: str
+    content: str
+    description: str = ""
+    tags: list[str] = field(default_factory=list)
+    source_uri: str | None = None
+    goal_id: str | None = None
+    status: KnowledgeStatus = KnowledgeStatus.DRAFT
+    id: str = field(default_factory=lambda: str(uuid4()))
+    created_at: datetime = field(default_factory=utc_now)
+    updated_at: datetime = field(default_factory=utc_now)
+
+    def __post_init__(self) -> None:
+        if not self.name.strip():
+            raise ValueError("KnowledgeBase.name is required")
+        if not self.content.strip():
+            raise ValueError("KnowledgeBase.content is required")
 
 
 @dataclass(slots=True)

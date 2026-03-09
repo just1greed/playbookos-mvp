@@ -27,7 +27,7 @@
 
 职责：
 
-- Goal / Playbook / Skill / Task / Session / Run / Acceptance / Artifact / Reflection / Event 核心对象模型
+- Goal / Playbook / Skill / Knowledge / Task / Session / Run / Acceptance / Artifact / Reflection / Event 核心对象模型
 - 枚举和值对象
 - 基础校验规则
 
@@ -195,6 +195,7 @@
 - `src/playbookos/domain/`
 - `src/playbookos/planner/`
 - `src/playbookos/orchestrator/`
+- `src/playbookos/ui/`：控制台与工作台页面
 - `src/playbookos/supervisor/`
 - `src/playbookos/executor/`
 - `src/playbookos/reflection/`
@@ -211,7 +212,7 @@
 
 ### Milestone 2：控制面主链路
 
-- Goal / Playbook / Skill / Task / Run API
+- Goal / Playbook / Skill / Knowledge / Task / Run API
 - Session / Acceptance / Event API
 - Board 查询
 - SQLite 持久化
@@ -252,7 +253,7 @@
 
 下一步建议优先：
 
-- 前端可编辑 SOP / Skill / Task 工作台
+- 页面内编辑既有实体与详情视图
 - 主控会话对子会话的更细粒度并行调度
 - 真实 OpenAI Agents SDK + MCP 调用
 - Artifact blob/object storage 持久化

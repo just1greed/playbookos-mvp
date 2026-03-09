@@ -24,6 +24,8 @@ from playbookos.api.schemas import (
     GoalLearningRead,
     GoalPlanRead,
     GoalRead,
+    KnowledgeBaseCreate,
+    KnowledgeBaseRead,
     SkillCreate,
     SkillRead,
     PlaybookImport,
@@ -50,6 +52,8 @@ from playbookos.domain.models import (
     Artifact,
     Goal,
     GoalStatus,
+    KnowledgeBase,
+    KnowledgeStatus,
     MCPServerStatus,
     Playbook,
     PlaybookStatus,
@@ -114,6 +118,7 @@ def create_app(store: StoreProtocol | None = None) -> FastAPI:
             goal_statuses=list(GoalStatus),
             playbook_statuses=list(PlaybookStatus),
             skill_statuses=list(SkillStatus),
+            knowledge_statuses=list(KnowledgeStatus),
             mcp_server_statuses=list(MCPServerStatus),
             task_statuses=list(TaskStatus),
             run_statuses=list(RunStatus),
@@ -198,6 +203,8 @@ def create_app(store: StoreProtocol | None = None) -> FastAPI:
         if payload.goal_id is not None:
             _fetch(store.goals, payload.goal_id, "Goal", operation="import_playbook", metadata={"goal_id": payload.goal_id})
         playbook = Playbook(**payload.model_dump())
+        if playbook.compiled_spec.get("steps"):
+            playbook.status = PlaybookStatus.COMPILED
         store.playbooks.save(playbook)
         return PlaybookRead.model_validate(playbook)
 
@@ -236,6 +243,22 @@ def create_app(store: StoreProtocol | None = None) -> FastAPI:
     @api.get("/api/skills/{skill_id}", response_model=SkillRead)
     def get_skill(skill_id: str, store: store_dep) -> SkillRead:
         return SkillRead.model_validate(_fetch(store.skills, skill_id, "Skill", operation="get_skill", metadata={"skill_id": skill_id}))
+
+    @api.post("/api/knowledge-bases", response_model=KnowledgeBaseRead, status_code=status.HTTP_201_CREATED)
+    def create_knowledge_base(payload: KnowledgeBaseCreate, store: store_dep) -> KnowledgeBaseRead:
+        if payload.goal_id is not None:
+            _fetch(store.goals, payload.goal_id, "Goal", operation="create_knowledge_base", metadata={"goal_id": payload.goal_id})
+        item = KnowledgeBase(**payload.model_dump())
+        store.knowledge_bases.save(item)
+        return KnowledgeBaseRead.model_validate(item)
+
+    @api.get("/api/knowledge-bases", response_model=list[KnowledgeBaseRead])
+    def list_knowledge_bases(store: store_dep) -> list[KnowledgeBaseRead]:
+        return [KnowledgeBaseRead.model_validate(item) for item in store.knowledge_bases.list()]
+
+    @api.get("/api/knowledge-bases/{knowledge_id}", response_model=KnowledgeBaseRead)
+    def get_knowledge_base(knowledge_id: str, store: store_dep) -> KnowledgeBaseRead:
+        return KnowledgeBaseRead.model_validate(_fetch(store.knowledge_bases, knowledge_id, "KnowledgeBase", operation="get_knowledge_base", metadata={"knowledge_id": knowledge_id}))
 
     @api.get("/api/sessions", response_model=list[SessionRead])
     def list_sessions(store: store_dep) -> list[SessionRead]:

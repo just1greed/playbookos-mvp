@@ -44,7 +44,7 @@ PlaybookOS 用来把目标、SOP、技能、工具权限、执行记录和反思
 
 当前版本提供：
 
-- 手动设置 Playbook / Task / Skill 的控制面基础能力
+- 手动设置 Goal / Playbook / Skill / Knowledge / Task 的控制面基础能力
 - 产品与架构基线文档
 - Goal / Playbook / Skill / Task / Session / Run / Acceptance / Artifact / Reflection / Event 领域模型
 - FastAPI 控制面 API 骨架
@@ -54,7 +54,7 @@ PlaybookOS 用来把目标、SOP、技能、工具权限、执行记录和反思
 - Supervisor 主控会话 / 子会话编排链路
 - OpenAI Agents SDK 风格执行适配层
 - Run 级 Artifact 元数据持久化与查询
-- 一个优美的内置前端控制台首页（`GET /`），并可中英文切换
+- 一个优美的内置前端控制台首页（`GET /`），并可中英文切换与直接录入 Goal / SOP / Skill / Knowledge / Task
 - SOP 自我迭代提案骨架
 - 用户可见的 Session / Acceptance / Event 追踪视图
 - PostgreSQL schema 文件，供后续正式部署接入
@@ -78,6 +78,9 @@ PlaybookOS 用来把目标、SOP、技能、工具权限、执行记录和反思
 - `POST /api/skills`
 - `GET /api/skills`
 - `GET /api/skills/{skill_id}`
+- `POST /api/knowledge-bases`
+- `GET /api/knowledge-bases`
+- `GET /api/knowledge-bases/{knowledge_id}`
 - `GET /api/sessions`
 - `GET /api/sessions/{session_id}`
 - `GET /api/acceptances`
@@ -162,7 +165,7 @@ PlaybookOS 用来把目标、SOP、技能、工具权限、执行记录和反思
 
 当前还没做完的部分：
 
-- 用户直接在前端编辑 SOP / Skill / Task 的表单工作台
+- 更细的更新/编辑能力与详情页（当前已支持直接新建，还未支持页面内编辑既有实体）
 - 主控会话自动拆分更多层级子会话并并行汇总
 - AI 主动改写 Skill / Knowledge Base 的专门 authoring 流程
 - 基于真实 OpenAI Agents SDK + MCP 调用结果的在线评测
@@ -185,6 +188,7 @@ PlaybookOS 用来把目标、SOP、技能、工具权限、执行记录和反思
 - `goals`
 - `playbooks`
 - `skills`
+- `knowledge_bases`
 - `tasks`
 - `sessions`
 - `runs`
@@ -224,6 +228,8 @@ PYTHONPATH=src python3 -m playbookos.ui.preview_server --demo --port 8081
 ```
 
 然后访问：`http://127.0.0.1:8081/`
+
+当前 8081 预览页已内置工作台表单，可直接创建 Goal、SOP、Skill、Knowledge 和 Task。
 
 ## 下一步
 

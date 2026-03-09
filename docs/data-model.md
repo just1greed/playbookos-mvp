@@ -53,7 +53,22 @@
 - `created_at`
 - `updated_at`
 
-### 1.4 MCPServer
+### 1.4 KnowledgeBase
+
+字段建议：
+
+- `id`
+- `goal_id`（可空）
+- `name`
+- `description`
+- `content`
+- `tags_json`
+- `source_uri`
+- `status`
+- `created_at`
+- `updated_at`
+
+### 1.5 MCPServer
 
 字段建议：
 
@@ -67,7 +82,7 @@
 - `created_at`
 - `updated_at`
 
-### 1.5 Task
+### 1.6 Task
 
 字段建议：
 
@@ -86,7 +101,7 @@
 - `created_at`
 - `updated_at`
 
-### 1.6 Run
+### 1.7 Run
 
 字段建议：
 
@@ -104,7 +119,7 @@
 - `metrics_json`
 - `created_at`
 
-### 1.7 Artifact
+### 1.8 Artifact
 
 字段建议：
 
@@ -119,7 +134,7 @@
 - `metadata_json`
 - `created_at`
 
-### 1.8 Reflection
+### 1.9 Reflection
 
 字段建议：
 
@@ -135,7 +150,7 @@
 - `created_at`
 - `updated_at`
 
-### 1.9 Session
+### 1.10 Session
 
 字段建议：
 
@@ -154,7 +169,7 @@
 - `created_at`
 - `updated_at`
 
-### 1.10 Acceptance
+### 1.11 Acceptance
 
 字段建议：
 
@@ -171,7 +186,7 @@
 - `created_at`
 - `updated_at`
 
-### 1.11 Event
+### 1.12 Event
 
 字段建议：
 
