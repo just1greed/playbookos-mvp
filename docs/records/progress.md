@@ -206,3 +206,7 @@
 - 已继续补完整局看板第二阶段：新增 `关键阻塞区 / 推荐动作区`，首页现在会汇总 blocked goals、waiting_human runs、failed runs、rejected reflections 与 SOP 检测出的 missing MCP
 - 推荐动作区会根据当前状态主动提示进入 `审批流 / MCP / Skill / 自动迭代 / 任务` 等工作台，不再只展示静态流程链与摘要卡
 - 已补充 `tests/test_dashboard_unittest.py` 覆盖 `dashboard-alerts-section` 与 `renderDashboardAlerts()`，并再次通过 `python3 -m compileall src tests`、`PYTHONPATH=src python3 -m unittest discover -s tests -p 'test*_unittest.py'` 与 `node --check /tmp/playbookos_dashboard_check.js`
+
+- 已继续推进前端重构第四、五阶段：`会话 / 自动迭代` 路由新增专属 `route detail` 内容区，`模型设置 / 全局设置 / 会话管理` 也开始展示实时摘要
+- `会话工作台` 现在会先展示最新 supervisor / worker 会话、绑定 task/run、child session 与 event 信号；`自动迭代工作台` 会先展示 reflection / knowledge update 流水线和待处理学习队列
+- 设置页不再只是静态占位卡：现已显示最近一次模型调用配置、当前 UI/API 状态和 session/event 实时计数

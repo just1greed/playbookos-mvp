@@ -238,6 +238,15 @@ TRANSLATIONS = {
         "route_task_queue_subtitle": "查看当前最需要处理的任务、依赖关系和绑定的 SOP / Skill。",
         "route_task_pressure_title": "执行压力",
         "route_task_pressure_subtitle": "汇总等待人工、待验收、阻塞依赖和失败运行信号。",
+        "route_sessions_timeline_title": "会话时间线",
+        "route_sessions_timeline_subtitle": "优先查看最新 supervisor / worker 会话、绑定的 task/run 和角色层级。",
+        "route_sessions_health_title": "会话健康",
+        "route_sessions_health_subtitle": "汇总 supervisor、worker、子会话、事件流和等待人工信号。",
+        "route_learning_pipeline_title": "学习流水线",
+        "route_learning_pipeline_subtitle": "查看最近的 reflection、knowledge update 和可发布的改进项。",
+        "route_learning_queue_title": "学习队列",
+        "route_learning_queue_subtitle": "优先处理待评测、待批准、待发布和待应用的学习项。",
+        "detail_events": "事件",
         "detail_transport": "传输",
         "detail_endpoint": "端点",
         "detail_scopes": "范围",
@@ -573,6 +582,15 @@ TRANSLATIONS = {
         "route_task_queue_subtitle": "See the tasks that need attention first, with dependencies and linked SOP / Skill context.",
         "route_task_pressure_title": "Execution Pressure",
         "route_task_pressure_subtitle": "Summarize waiting-human, acceptance, blocker, and failed-run signals.",
+        "route_sessions_timeline_title": "Session Timeline",
+        "route_sessions_timeline_subtitle": "Inspect recent supervisor / worker sessions, linked task/run context, and role hierarchy first.",
+        "route_sessions_health_title": "Session Health",
+        "route_sessions_health_subtitle": "Summarize supervisor, worker, child-session, event-stream, and waiting-human signals.",
+        "route_learning_pipeline_title": "Learning Pipeline",
+        "route_learning_pipeline_subtitle": "Inspect recent reflections, knowledge updates, and publishable improvements.",
+        "route_learning_queue_title": "Learning Queue",
+        "route_learning_queue_subtitle": "Handle evaluation, approval, publish, and apply queues for learning artifacts first.",
+        "detail_events": "Events",
         "detail_transport": "Transport",
         "detail_endpoint": "Endpoint",
         "detail_scopes": "Scopes",
@@ -1259,14 +1277,17 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
             <div class="placeholder-card" id="model-settings-panel" data-settings-panel="model-settings">
               <h3 data-i18n="nav_model_settings"></h3>
               <p data-i18n="settings_model_card"></p>
+              <div class="rows" id="model-settings-rows"></div>
             </div>
             <div class="placeholder-card" id="global-settings-panel" data-settings-panel="global-settings">
               <h3 data-i18n="nav_global_settings"></h3>
               <p data-i18n="settings_global_card"></p>
+              <div class="rows" id="global-settings-rows"></div>
             </div>
             <div class="placeholder-card" id="session-admin-panel" data-settings-panel="session-admin">
               <h3 data-i18n="nav_session_admin"></h3>
               <p data-i18n="settings_session_card"></p>
+              <div class="rows" id="session-admin-rows"></div>
             </div>
           </div>
         </article>
@@ -1320,13 +1341,13 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         mcp: ['route-focus-section', 'route-detail-section', 'workbench-section', 'editor-section'],
         knowledge: ['route-focus-section', 'route-detail-section', 'workbench-section', 'editor-section'],
         tasks: ['route-focus-section', 'route-detail-section', 'workbench-section', 'editor-section', 'action-center-section'],
-        sessions: ['route-focus-section', 'session-tree-section', 'execution-inspector-section', 'supervisor-section'],
-        learning: ['route-focus-section', 'patch-review-section', 'skill-version-section', 'supervisor-section'],
+        sessions: ['route-focus-section', 'route-detail-section', 'session-tree-section', 'execution-inspector-section', 'supervisor-section'],
+        learning: ['route-focus-section', 'route-detail-section', 'patch-review-section', 'skill-version-section', 'supervisor-section'],
         approvals: ['route-focus-section', 'action-center-section'],
         prompts: ['route-focus-section', 'workbench-section'],
         'model-settings': ['settings-placeholder-section'],
         'global-settings': ['settings-placeholder-section'],
-        'session-admin': ['settings-placeholder-section', 'session-tree-section'],
+        'session-admin': ['settings-placeholder-section', 'route-detail-section', 'session-tree-section'],
         system: ['route-focus-section', 'dashboard-api-section', 'snapshot-section'],
       }};
       const workbenchRouteForms = {{
@@ -1565,6 +1586,53 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
 
         blockerNode.innerHTML = blockers.length ? blockers.join('') : routeDetailRow(t('route_detail_empty'), [t('route_placeholder_body')], t('idle'));
         recommendationNode.innerHTML = recommendations.length ? recommendations.join('') : routeDetailRow(t('route_detail_empty'), [t('route_placeholder_body')], t('idle'));
+      }}
+
+      function renderSettingsPanels() {{
+        const modelRows = document.getElementById('model-settings-rows');
+        const globalRows = document.getElementById('global-settings-rows');
+        const sessionRows = document.getElementById('session-admin-rows');
+        if (!modelRows || !globalRows || !sessionRows) return;
+        const runs = latestResources.runs || [];
+        const sessions = latestResources.sessions || [];
+        const events = latestResources.events || [];
+        const latestRun = [...runs].sort((left, right) => String(right.updated_at || right.created_at || '').localeCompare(String(left.updated_at || left.created_at || '')))[0] || null;
+        const metrics = (latestRun && latestRun.metrics) || {{}};
+        const config = metrics.openai_config || {{}};
+        modelRows.innerHTML = [
+          routeDetailRow(config.model || 'n/a', [
+            `mode: ${{metrics.openai_mode || metrics.adapter || 'n/a'}}`,
+            `format: ${{metrics.openai_request_format || 'n/a'}}`,
+            `url: ${{metrics.openai_request_url || 'n/a'}}`,
+          ], latestRun ? (latestRun.status || 'idle') : 'idle'),
+          routeDetailRow('tool calls', [
+            `${{t('execution_inspector_calls')}}: ${{((metrics.tool_calls || []).length)}}`,
+            `response: ${{metrics.openai_response_id || 'n/a'}}`,
+          ], ((metrics.tool_calls || []).length) ? 'active' : 'idle'),
+        ].join('');
+        globalRows.innerHTML = [
+          routeDetailRow('ui', [
+            `language: ${{currentLanguage}}`,
+            `route: ${{currentRoute}}`,
+            `api: ${{apiBase}}`,
+          ], 'active'),
+          routeDetailRow('snapshot', [
+            `resources: ${{sectionOrder.reduce((total, section) => total + sumValues(currentSnapshot[section] || {{}}), 0)}}`,
+            `blocked: ${{Number((currentSnapshot.goals || {{}}).blocked || 0) + Number((currentSnapshot.runs || {{}}).waiting_human || 0)}}`,
+          ], 'live'),
+        ].join('');
+        sessionRows.innerHTML = [
+          routeDetailRow(t('nav_sessions'), [
+            `total: ${{sessions.length}}`,
+            `supervisor: ${{sessions.filter((item) => item.kind === 'supervisor').length}}`,
+            `worker: ${{sessions.filter((item) => item.kind === 'worker').length}}`,
+          ], sessions.length ? 'active' : 'idle'),
+          routeDetailRow(t('detail_events'), [
+            `events: ${{events.length}}`,
+            `children: ${{sessions.filter((item) => item.parent_session_id).length}}`,
+            `waiting_human runs: ${{(latestResources.runs || []).filter((item) => item.status === 'waiting_human').length}}`,
+          ], events.length ? 'live' : 'idle'),
+        ].join('');
       }}
 
       function updatePageHeader() {{
@@ -2592,6 +2660,57 @@ ${{t('skill_version_servers')}}: ${{(skill.required_mcp_servers || []).join(', '
             routeDetailRow(t('focus_issues'), [`blocked: ${{blockedTasks}}`, `failed runs: ${{failedRuns}}`], 'blocked'),
             routeDetailRow(t('focus_pending'), [`ready: ${{readyTasks}}`, `${{t('detail_dependencies')}}: ${{tasks.filter((item) => (item.depends_on || []).length).length}}`], 'ready'),
           ];
+               }} else if (currentRoute === 'sessions' || currentRoute === 'session-admin') {{
+          const sessions = latestResources.sessions || [];
+          const events = latestResources.events || [];
+          primaryTitle = t('route_sessions_timeline_title');
+          primarySubtitle = t('route_sessions_timeline_subtitle');
+          sideTitle = t('route_sessions_health_title');
+          sideSubtitle = t('route_sessions_health_subtitle');
+          primaryRows = sortByRecent(sessions).map((item) => routeDetailRow(item.title || item.id, [
+            `${{t('session_kind_label')}}: ${{item.kind || 'n/a'}}`,
+            `${{t('session_role_label')}}: ${{(item.input_context && item.input_context.session_role) || 'n/a'}}`,
+            `${{t('session_task_label')}}: ${{item.task_id || 'n/a'}} · ${{t('session_run_label')}}: ${{item.run_id || 'n/a'}}`,
+          ], item.status || item.kind || 'idle'));
+          sideRows = [
+            routeDetailRow('supervisor / worker', [
+              `supervisor: ${{sessions.filter((item) => item.kind === 'supervisor').length}}`,
+              `worker: ${{sessions.filter((item) => item.kind === 'worker').length}}`,
+              `children: ${{sessions.filter((item) => item.parent_session_id).length}}`,
+            ], 'active'),
+            routeDetailRow(t('detail_events'), [
+              `events: ${{events.length}}`,
+              `waiting_human runs: ${{runs.filter((item) => item.status === 'waiting_human').length}}`,
+            ], events.length ? 'live' : 'idle'),
+          ];
+        }} else if (currentRoute === 'learning') {{
+          const reflections = latestResources.reflections || [];
+          const knowledgeUpdates = latestResources.knowledge_updates || [];
+          primaryTitle = t('route_learning_pipeline_title');
+          primarySubtitle = t('route_learning_pipeline_subtitle');
+          sideTitle = t('route_learning_queue_title');
+          sideSubtitle = t('route_learning_queue_subtitle');
+          primaryRows = [
+            ...sortByRecent(reflections, 4).map((item) => routeDetailRow(item.summary || item.id, [
+              `${{t('detail_goal')}}: ${{goalTitle(taskForReflection(item) ? taskForReflection(item).goal_id : null)}}`,
+              `${{t('focus_review')}}: ${{item.eval_status || 'n/a'}} / ${{item.approval_status || 'n/a'}}`,
+            ], item.eval_status || 'proposed')),
+            ...sortByRecent(knowledgeUpdates, 4).slice(0, 2).map((item) => routeDetailRow(item.title || item.id, [
+              `${{t('detail_goal')}}: ${{goalTitle(item.goal_id)}}`,
+              item.summary || 'n/a',
+            ], item.status || 'proposed')),
+          ].slice(0, 6);
+          sideRows = [
+            routeDetailRow(t('patch_review_title'), [
+              `proposed: ${{reflections.filter((item) => item.eval_status === 'proposed').length}}`,
+              `approved: ${{reflections.filter((item) => item.eval_status === 'approved').length}}`,
+              `published: ${{reflections.filter((item) => item.eval_status === 'published').length}}`,
+            ], 'proposed'),
+            routeDetailRow(t('learning_ops_title'), [
+              `knowledge proposed: ${{knowledgeUpdates.filter((item) => item.status === 'proposed').length}}`,
+              `rejected: ${{knowledgeUpdates.filter((item) => item.status === 'rejected').length}}`,
+            ], 'review'),
+          ];
         }}
 
         titleNode.textContent = primaryTitle;
@@ -2802,6 +2921,7 @@ ${{t('skill_version_servers')}}: ${{(skill.required_mcp_servers || []).join(', '
         renderDashboardAlerts();
         renderResourceRows(payloads);
         renderRouteDetails();
+        renderSettingsPanels();
         renderWorkbenchOptions();
         refreshEditorResourceOptions();
         renderActionCenter();
