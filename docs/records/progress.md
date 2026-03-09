@@ -135,3 +135,7 @@
 - 已使用 `node --check` 校验生成后的前端脚本语法
 - 已使用 `PYTHONPATH=src python3 -m unittest discover -s tests -p 'test*_unittest.py'` 完成全量回归，25 项测试通过
 - 已重启本地 demo 预览服务到 `http://127.0.0.1:8081/` 并确认页面已渲染出“控制看板 / 配置工作台”等实际内容
+
+- Dashboard 已新增“操作中心”，把 Goal 编排、Run 审批、Task 验收、Knowledge Update 应用/拒绝、Reflection 评测/批准/发布整合到一个用户可见界面
+- preview server 已补齐对应动作接口：`goal plan/dispatch/autopilot`、`run execute/approve/reject/reflect`、`task accept/complete`、`reflection evaluate/approve/reject/publish`
+- 已再次使用 `node --check` 校验生成 Dashboard 脚本，并用无头浏览器确认 `8081` 页面渲染出“操作中心 / 目标编排 / 人工审批 / 复盘 / 知识更新”等实际内容

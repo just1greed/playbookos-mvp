@@ -39,6 +39,37 @@ TRANSLATIONS = {
         "control_board_subtitle": "来自 /api/board 的实时状态分布",
         "api_entry_points": "API 入口",
         "api_entry_subtitle": "适合手动巡检，也适合自动化编排接入",
+        "action_center": "操作中心",
+        "action_center_subtitle": "把规划、审批、验收、复盘与知识回写直接放到用户可见界面中",
+        "action_status_ready": "操作中心已就绪。",
+        "goal_ops_title": "目标编排",
+        "goal_ops_empty": "还没有可操作的 Goal。",
+        "review_ops_title": "人工审批 / 验收",
+        "review_ops_empty": "当前没有待审批或待验收项。",
+        "learning_ops_title": "复盘 / 知识更新",
+        "learning_ops_empty": "当前没有待处理的知识更新或反思提案。",
+        "action_plan": "规划",
+        "action_dispatch": "派发",
+        "action_autopilot": "自动执行",
+        "action_execute": "执行 Run",
+        "action_approve_run": "批准 Run",
+        "action_reject_run": "拒绝 Run",
+        "action_accept_task": "通过验收",
+        "action_reject_task": "打回任务",
+        "action_apply_knowledge": "应用知识",
+        "action_reject_knowledge": "拒绝知识",
+        "action_evaluate_reflection": "评测提案",
+        "action_approve_reflection": "批准提案",
+        "action_reject_reflection": "拒绝提案",
+        "action_publish_reflection": "发布 SOP",
+        "action_status_running": "操作执行中…",
+        "action_status_success": "操作完成，已刷新全局状态。",
+        "action_status_error": "操作失败",
+        "action_kind_goal": "目标",
+        "action_kind_run": "运行",
+        "action_kind_task": "任务",
+        "action_kind_knowledge": "知识更新",
+        "action_kind_reflection": "反思",
         "workbench_title": "配置工作台",
         "workbench_subtitle": "直接在页面中手动配置 Goal、SOP、Skill、Knowledge 和 Task。",
         "workbench_status_ready": "工作台就绪，可直接提交。",
@@ -151,6 +182,37 @@ TRANSLATIONS = {
         "control_board_subtitle": "Live status distribution from /api/board",
         "api_entry_points": "API Entry Points",
         "api_entry_subtitle": "Useful for manual inspection and automation workflows",
+        "action_center": "Action Center",
+        "action_center_subtitle": "Put planning, approvals, acceptance, postmortems, and knowledge updates into a visible user-facing loop",
+        "action_status_ready": "Action center is ready.",
+        "goal_ops_title": "Goal Orchestration",
+        "goal_ops_empty": "No actionable goals yet.",
+        "review_ops_title": "Human Review / Acceptance",
+        "review_ops_empty": "No pending approval or acceptance items.",
+        "learning_ops_title": "Postmortem / Knowledge Updates",
+        "learning_ops_empty": "No pending knowledge updates or reflection proposals.",
+        "action_plan": "Plan",
+        "action_dispatch": "Dispatch",
+        "action_autopilot": "Autopilot",
+        "action_execute": "Execute Run",
+        "action_approve_run": "Approve Run",
+        "action_reject_run": "Reject Run",
+        "action_accept_task": "Accept Task",
+        "action_reject_task": "Reject Task",
+        "action_apply_knowledge": "Apply Knowledge",
+        "action_reject_knowledge": "Reject Knowledge",
+        "action_evaluate_reflection": "Evaluate",
+        "action_approve_reflection": "Approve",
+        "action_reject_reflection": "Reject",
+        "action_publish_reflection": "Publish SOP",
+        "action_status_running": "Running action…",
+        "action_status_success": "Action completed and state refreshed.",
+        "action_status_error": "Action failed",
+        "action_kind_goal": "Goal",
+        "action_kind_run": "Run",
+        "action_kind_task": "Task",
+        "action_kind_knowledge": "Knowledge Update",
+        "action_kind_reflection": "Reflection",
         "workbench_title": "Workbench",
         "workbench_subtitle": "Configure goals, SOPs, skills, knowledge, and tasks directly in the page.",
         "workbench_status_ready": "Workbench is ready for input.",
@@ -376,6 +438,17 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
       .inline-checkbox {{ display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 14px; }}
       .inline-checkbox input {{ width: auto; }}
       .form-actions {{ margin-top: 14px; display: flex; justify-content: flex-end; }}
+      .action-grid {{ display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }}
+      .action-card {{ grid-column: span 4; padding: 18px; border-radius: 20px; background: rgba(15, 23, 42, 0.62); border: 1px solid rgba(148, 163, 184, 0.12); }}
+      .action-card h3 {{ margin: 0 0 10px; font-size: 18px; }}
+      .action-status {{ margin-top: 12px; padding: 12px 14px; border-radius: 14px; background: rgba(15, 23, 42, 0.65); border: 1px solid var(--border); color: var(--muted); }}
+      .action-rows {{ display: grid; gap: 12px; }}
+      .action-row {{ padding: 14px; border-radius: 16px; background: rgba(2, 6, 23, 0.58); border: 1px solid rgba(148, 163, 184, 0.08); }}
+      .action-row strong {{ display: block; font-size: 14px; }}
+      .action-row small {{ display: block; color: var(--muted); margin-top: 6px; line-height: 1.6; white-space: pre-wrap; }}
+      .action-buttons {{ display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }}
+      .action-buttons .button {{ padding: 9px 12px; border-radius: 12px; box-shadow: none; }}
+      .action-buttons .button.secondary {{ background: rgba(15, 23, 42, 0.82); }}
       .list-card {{ grid-column: span 8; }}
       .activity-card {{ grid-column: span 4; }}
       .rows {{ display: grid; gap: 10px; margin-top: 14px; }}
@@ -396,7 +469,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
       .boot-error-detail {{ margin-top: 12px; white-space: pre-wrap; word-break: break-word; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; line-height: 1.6; }}
       @media (max-width: 980px) {{
         .hero-meta {{ grid-template-columns: 1fr; }}
-        .endpoint-card, .list-card, .activity-card, .form-card {{ grid-column: span 12; }}
+        .endpoint-card, .list-card, .activity-card, .form-card, .action-card {{ grid-column: span 12; }}
       }}
     </style>
   </head>
@@ -546,6 +619,27 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
       </section>
 
       <section class="section">
+        <article class="card workbench-card">
+          <div class="section-title"><h2 data-i18n="action_center"></h2><span data-i18n="action_center_subtitle"></span></div>
+          <div class="action-status" id="action-status"></div>
+          <div class="action-grid" style="margin-top:16px;">
+            <div class="action-card">
+              <h3 data-i18n="goal_ops_title"></h3>
+              <div class="action-rows" id="goal-action-rows"></div>
+            </div>
+            <div class="action-card">
+              <h3 data-i18n="review_ops_title"></h3>
+              <div class="action-rows" id="review-action-rows"></div>
+            </div>
+            <div class="action-card">
+              <h3 data-i18n="learning_ops_title"></h3>
+              <div class="action-rows" id="learning-action-rows"></div>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="section">
         <div class="grid">
           <article class="card list-card">
             <div class="section-title"><h2 id="resource-peek-title"></h2><span id="resource-peek-subtitle"></span></div>
@@ -649,6 +743,14 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         node.style.color = state === 'error' ? '#fca5a5' : state === 'success' ? '#86efac' : 'var(--muted)';
       }}
 
+      function setActionStatus(message, state = 'idle') {{
+        const node = document.getElementById('action-status');
+        if (!node) return;
+        node.dataset.state = state;
+        node.textContent = message;
+        node.style.color = state === 'error' ? '#fca5a5' : state === 'success' ? '#86efac' : 'var(--muted)';
+      }}
+
       function applyLanguage(language) {{
         currentLanguage = translations[language] ? language : 'zh';
         localStorage.setItem('playbookos-language', currentLanguage);
@@ -689,9 +791,13 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         if (!document.getElementById('workbench-status').dataset.state) {{
           setWorkbenchStatus(t('workbench_status_ready'));
         }}
+        if (!document.getElementById('action-status').dataset.state) {{
+          setActionStatus(t('action_status_ready'));
+        }}
         renderSummary(currentSnapshot);
         renderEndpointCards();
         renderWorkbenchOptions();
+        renderActionCenter();
         if (!document.getElementById('editor-status').dataset.state) {{
           document.getElementById('editor-status').dataset.state = 'idle';
           document.getElementById('editor-status').textContent = t('editor_status_ready');
@@ -780,6 +886,140 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
           throw new Error(data.detail || `Failed to update ${{path}}: ${{response.status}}`);
         }}
         return data;
+      }}
+
+      function actionRow(title, detail, buttons) {{
+        return `<div class="action-row"><strong>${{escapeHtml(title)}}</strong><small>${{escapeHtml(detail)}}</small><div class="action-buttons">${{buttons.join('')}}</div></div>`;
+      }}
+
+      function actionButton(labelKey, actionKind, actionTarget, actionName, payload = null, secondary = false) {{
+        const payloadAttr = payload ? ` data-payload="${{escapeHtml(JSON.stringify(payload))}}"` : '';
+        return `<button class="button${{secondary ? ' secondary' : ''}}" type="button" data-action-kind="${{escapeHtml(actionKind)}}" data-action-target="${{escapeHtml(actionTarget)}}" data-action-name="${{escapeHtml(actionName)}}"${{payloadAttr}}>${{escapeHtml(t(labelKey))}}</button>`;
+      }}
+
+      function renderActionCenter() {{
+        renderGoalActions();
+        renderReviewActions();
+        renderLearningActions();
+      }}
+
+      function renderGoalActions() {{
+        const rows = (latestResources.goals || []).slice(0, 6).map((goal) => actionRow(
+          goal.title || goal.id,
+          `${{t('action_kind_goal')}} · ${{goal.status || ''}} · ${{goal.id}}`,
+          [
+            actionButton('action_plan', 'goal', goal.id, 'plan', null, true),
+            actionButton('action_dispatch', 'goal', goal.id, 'dispatch', null, true),
+            actionButton('action_autopilot', 'goal', goal.id, 'autopilot'),
+          ],
+        ));
+        document.getElementById('goal-action-rows').innerHTML = rows.length ? rows.join('') : actionRow(t('goal_ops_title'), t('goal_ops_empty'), []);
+      }}
+
+      function renderReviewActions() {{
+        const rows = [];
+        for (const run of latestResources.runs || []) {{
+          const task = (latestResources.tasks || []).find((item) => item.id === run.task_id);
+          if (!task) continue;
+          if (run.status === 'waiting_human') {{
+            rows.push(actionRow(
+              task.name || run.id,
+              `${{t('action_kind_run')}} · waiting_human · ${{run.id}}`,
+              [
+                actionButton('action_approve_run', 'run', run.id, 'approve'),
+                actionButton('action_reject_run', 'run', run.id, 'reject', null, true),
+              ],
+            ));
+          }} else if (run.status === 'queued') {{
+            rows.push(actionRow(
+              task.name || run.id,
+              `${{t('action_kind_run')}} · queued · ${{run.id}}`,
+              [actionButton('action_execute', 'run', run.id, 'execute')],
+            ));
+          }}
+        }}
+        for (const task of latestResources.tasks || []) {{
+          if (!['review', 'done'].includes(task.status)) continue;
+          rows.push(actionRow(
+            task.name || task.id,
+            `${{t('action_kind_task')}} · ${{task.status}} · ${{task.id}}`,
+            [
+              actionButton('action_accept_task', 'task', task.id, 'accept', {{ accepted: true }}),
+              actionButton('action_reject_task', 'task', task.id, 'accept', {{ accepted: false }}, true),
+            ],
+          ));
+        }}
+        document.getElementById('review-action-rows').innerHTML = rows.length ? rows.join('') : actionRow(t('review_ops_title'), t('review_ops_empty'), []);
+      }}
+
+      function renderLearningActions() {{
+        const rows = [];
+        for (const item of latestResources.knowledge_updates || []) {{
+          if (item.status !== 'proposed') continue;
+          rows.push(actionRow(
+            item.title || item.id,
+            `${{t('action_kind_knowledge')}} · ${{item.status}} · ${{item.id}}`,
+            [
+              actionButton('action_apply_knowledge', 'knowledge', item.id, 'apply'),
+              actionButton('action_reject_knowledge', 'knowledge', item.id, 'reject', null, true),
+            ],
+          ));
+        }}
+        for (const item of latestResources.reflections || []) {{
+          const buttons = [];
+          if (item.eval_status === 'proposed') {{
+            buttons.push(actionButton('action_evaluate_reflection', 'reflection', item.id, 'evaluate'));
+          }}
+          if (item.eval_status === 'approved' && item.approval_status !== 'approved') {{
+            buttons.push(actionButton('action_approve_reflection', 'reflection', item.id, 'approve'));
+          }}
+          if (item.eval_status !== 'published' && item.approval_status !== 'rejected') {{
+            buttons.push(actionButton('action_reject_reflection', 'reflection', item.id, 'reject', null, true));
+          }}
+          if (item.eval_status === 'approved' && item.approval_status === 'approved') {{
+            buttons.push(actionButton('action_publish_reflection', 'reflection', item.id, 'publish'));
+          }}
+          if (!buttons.length) continue;
+          rows.push(actionRow(
+            item.summary || item.id,
+            `${{t('action_kind_reflection')}} · ${{item.eval_status || ''}} / ${{item.approval_status || ''}} · ${{item.id}}`,
+            buttons,
+          ));
+        }}
+        document.getElementById('learning-action-rows').innerHTML = rows.length ? rows.join('') : actionRow(t('learning_ops_title'), t('learning_ops_empty'), []);
+      }}
+
+      async function runAction(actionKind, actionTarget, actionName, payload = null) {{
+        const body = payload && Object.keys(payload).length ? payload : {{}};
+        if (actionKind === 'goal') {{
+          await postJson(`goals/${{actionTarget}}/${{actionName}}`, body);
+          return;
+        }}
+        if (actionKind === 'run') {{
+          await postJson(`runs/${{actionTarget}}/${{actionName}}`, body);
+          return;
+        }}
+        if (actionKind === 'reflection') {{
+          await postJson(`reflections/${{actionTarget}}/${{actionName}}`, body);
+          return;
+        }}
+        if (actionKind === 'knowledge') {{
+          await postJson(`knowledge-updates/${{actionTarget}}/${{actionName}}`, body);
+          return;
+        }}
+        if (actionKind === 'task' && actionName === 'accept') {{
+          const accepted = Boolean(payload && payload.accepted);
+          const task = (latestResources.tasks || []).find((item) => item.id === actionTarget);
+          await postJson(`tasks/${{actionTarget}}/accept`, {{
+            criteria: task ? [task.description || task.name] : [],
+            reviewer_id: 'dashboard-reviewer',
+            accepted,
+            notes: accepted ? 'Accepted in dashboard action center' : 'Rejected in dashboard action center',
+            findings: [],
+          }});
+          return;
+        }}
+        throw new Error(`Unsupported action: ${{actionKind}}/${{actionName}}`);
       }}
 
       function renderResourceRows(payloads) {{
@@ -951,6 +1191,7 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
         renderResourceRows(payloads);
         renderWorkbenchOptions();
         refreshEditorResourceOptions();
+        renderActionCenter();
         clearBootError();
       }}
 
@@ -1061,6 +1302,22 @@ def build_dashboard_html(board_snapshot: dict[str, dict[str, int]] | None = None
       document.getElementById('skill-form').addEventListener('submit', (event) => handleWorkbenchSubmit(handleSkillSubmit, event));
       document.getElementById('knowledge-form').addEventListener('submit', (event) => handleWorkbenchSubmit(handleKnowledgeSubmit, event));
       document.getElementById('task-form').addEventListener('submit', (event) => handleWorkbenchSubmit(handleTaskSubmit, event));
+      document.addEventListener('click', async (event) => {{
+        const button = event.target.closest('[data-action-kind]');
+        if (!button) return;
+        try {{
+          const payload = button.dataset.payload ? JSON.parse(button.dataset.payload) : null;
+          setActionStatus(t('action_status_running'));
+          button.disabled = true;
+          await runAction(button.dataset.actionKind, button.dataset.actionTarget, button.dataset.actionName, payload);
+          await refresh();
+          setActionStatus(t('action_status_success'), 'success');
+        }} catch (error) {{
+          setActionStatus(`${{t('action_status_error')}}: ${{error.message}}`, 'error');
+        }} finally {{
+          button.disabled = false;
+        }}
+      }});
 
       window.addEventListener('error', (event) => {{
         showBootError(event.error || event.message);

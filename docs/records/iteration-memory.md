@@ -30,13 +30,14 @@
 - 内置 Dashboard：首页可中英文切换，并可看到 playbooks / knowledge / sessions / acceptances / events
 - 页面工作台已支持直接新建 Goal / SOP / Skill / Knowledge / Task
 - 页面编辑器已支持查看并修改既有 Goal / SOP / Skill / Knowledge / Task
+- 页面操作中心已支持 Goal 规划 / 派发 / 自动执行、Run 审批 / 执行、Task 验收、Knowledge Update apply/reject、Reflection evaluate/approve/reject/publish
 
 ### 部分实现
 
 - SOP 手动设置：已具备页面内新建与基础编辑，但还缺少 diff / patch / 版本审批 UI
 - AI 参与完善：已有 reflection proposal、autopilot 与事件链路，但还没有针对 Skill / Task / SOP / 知识库的专门“AI co-pilot authoring”接口
-- 验收：已有独立的 acceptance 实体与 API，但还没有更细的 checklist 模板、评分和批量验收 UI
-- 知识库：已有 `KnowledgeBase` 实体、任务绑定、执行读取，以及 `KnowledgeUpdate` AI 回写提案链路，但还没有检索排序和版本化能力
+- 验收：已有独立的 acceptance 实体、API 和页面内操作入口，但还没有更细的 checklist 模板、评分和批量验收 UI
+- 知识库：已有 `KnowledgeBase` 实体、任务绑定、执行读取，以及 `KnowledgeUpdate` AI 回写提案链路和页面内 apply/reject，但还没有检索排序和版本化能力
 - 子会话：当前已有 supervisor / worker session，可见且可追踪，但还没有更深层的 session tree / parallel sub-session orchestration
 
 ### 尚未完成
@@ -50,8 +51,8 @@
 
 ## 推荐下一优先级
 
-1. 知识库检索排序 + 页面内 apply/reject 操作
-2. 多层子会话 / session tree / 并行汇总
-3. SOP patch review / diff / publish UI
-4. Skill versioning / rollback
+1. 多层子会话 / session tree / 并行汇总
+2. SOP patch review / diff / publish UI
+3. Skill versioning / rollback
+4. 知识库检索排序 / 版本化
 5. 真实 executor + MCP 集成

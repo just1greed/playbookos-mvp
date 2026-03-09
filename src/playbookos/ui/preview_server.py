@@ -13,12 +13,13 @@ from typing import Any
 from urllib.parse import urlparse
 
 from playbookos.api.store import InMemoryStore, StoreProtocol
-from playbookos.domain.models import Goal, KnowledgeBase, Playbook, PlaybookStatus, ReflectionStatus, Skill, Task
-from playbookos.executor.service import DeterministicExecutorAdapter, autopilot_goal_in_store
+from playbookos.domain.models import Goal, KnowledgeBase, Playbook, PlaybookStatus, ReflectionStatus, RunStatus, Skill, Task, TaskStatus, utc_now
+from playbookos.executor.service import DeterministicExecutorAdapter, autopilot_goal_in_store, execute_run_in_store
 from playbookos.observability import get_error_log_path, list_recorded_errors, record_error
 from playbookos.persistence import create_store_from_env
+from playbookos.orchestrator.service import complete_task_in_store, dispatch_goal_in_store
 from playbookos.planner.service import plan_goal_in_store
-from playbookos.reflection.service import approve_reflection_in_store, evaluate_reflection_in_store, publish_reflection_in_store
+from playbookos.reflection.service import approve_reflection_in_store, evaluate_reflection_in_store, publish_reflection_in_store, reflect_run_in_store, reject_reflection_in_store
 from playbookos.supervisor import accept_task_in_store
 from playbookos.ui import build_dashboard_html
 
@@ -183,6 +184,121 @@ class PreviewRequestHandler(BaseHTTPRequestHandler):
                 )
                 self.server.store.tasks.save(task)
                 self._write_json(_to_jsonable(task), status=HTTPStatus.CREATED)
+                return
+            if path.startswith("/api/goals/") and path.endswith("/plan"):
+                goal_id = path.split("/")[-2]
+                result = plan_goal_in_store(self.server.store, goal_id)
+                self._write_json({
+                    "goal_id": result.goal_id,
+                    "playbook_ids": result.playbook_ids,
+                    "task_ids": [item.id for item in result.created_tasks],
+                    "created_count": result.created_count,
+                    "existing_task_count": result.existing_task_count,
+                })
+                return
+            if path.startswith("/api/goals/") and path.endswith("/dispatch"):
+                goal_id = path.split("/")[-2]
+                result = dispatch_goal_in_store(self.server.store, goal_id)
+                self._write_json({
+                    "goal_id": result.goal_id,
+                    "promoted_task_ids": result.promoted_task_ids,
+                    "dispatched_task_ids": result.dispatched_task_ids,
+                    "created_run_ids": result.created_run_ids,
+                    "waiting_human_task_ids": result.waiting_human_task_ids,
+                    "goal_status": result.goal_status.value,
+                })
+                return
+            if path.startswith("/api/goals/") and path.endswith("/autopilot"):
+                goal_id = path.split("/")[-2]
+                plan_goal_in_store(self.server.store, goal_id)
+                result = autopilot_goal_in_store(self.server.store, goal_id, adapter=DeterministicExecutorAdapter())
+                self._write_json(_to_jsonable(result))
+                return
+            if path.startswith("/api/tasks/") and path.endswith("/accept"):
+                task_id = path.split("/")[-2]
+                result = accept_task_in_store(
+                    self.server.store,
+                    task_id,
+                    criteria=list(payload.get("criteria", [])),
+                    reviewer_id=payload.get("reviewer_id"),
+                    accepted=bool(payload.get("accepted", False)),
+                    notes=payload.get("notes", ""),
+                    findings=list(payload.get("findings", [])),
+                )
+                self._write_json({
+                    "acceptance": _to_jsonable(result.acceptance),
+                    "task_status": result.task_status.value,
+                    "goal_status": result.goal_status.value,
+                    "event_ids": result.event_ids,
+                })
+                return
+            if path.startswith("/api/tasks/") and path.endswith("/complete"):
+                task_id = path.split("/")[-2]
+                result = complete_task_in_store(self.server.store, task_id)
+                self._write_json(_to_jsonable(result))
+                return
+            if path.startswith("/api/runs/") and path.endswith("/execute"):
+                run_id = path.split("/")[-2]
+                result = execute_run_in_store(self.server.store, run_id, adapter=DeterministicExecutorAdapter())
+                if result.status == RunStatus.SUCCEEDED:
+                    run = self.server.store.runs.get(run_id)
+                    complete_task_in_store(self.server.store, run.task_id)
+                self._write_json(_to_jsonable(result))
+                return
+            if path.startswith("/api/runs/") and path.endswith("/reflect"):
+                run_id = path.split("/")[-2]
+                result = reflect_run_in_store(self.server.store, run_id)
+                self._write_json(_to_jsonable(result))
+                return
+            if path.startswith("/api/runs/") and path.endswith("/approve"):
+                run_id = path.split("/")[-2]
+                run = self.server.store.runs.get(run_id)
+                task = self.server.store.tasks.get(run.task_id)
+                run.status = RunStatus.QUEUED
+                run.started_at = run.started_at or utc_now()
+                task.status = TaskStatus.RUNNING
+                task.updated_at = utc_now()
+                self.server.store.runs.save(run)
+                self.server.store.tasks.save(task)
+                self._write_json(_to_jsonable(run))
+                return
+            if path.startswith("/api/runs/") and path.endswith("/reject"):
+                run_id = path.split("/")[-2]
+                run = self.server.store.runs.get(run_id)
+                task = self.server.store.tasks.get(run.task_id)
+                goal = self.server.store.goals.get(task.goal_id)
+                run.status = RunStatus.FAILED
+                run.finished_at = utc_now()
+                run.error_class = "human_rejected"
+                run.error_message = "Run rejected by human review"
+                task.status = TaskStatus.FAILED
+                task.updated_at = utc_now()
+                goal.status = goal.status.__class__.BLOCKED
+                goal.updated_at = utc_now()
+                self.server.store.runs.save(run)
+                self.server.store.tasks.save(task)
+                self.server.store.goals.save(goal)
+                self._write_json(_to_jsonable(run))
+                return
+            if path.startswith("/api/reflections/") and path.endswith("/evaluate"):
+                reflection_id = path.split("/")[-2]
+                result = evaluate_reflection_in_store(self.server.store, reflection_id)
+                self._write_json(_to_jsonable(result))
+                return
+            if path.startswith("/api/reflections/") and path.endswith("/approve"):
+                reflection_id = path.split("/")[-2]
+                item = approve_reflection_in_store(self.server.store, reflection_id, approved_by="preview-human")
+                self._write_json(_to_jsonable(item))
+                return
+            if path.startswith("/api/reflections/") and path.endswith("/reject"):
+                reflection_id = path.split("/")[-2]
+                item = reject_reflection_in_store(self.server.store, reflection_id, approved_by="preview-human")
+                self._write_json(_to_jsonable(item))
+                return
+            if path.startswith("/api/reflections/") and path.endswith("/publish"):
+                reflection_id = path.split("/")[-2]
+                result = publish_reflection_in_store(self.server.store, reflection_id)
+                self._write_json(_to_jsonable(result))
                 return
 
             record_error("Route not found", component="preview_server", operation="do_POST", metadata={"path": path, "status_code": 404}, path=self.server.error_log_path)
